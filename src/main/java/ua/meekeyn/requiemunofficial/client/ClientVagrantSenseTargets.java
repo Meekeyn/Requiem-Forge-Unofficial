@@ -16,8 +16,8 @@ import java.util.Set;
 /**
  * Client side list of soulless bodies sensed by a vagrant passing through walls.
  *
- * <p>The server only tells us <i>which</i> entities are soulless; the outline itself is decided
- * locally at render time (see {@code MinecraftMixin#requiemunofficial$senseSoullessOutline}),
+ * <p>The server only tells us <i>which</i> entities can currently be possessed; the outline itself
+ * is decided locally at render time (see {@code MinecraftMixin#requiemunofficial$senseSoullessOutline}),
  * so no entity state (glowing tag) is ever mutated. Entity shared flags are rewritten by the
  * server every tick, which is why setting {@code glowing} client side never worked, and it would
  * also clobber legitimate glowing effects such as the spectral arrow.

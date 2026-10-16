@@ -1,6 +1,0 @@
-{
-  "parent": "item/generated",
-    "textures": {
-        "layer0": "requiem:item/sealed_remnant_vessel"
-    }
-}

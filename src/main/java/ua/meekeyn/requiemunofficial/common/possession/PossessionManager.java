@@ -717,44 +717,17 @@ public final class PossessionManager {
         return collectVagrantSenseTargetIds(player);
     }
 
-    public static boolean isVagrantSenseTargetForTest(LivingEntity entity) {
-        return isVagrantSenseHostCandidate(entity);
+    public static boolean isVagrantSenseTargetForTest(ServerPlayer player, LivingEntity entity) {
+        return canPossess(player, entity);
     }
 
     private static List<Integer> collectVagrantSenseTargetIds(ServerPlayer player) {
         AABB searchBox = player.getBoundingBox().inflate(VAGRANT_SENSE_RANGE);
         return player.serverLevel().getEntitiesOfClass(LivingEntity.class, searchBox).stream()
-                .filter(entity -> entity != player && isVagrantSenseHostCandidate(entity))
+                .filter(entity -> entity != player && canPossess(player, entity))
                 .map(Entity::getId)
                 .sorted()
                 .toList();
-    }
-
-    /**
-     * Whether the given body is a potential possession host for the vagrant, judged independently
-     * of the soul question.
-     *
-     * <p>Mirrors the host related checks of {@link #possessionFailureMessage(ServerPlayer, LivingEntity)}
-     * (alive, not a player, not blacklisted, not already possessed, not occupied, listed as
-     * possessable or naturally soulless) but deliberately skips the vagrant state checks and the
-     * "target must not have a soul" check: the sense outline tells the vagrant which bodies are
-     * around, not whether the possession would succeed this very second. Naturally soulless types
-     * such as {@code minecraft:zombie} and {@code minecraft:skeleton} therefore qualify too.
-     */
-    private static boolean isVagrantSenseHostCandidate(LivingEntity target) {
-        if (!target.isAlive() || target instanceof Player) {
-            return false;
-        }
-        if (target.getType().is(ModTags.POSSESSION_BLACKLIST)) {
-            return false;
-        }
-        if (target.getPersistentData().getBoolean(POSSESSED)) {
-            return false;
-        }
-        if (!target.getPassengers().isEmpty()) {
-            return false;
-        }
-        return target.getType().is(ModTags.POSSESSABLES) || EntitySoulManager.canBePossessionHost(target);
     }
 
     private static boolean shouldShowVagrantSenseTargets(ServerPlayer player) {

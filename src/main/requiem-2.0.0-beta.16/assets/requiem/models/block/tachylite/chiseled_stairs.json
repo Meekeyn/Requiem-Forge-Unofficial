@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/stairs",
-  "textures": {
-    "bottom": "requiem:block/chiseled_tachylite",
-    "top": "requiem:block/chiseled_tachylite",
-    "side": "requiem:block/chiseled_tachylite"
-  }
-}

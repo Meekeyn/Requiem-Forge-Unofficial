@@ -6128,7 +6128,7 @@ public final class CoreDataGameTests {
     }
 
     @GameTest(template = "empty")
-    public static void vagrantSenseTargetsNearbyPotentialHosts(GameTestHelper helper) {
+    public static void vagrantSenseTargetsNearbyPossessableBodies(GameTestHelper helper) {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
@@ -6153,11 +6153,11 @@ public final class CoreDataGameTests {
         bystander.moveTo(helper.absolutePos(new BlockPos(5, 2, 1)), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(bystander);
 
-        helper.assertTrue(PossessionManager.isVagrantSenseTargetForTest(soulless),
-                "Soulless inert body should be sensed");
-        helper.assertTrue(PossessionManager.isVagrantSenseTargetForTest(normal),
-                "Living body with its own soul is still a potential host and should be sensed");
-        helper.assertTrue(!PossessionManager.isVagrantSenseTargetForTest(bystander),
+        helper.assertTrue(PossessionManager.isVagrantSenseTargetForTest(player, soulless),
+                "Soulless empty body should be sensed");
+        helper.assertTrue(!PossessionManager.isVagrantSenseTargetForTest(player, normal),
+                "Body still holding its own soul can not be possessed yet and must not be sensed");
+        helper.assertTrue(!PossessionManager.isVagrantSenseTargetForTest(player, bystander),
                 "Body that can never be possessed must not be sensed");
         helper.succeed();
     }

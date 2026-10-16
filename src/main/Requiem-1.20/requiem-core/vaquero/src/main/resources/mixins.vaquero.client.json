@@ -1,9 +1,0 @@
-{
-  "parent": "mixins.vaquero.common.json",
-  "package": "org.ladysnake.vaquero.impl.mixin.client",
-  "mixins": [
-  ],
-  "client": [
-    "ClientPlayerEntityMixin"
-  ]
-}

@@ -1,5 +1,0 @@
-{
-  "transform": true,
-  "fragmentSource": "requiem:shaders/material/obelisk_soul.frag",
-  "vertexSource": "canvas:shaders/material/default.vert"
-}
