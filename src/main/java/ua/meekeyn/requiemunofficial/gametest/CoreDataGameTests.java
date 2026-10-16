@@ -1795,6 +1795,7 @@ public final class CoreDataGameTests {
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, VagrantRules.LEAF_PHASE_REQUIRED_TICKS);
+        VagrantRules.setLeafPhaseActive(player, true);
 
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(1, 2, 1)),
                 net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState(), 3);
@@ -1803,24 +1804,50 @@ public final class CoreDataGameTests {
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(1, 2, 2)),
                 net.minecraft.world.level.block.Blocks.STONE_SLAB.defaultBlockState(), 3);
 
-        net.minecraft.world.phys.AABB bodyBox = player.getBoundingBox();
-        net.minecraft.world.phys.Vec3 intoStairs = net.minecraft.world.entity.Entity.collideBoundingBox(
+        net.minecraft.world.phys.AABB crownBox = player.getBoundingBox();
+        net.minecraft.world.phys.Vec3 crownStairs = net.minecraft.world.entity.Entity.collideBoundingBox(
                 player,
                 new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D),
-                bodyBox,
+                crownBox,
                 helper.getLevel(),
                 List.of()
         );
-        net.minecraft.world.phys.Vec3 intoSlab = net.minecraft.world.entity.Entity.collideBoundingBox(
+        net.minecraft.world.phys.Vec3 crownSlab = net.minecraft.world.entity.Entity.collideBoundingBox(
                 player,
                 new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D),
-                bodyBox,
+                crownBox,
+                helper.getLevel(),
+                List.of()
+        );
+        helper.assertTrue(crownStairs.x > 0.95D, "Inside the leaf crown the vagrant should pass adjacent stairs");
+        helper.assertTrue(crownSlab.z > 0.95D, "Inside the leaf crown the vagrant should pass adjacent slab");
+
+        player.moveTo(helper.absolutePos(new BlockPos(5, 2, 1)), 0.0F, 0.0F);
+        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(6, 2, 1)),
+                net.minecraft.world.level.block.Blocks.STONE_STAIRS.defaultBlockState(), 3);
+        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(5, 2, 2)),
+                net.minecraft.world.level.block.Blocks.STONE_SLAB.defaultBlockState(), 3);
+        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(7, 2, 1)),
+                net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState(), 3);
+
+        net.minecraft.world.phys.AABB openBox = player.getBoundingBox();
+        net.minecraft.world.phys.Vec3 openStairs = net.minecraft.world.entity.Entity.collideBoundingBox(
+                player,
+                new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D),
+                openBox,
+                helper.getLevel(),
+                List.of()
+        );
+        net.minecraft.world.phys.Vec3 openSlab = net.minecraft.world.entity.Entity.collideBoundingBox(
+                player,
+                new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D),
+                openBox,
                 helper.getLevel(),
                 List.of()
         );
 
-        helper.assertTrue(intoStairs.x < 1.0D, "Leaf-only phasing must keep adjacent stair collision");
-        helper.assertTrue(intoSlab.z < 1.0D, "Leaf-only phasing must keep adjacent slab collision");
+        helper.assertTrue(openStairs.x < 1.0D, "Leaf-only phasing must keep adjacent stair collision outside the crown");
+        helper.assertTrue(openSlab.z < 1.0D, "Leaf-only phasing must keep adjacent slab collision outside the crown");
         helper.succeed();
     }
 
@@ -2028,8 +2055,15 @@ public final class CoreDataGameTests {
 
         double stoneX = player.getX();
         player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D));
-        helper.assertTrue(player.getX() - stoneX < 0.95D,
-                "Leaf-only filtered phasing must not pass through adjacent stone");
+        helper.assertTrue(player.getX() - stoneX > 0.95D,
+                "Inside the leaf crown the vagrant should cross the stone behind the leaves");
+
+        helper.setBlock(new BlockPos(2, 4, 1), net.minecraft.world.level.block.Blocks.STONE);
+        player.moveTo(helper.absolutePos(new BlockPos(1, 4, 1)), 0.0F, 0.0F);
+        double outsideStoneX = player.getX();
+        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D));
+        helper.assertTrue(player.getX() - outsideStoneX < 0.95D,
+                "Outside the crown leaf permission must not pass adjacent stone");
         helper.succeed();
     }
 
@@ -5855,10 +5889,26 @@ public final class CoreDataGameTests {
 
         helper.assertTrue(VagrantRules.shouldSuppressOnlyLeafCollision(player),
                 "Charged leaf entry should use leaf-only collision filtering");
-        player.moveTo(helper.absolutePos(new BlockPos(1, 2, 2)), 0.0F, 0.0F);
+        helper.assertTrue(VagrantRules.shouldSuppressCollisionWith(
+                        player,
+                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
+                ),
+                "Inside the leaf crown the vagrant should pass the stone that sits in it");
 
-        helper.assertTrue(!VagrantRules.shouldSuppressBlockCollision(player),
-                "Leaf-only charge must not suppress ordinary stone collision");
+        double crownZ = player.getZ();
+        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D));
+        helper.assertTrue(player.getZ() - crownZ > 0.95D,
+                "Inside the leaf crown the vagrant should fly through the stone behind the leaves");
+
+        player.moveTo(helper.absolutePos(new BlockPos(3, 2, 1)), 0.0F, 0.0F);
+        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(4, 2, 1)),
+                net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
+
+        helper.assertTrue(!VagrantRules.shouldSuppressCollisionWith(
+                        player,
+                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
+                ),
+                "Outside the crown leaf permission must not suppress stone collision");
         helper.assertTrue(!VagrantRules.isPhaseCharged(player),
                 "Leaf-only charge must not become normal wall charge");
         helper.succeed();
@@ -6105,10 +6155,13 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-only-test")
         );
+        player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, VagrantRules.LEAF_PHASE_REQUIRED_TICKS);
         VagrantRules.setLeafPhaseActive(player, true);
 
+        helper.assertTrue(!VagrantRules.isLeafPhaseSolidPassage(player),
+                "A vagrant outside the crown should not receive solid block passage from leaf permission");
         helper.assertTrue(VagrantRules.shouldSuppressCollisionWith(
                         player,
                         net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState()
