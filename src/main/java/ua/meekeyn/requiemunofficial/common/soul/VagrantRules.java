@@ -98,7 +98,7 @@ public final class VagrantRules {
     public static boolean shouldSuppressBlockCollision(Player player) {
         return isRestricted(player)
                 && (isPhaseCharged(player)
-                || isLeafPhaseActive(player) && !isInsideNonLeafPhaseableBlock(player));
+                || isLeafPhaseActive(player));
     }
 
     public static boolean shouldUsePhaseMovement(Player player) {
@@ -115,13 +115,30 @@ public final class VagrantRules {
     }
 
     public static boolean shouldSuppressCollisionWith(Player player, BlockState state) {
+        return shouldSuppressCollisionWith(player, state, isLeafPhaseSolidPassage(player));
+    }
+
+    public static boolean shouldSuppressCollisionWith(Player player, BlockState state, boolean leafSolidPassage) {
         if (!isRestricted(player) || state.isAir()) {
             return false;
         }
         if (isPhaseCharged(player)) {
             return canPassThrough(state);
         }
-        return isLeafPhaseActive(player) && isLeaves(state);
+        if (!isLeafPhaseActive(player)) {
+            return false;
+        }
+        return isLeaves(state) || leafSolidPassage && canPassThrough(state);
+    }
+
+    /**
+     * While the vagrant is inside the leaf crown (or has already been pushed into one of the
+     * crown's own solid blocks) every passable block is phaseable, so a tree can be crossed
+     * freely. Outside the crown only the leaves themselves stay passable, which keeps the
+     * ground and walls solid during the grace window.
+     */
+    public static boolean isLeafPhaseSolidPassage(Player player) {
+        return isInsideLeaves(player) || isInsideNonLeafPhaseableBlock(player);
     }
 
     public static boolean shouldChargePhaseEntry(Player player) {

@@ -318,11 +318,13 @@ public final class VagrantEvents {
                 && (VagrantRules.shouldChargePhaseEntry(player) || player.horizontalCollision);
         player.getPersistentData().putBoolean(VagrantRules.PHASE_ATTEMPTING, attempting);
         if (insideBlock) {
-            if (VagrantRules.isInsideNonLeafPhaseableBlock(player)) {
+            if (VagrantRules.isInsideNonLeafPhaseableBlock(player) && !VagrantRules.isInsideLeaves(player)) {
                 if (VagrantRules.isPhaseCharged(player)) {
                     player.getPersistentData().putInt(VagrantRules.PHASE_CHARGE_TICKS, VagrantRules.PHASE_REQUIRED_TICKS);
                 } else {
                     player.getPersistentData().putInt(VagrantRules.PHASE_CHARGE_TICKS, 0);
+                }
+                if (!VagrantRules.isLeafPhaseActive(player)) {
                     player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, 0);
                     VagrantRules.setLeafPhaseActive(player, false);
                 }
