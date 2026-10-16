@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:piglin",
+    "minecraft:piglin_brute",
+    {"id": "requiemunofficial:cured_piglin", "required": false},
+    {"id": "requiemunofficial:cured_piglin_brute", "required": false}
+  ]
+}
+

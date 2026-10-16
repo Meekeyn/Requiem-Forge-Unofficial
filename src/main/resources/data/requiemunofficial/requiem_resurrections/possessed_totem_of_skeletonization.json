@@ -1,0 +1,14 @@
+{
+  "schema_version": 0,
+  "priority": 50,
+  "possessed": {
+    "type": "#requiemunofficial:transformation/skeletonizable"
+  },
+  "consumable": {
+    "items": ["requiemunofficial:totem_of_skeletonization"]
+  },
+  "entity": {
+    "type": "minecraft:skeleton"
+  }
+}
+

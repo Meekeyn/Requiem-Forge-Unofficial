@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "requiemunofficial:tachylite_runestone"
+    },
+    {
+      "item": "requiemunofficial:ichor_vessel_penance"
+    }
+  ],
+  "result": {
+    "item": "requiemunofficial:runic_tachylite_penance"
+  }
+}

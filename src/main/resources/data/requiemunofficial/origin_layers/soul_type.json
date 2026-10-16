@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "enabled": true,
+  "order": -1,
+  "auto_choose": true,
+  "name": "origins:layer.requiemunofficial.soul_type.name",
+  "missing_name": "origins:layer.requiemunofficial.soul_type.missing_origin.name",
+  "missing_description": "origins:layer.requiemunofficial.soul_type.missing_origin.description",
+  "origins": [
+    "requiemunofficial:remnant",
+    "requiemunofficial:mortal"
+  ]
+}

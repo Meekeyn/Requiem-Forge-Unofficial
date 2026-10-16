@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/runic/penance"
+      }
+    },
+    {
+      "when": {
+        "activated": "true"
+      },
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/rune_overlay/penance"
+      }
+    }
+  ]
+}

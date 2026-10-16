@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:villager",
+    {"id": "requiemunofficial:cured_villager", "required": false}
+  ]
+}
+

@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "alexsmobs:bald_eagle", "required": false },
+    { "id": "alexsmobs:catfish", "required": false },
+    { "id": "alexsmobs:crocodile", "required": false },
+    { "id": "alexsmobs:frilled_shark", "required": false },
+    { "id": "alexsmobs:giant_squid", "required": false },
+    { "id": "alexsmobs:grizzly_bear", "required": false },
+    { "id": "alexsmobs:hammerhead_shark", "required": false },
+    { "id": "alexsmobs:mimic_octopus", "required": false },
+    { "id": "alexsmobs:orca", "required": false },
+    { "id": "alexsmobs:seal", "required": false },
+    { "id": "alexsmobs:seagull", "required": false },
+    { "id": "alexsmobs:shoebill", "required": false },
+    { "id": "alexsmobs:skelewag", "required": false }
+  ]
+}

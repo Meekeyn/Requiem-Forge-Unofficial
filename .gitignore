@@ -1,0 +1,43 @@
+# Gradle
+.gradle/
+build/
+out/
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# IDE - VS Code
+.vscode/
+
+# Minecraft / Forge run directories
+run/
+run-data/
+logs/
+crash-reports/
+
+# Smoke test logs
+run-client-smoke.err.log
+run-client-smoke.out.log
+server-smoke.err.log
+server-smoke.out.log
+
+# Compiled classes accidentally placed in src
+*.class
+
+# Manual backup folders (e.g. *_backup_20261010_205606)
+*_backup_*/
+
+# Backup
+_codex_backup/
+
+# System
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Local config secrets
+*.keystore
+!gradle/wrapper/gradle-wrapper.jar

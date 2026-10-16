@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/runic/attrition"
+      }
+    },
+    {
+      "when": {
+        "activated": "true"
+      },
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/rune_overlay/attrition"
+      }
+    }
+  ]
+}

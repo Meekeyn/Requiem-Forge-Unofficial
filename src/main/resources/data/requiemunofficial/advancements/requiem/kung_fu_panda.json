@@ -1,0 +1,41 @@
+{
+  "parent": "requiemunofficial:requiem/first_possession",
+  "display": {
+    "icon": {
+      "item": "minecraft:bamboo"
+    },
+    "title": {
+      "translate": "requiemunofficial:advancements.requiem.kung_fu_panda.title"
+    },
+    "description": {
+      "translate": "requiemunofficial:advancements.requiem.kung_fu_panda.description"
+    },
+    "frame": "task",
+    "hidden": false,
+    "show_toast": true,
+    "announce_to_chat": true
+  },
+  "criteria": {
+    "panda_strike": {
+      "trigger": "requiemunofficial:possessed_hit_entity",
+      "conditions": {
+        "possessed": {
+          "type": "minecraft:panda",
+          "equipment": {
+            "mainhand": {
+              "items": [
+                "minecraft:wooden_sword"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "requirements": [
+    [
+      "panda_strike"
+    ]
+  ]
+}
+

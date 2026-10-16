@@ -1,0 +1,71 @@
+{
+  "requiemunofficial:advancements.requiem.i_hate_sand.title": "Eu odeio areia.",
+  "requiemunofficial:advancements.requiem.i_hate_sand.description": "Renascer como um Husk.",
+  "requiemunofficial:advancements.adventure.the_choice.title": "Um dilema diabólico",
+  "requiemunofficial:advancements.adventure.the_choice.description": "Escolha entre uma vida normal e uma eternidade bizarra",
+
+  "requiemunofficial:argument.entity.options.possessor.description": "Entidades possuídas por",
+
+  "requiemunofficial:commands.query.success.other": "%2$s é %1$s",
+  "requiemunofficial:commands.query.success.self": "Você é %s",
+  "requiemunofficial:commands.ethereal.set.fail.mortal": "Falha ao fazer %s etéreo porque ele já é Mortal",
+  "requiemunofficial:commands.ethereal.set.success.other": "O estado etéreo de %s agora é %s",
+  "requiemunofficial:commands.ethereal.set.success.self": "O seu estado etéreo agora é %s",
+  "requiemunofficial:commands.ethereal.set.target": "O seu estado etéreo foi atualizado para %s",
+  "requiemunofficial:commands.remnant.set.success.other": "O estado de remanescente de %s agora é %s",
+  "requiemunofficial:commands.remnant.set.success.self": "O seu estado de remanescente agora é %s",
+  "requiemunofficial:commands.remnant.set.target": "O seu estado de remanescente foi atualizado para %s",
+  "requiemunofficial:ethereal": "Etéreo",
+  "requiemunofficial:not_ethereal": "Corpóreo",
+  "requiemunofficial:remnant_type.requiem.remnant.name": "Remanescente",
+  "requiemunofficial:remnant_type.requiem.mortal.name": "Mortal",
+  "requiemunofficial:commands.possession.start.fail.not_mob": "%s não pode ser possuído porque não é um mob",
+  "requiemunofficial:commands.possession.start.fail.not_incorporeal": "%s não é incorpóreo",
+  "requiemunofficial:commands.possession.start.fail": "Falha ao possuir %s",
+  "requiemunofficial:commands.possession.start.success.other": "%s começou a possuir %s",
+  "requiemunofficial:commands.possession.start.success.self": "Começou a possuir %s",
+  "requiemunofficial:commands.possession.stop.success.other": "%s parou de possuir %s",
+  "requiemunofficial:commands.possession.stop.success.self": "Parou de possuir %s",
+
+  "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
+  "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
+
+  "requiemunofficial:dialogue.first_contact.introduction.text": "Você ouve uma voz falando com você, mas você não consegue saber de onde está vindo.",
+  "requiemunofficial:dialogue.first_contact.introduction.explain": "O que está acontecendo?",
+  "requiemunofficial:dialogue.first_contact.introduction.yes": "Faça eu ser um demônio logo.",
+  "requiemunofficial:dialogue.first_contact.introduction.no": "Eu não quero ter nada a ver com isso.",
+  "requiemunofficial:dialogue.first_contact.explanation.text": "Rejeite sua humanidade, e fique amaldiçoado com a eternidade. Rejeite e continue a viver sua vida normal entre outros. Essa é uma oportunidade para ter uma experiência totalmente diferente quando morrer, mas aceitá-la significa mudar os seus hábitos.",
+  "requiemunofficial:dialogue.first_contact.explanation.ok": "Eu entendo.",
+  "requiemunofficial:dialogue.first_contact.interested.text": "Se você seguir esse caminho, você terá que achar um novo corpo toda vez que morrer. Os poderes que você adquirir serão muito úteis quando isso acontecer, e os corpos que você encontrar podem ser bem mais interessantes que o corpo humano comum a que você está acostumado.",
+  "requiemunofficial:dialogue.first_contact.disinterested.text": "Se você seguir esse caminho, você perderá tudo que o Requiem tem para oferecer. Você renascerá como sempre, e poderá jogar como um humano após morrer.",
+  "requiemunofficial:dialogue.first_contact.confirm": "Isso é o que eu quero.",
+  "requiemunofficial:dialogue.first_contact.doubt": "Pensando bem...",
+  "requiemunofficial:dialogue.first_contact.very_interested.text": "Tem certeza que quer se tornar um demônio?",
+  "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Tem certeza que quer ficar humano?",
+  "requiemunofficial:dialogue.first_contact.final_confirm": "Confirmar",
+  "requiemunofficial:dialogue.first_contact.final_doubt": "Voltar",
+
+  "requiemunofficial:subtitles.effect.become.mortal": "Se tornando mortal",
+  "requiemunofficial:subtitles.effect.become.remnant": "Adquirindo um demônio",
+  "requiemunofficial:subtitles.effect.possession.attempt": "Tentativa de Possessão",
+  "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
+
+  "requiemunofficial:tooltip.bony_prosthesis": "Prótese Óssea",
+  "requiemunofficial:tooltip.calcium_bucket": "Balde de Cálcio",
+  "requiemunofficial:tooltip.cure_catalyst": "Catalisador da Cura",
+  "requiemunofficial:tooltip.cure_reagent": "Reagente da Cura",
+  "requiemunofficial:tooltip.drowned_food": "Commida de Afogado",
+  "requiemunofficial:tooltip.drowned_grip": "Punho de Afogado",
+  "requiemunofficial:tooltip.skeletal_efficiency": "Eficiência esqueletal",
+  "requiemunofficial:tooltip.zombie_food": "Comida de Zumbi",
+
+  "death.attack.requiem.attrition.hardcore": "%1$s foi posto para dormir, para sempre.",
+  "death.attack.requiem.attrition.hardcore.player": "%2$s fez %1$s dormir, para sempre.",
+
+  "effect.requiem.attrition": "Atrito",
+
+  "enchantment.requiem.humanity": "Humanidade",
+
+  "item.requiem.opus_daemonium": "Opus Daemonium"
+}
+

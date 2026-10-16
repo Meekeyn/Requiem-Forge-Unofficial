@@ -1,0 +1,395 @@
+{
+  "requiemunofficial:advancements.requiem.root.title": "Requiem",
+  "requiemunofficial:advancements.requiem.root.description": "Choose the bizarre eternity",
+  "requiemunofficial:advancements.requiem.first_possession.title": "I'll be taking that",
+  "requiemunofficial:advancements.requiem.first_possession.description": "Possess a mob",
+  "requiemunofficial:advancements.requiem.i_hate_sand.title": "I hate sand.",
+  "requiemunofficial:advancements.requiem.i_hate_sand.description": "Resurrect as a husk",
+  "requiemunofficial:advancements.requiem.good_as_new.title": "Good as New!",
+  "requiemunofficial:advancements.requiem.good_as_new.description": "Cure an undead body while possessing it",
+  "requiemunofficial:advancements.requiem.makeshift_makeover.title": "Makeshift Makeover",
+  "requiemunofficial:advancements.requiem.makeshift_makeover.description": "Replace every bone of a Wither Skeleton",
+  "requiemunofficial:advancements.adventure.the_choice.title": "A devilish conundrum",
+  "requiemunofficial:advancements.adventure.the_choice.description": "Choose between an ordinary life and a bizarre eternity",
+  "requiemunofficial:advancements.requiem.classic_look.title": "Classic Look",
+  "requiemunofficial:advancements.requiem.classic_look.description": "Possess a relooked enderman",
+  "requiemunofficial:advancements.requiem.piglin_seppukku.title": "What have I done?",
+  "requiemunofficial:advancements.requiem.piglin_seppukku.description": "Cause a zombified piglin to regret its actions",
+  "requiemunofficial:advancements.requiem.kung_fu_panda.title": "Kung Fu Panda",
+  "requiemunofficial:advancements.requiem.kung_fu_panda.description": "As a panda, hit something with a wooden sword",
+
+  "requiemunofficial:argument.entity.options.possessor.description": "Entities possessed by",
+
+  "requiemunofficial:remnant_type.requiem.mortal.name": "Mortal",
+  "requiemunofficial:remnant_type.requiem.remnant.name": "Remnant",
+  "requiemunofficial:mortal": "Mortal",
+  "requiemunofficial:remnant": "Remnant",
+
+  "requiemunofficial:commands.query.success.other": "%2$s is %1$s",
+  "requiemunofficial:commands.query.success.self": "You are %s",
+  "requiemunofficial:commands.ethereal.set.fail.mortal": "Failed to make %s ethereal as they are Mortal",
+  "requiemunofficial:commands.ethereal.set.fail": "Failed to change %s's ethereal status",
+  "requiemunofficial:commands.ethereal.set.success.other": "Set %s's ethereal state to %s",
+  "requiemunofficial:commands.ethereal.set.success.self": "Set own ethereal state to %s",
+  "requiemunofficial:commands.ethereal.set.target": "Your ethereal state has been updated to %s",
+  "requiemunofficial:commands.remnant.set.success.other": "Set %s's remnant state to %s",
+  "requiemunofficial:commands.remnant.set.success.self": "Set own remnant state to %s",
+  "requiemunofficial:commands.remnant.set.target": "Your remnant state has been updated to %s",
+  "requiemunofficial:commands.remnant.soul.query.has_soul": "%s has a soul",
+  "requiemunofficial:commands.remnant.soul.query.no_soul": "%s has no soul",
+  "requiemunofficial:commands.remnant.soul.set.fail.not_living": "%s cannot hold a soul",
+  "requiemunofficial:commands.remnant.soul.remove.success": "Removed %s's soul",
+  "requiemunofficial:commands.remnant.soul.restore.success": "Restored %s's soul",
+  "requiemunofficial:ethereal": "Ethereal",
+  "requiemunofficial:not_ethereal": "Corporeal",
+  "requiemunofficial:dialogue.not_found": "Unknown Dialogue: %s",
+  "requiemunofficial:remnant_type.not_found": "Unknown Remnant Type: %s",
+  "requiemunofficial:commands.possession.start.fail.not_mob": "%s cannot be possessed as it is not a mob entity",
+  "requiemunofficial:commands.possession.start.fail.not_incorporeal": "%s is not incorporeal",
+  "requiemunofficial:commands.possession.start.fail": "Failed to possess %s",
+  "requiemunofficial:commands.possession.start.success.other": "%s started possessing %s",
+  "requiemunofficial:commands.possession.start.success.self": "Started possessing %s",
+  "requiemunofficial:commands.possession.stop.success.other": "%s stopped possessing %s",
+  "requiemunofficial:commands.possession.stop.success.self": "Stopped possessing %s",
+  "requiemunofficial:commands.shell.split.fail.mortal": "Failed to split %s as they are Mortal",
+  "requiemunofficial:commands.shell.split.fail.vagrant": "Failed to split %s as they are already Vagrant",
+  "requiemunofficial:commands.shell.fail.not_shell": "%s is not a player shell",
+  "requiemunofficial:commands.shell.merge.fail": "Failed to merge %s with this shell",
+  "requiemunofficial:commands.soul.query.has_soul": "%s currently has a soul",
+  "requiemunofficial:commands.soul.query.no_soul": "%s currently has no soul",
+  "requiemunofficial:commands.soul.set.fail.not_living": "%s is not a living entity",
+  "requiemunofficial:commands.soul.set.fail.permanently_soulless": "%s cannot have a soul of its own",
+  "requiemunofficial:commands.soul.remove.success": "Successfully removed the soul from %s",
+  "requiemunofficial:commands.soul.restore.success": "Successfully restored its soul to %s",
+
+  "requiemunofficial:container.obelisk_rift": "Rift",
+  "requiemunofficial:toast.rift_witnessed": "Rift Witnessed!",
+
+  "requiemunofficial:block.minecraft.bed.invalid_body": "This form does not sleep",
+
+  "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
+  "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
+  "requiemunofficial:opus.wanderer_sentence": "Ad Vitam Vagrate",
+
+  "requiemunofficial:dialogue.first_contact.introduction.text": "You hear a voice talking to you, but you can't quite put your finger on where it's coming from.",
+  "requiemunofficial:dialogue.first_contact.introduction.explain": "What is going on?",
+  "requiemunofficial:dialogue.first_contact.introduction.yes": "Make me a demon already.",
+  "requiemunofficial:dialogue.first_contact.introduction.no": "I do not want anything to do with this.",
+  "requiemunofficial:dialogue.first_contact.explanation.text": "Reject your humanity, and become cursed with eternity. Refuse, and keep to your ordinary lives among others. This is an opportunity to get a whole new experience when you die, but taking it means changing your habits.",
+  "requiemunofficial:dialogue.first_contact.explanation.ok": "I see.",
+  "requiemunofficial:dialogue.first_contact.interested.text": "If you follow this path, you will have to find a new body each time you die. The powers you acquire will be of great use when that happen, and the bodies you find may well be more interesting than the standard human body you are used to.",
+  "requiemunofficial:dialogue.first_contact.disinterested.text": "If you follow this path, you will miss on everything Requiem has to offer. You will respawn as usual, and be able to play as a human right after dying.",
+  "requiemunofficial:dialogue.first_contact.confirm": "This is what I want.",
+  "requiemunofficial:dialogue.first_contact.doubt": "On second thought...",
+  "requiemunofficial:dialogue.first_contact.very_interested.text": "Are you sure you want to become a demon?",
+  "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Are you sure you want to stay human?",
+  "requiemunofficial:dialogue.first_contact.final_confirm": "Confirm",
+  "requiemunofficial:dialogue.first_contact.final_doubt": "Go back",
+
+  "requiemunofficial:subtitles.block.obelisk.activate": "Obelisk forms",
+  "requiemunofficial:subtitles.block.obelisk.ambient": "Obelisk whispers",
+  "requiemunofficial:subtitles.block.obelisk.deactivate": "Obelisk collapses",
+  "requiemunofficial:subtitles.block.runestone.carve": "Runestone carved",
+  "requiemunofficial:subtitles.block.runestone.clear": "Runestone cleared",
+  "requiemunofficial:subtitles.effect.become.mortal": "Becoming mortal",
+  "requiemunofficial:subtitles.effect.become.remnant": "Acquiring a demon",
+  "requiemunofficial:subtitles.effect.dissociating": "Player dissociating",
+  "requiemunofficial:subtitles.effect.phasing": "Player phasing",
+  "requiemunofficial:subtitles.effect.possession.attempt": "Possession Attempt",
+  "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
+  "requiemunofficial:subtitles.effect.reclamation.clear": "Reclamation clears",
+  "requiemunofficial:subtitles.entity.mortician.ambient": "Mortician rattles",
+  "requiemunofficial:subtitles.entity.mortician.cast_spell": "Mortician casts spell",
+  "requiemunofficial:subtitles.entity.mortician.death": "Mortician dies",
+  "requiemunofficial:subtitles.entity.mortician.hurt": "Mortician hurts",
+  "requiemunofficial:subtitles.entity.mortician.no": "Mortician disagrees",
+  "requiemunofficial:subtitles.entity.mortician.prepare_attack": "Mortician prepares attack",
+  "requiemunofficial:subtitles.entity.mortician.trade": "Mortician trades",
+  "requiemunofficial:subtitles.entity.mortician.yes": "Mortician agrees",
+  "requiemunofficial:subtitles.entity.soul.teleport": "Soul teleports away",
+  "requiemunofficial:subtitles.entity.soul.disintegrate": "Soul dissolves",
+  "requiemunofficial:subtitles.item.empty_vessel.use": "Vessel activates",
+  "requiemunofficial:subtitles.item.filled_vessel.use": "Soul gets released",
+  "requiemunofficial:subtitles.item.soul_vessel.use": "Soul Vessel Activates",
+
+  "requiemunofficial:tooltip.filled_vessel": "%s Soul",
+
+  "requiemunofficial:tooltip.ammo_generator": "Ammo Generation",
+  "requiemunofficial:tooltip.bolt_hoarder": "Bolt Hoarder",
+  "requiemunofficial:tooltip.bony_prosthesis": "Bony Prosthesis",
+  "requiemunofficial:tooltip.calcium_bucket": "Calcium Goodness",
+  "requiemunofficial:tooltip.cure_catalyst": "Cure Catalyst",
+  "requiemunofficial:tooltip.cure_reagent": "Cure Reagent",
+  "requiemunofficial:tooltip.drowned_food": "Drowned Delicacy",
+  "requiemunofficial:tooltip.drowned_grip": "Drowned Grip",
+  "requiemunofficial:tooltip.foxy_berry": "Foxy Berry",
+  "requiemunofficial:tooltip.illager_food": "Carnist",
+  "requiemunofficial:tooltip.mushroom_food": "Mushrooms",
+  "requiemunofficial:tooltip.piglin_food": "Piglin Diet",
+  "requiemunofficial:tooltip.skeletal_efficiency": "Skeletal Efficiency",
+  "requiemunofficial:tooltip.villager_base_food": "Village Food",
+  "requiemunofficial:tooltip.villager_food": "Vegetarian",
+  "requiemunofficial:tooltip.witch_brew_base": "Witch's Brew Base",
+  "requiemunofficial:tooltip.witch_food": "Witch Diet",
+  "requiemunofficial:tooltip.zombie_food": "Zombie Snack",
+
+  "block.requiem.tachylite.runestone": "Tachylite Runestone",
+  "block.requiem.tachylite.runic.attrition": "Tachylite Runestone of Attrition",
+  "block.requiem.tachylite.runic.emancipation": "Tachylite Runestone of Emancipation",
+  "block.requiem.tachylite.runic.penance": "Tachylite Runestone of Penance",
+  "block.requiem.tachylite.runic.reclamation": "Tachylite Runestone of Reclamation",
+  "block.requiem.tachylite.runic.rift": "Soul Rift",
+  "block.requiemunofficial.tachylite.derelict": "Derelict Tachylite",
+  "block.requiemunofficial.tachylite.chiseled": "Chiseled Tachylite",
+  "block.requiemunofficial.tachylite.chiseled_pillar": "Chiseled Tachylite Pillar",
+  "block.requiemunofficial.tachylite.chiseled_slab": "Chiseled Tachylite Slab",
+  "block.requiemunofficial.tachylite.chiseled_stairs": "Chiseled Tachylite Stairs",
+  "block.requiem.tachylite.polished": "Polished Tachylite",
+  "block.requiem.tachylite.polished_pillar": "Polished Tachylite Pillar",
+  "block.requiemunofficial.tachylite.scraped": "Scraped Tachylite",
+  "block.requiem.tachylite.tachylite": "Tachylite",
+  "block.requiem.tachylite.tachylite_slab": "Tachylite Slab",
+  "block.requiem.tachylite.tachylite_stairs": "Tachylite Stairs",
+
+  "config.requiem.title": "Requiem Config Menu",
+  "config.requiem.graphics": "Graphics",
+  "config.requiem.fancy_demon_render": "Fancy demon render",
+  "config.requiem.more": "More...",
+  "config.requiem.more_info": "Requiem can be configured through %1$s and %2$s. For more information on the various options available, consider visiting %3$s.",
+  "config.requiem.more_info.datapacks": "Data Packs",
+  "config.requiem.more_info.gamerules": "Game Rules",
+  "config.requiem.more_info.official_doc": "the official documentation on the Ladysnake website",
+
+  "death.attack.requiem.attrition.hardcore": "%1$s was put to rest, forever.",
+  "death.attack.requiem.attrition.hardcore.player": "%2$s put %1$s to rest, forever.",
+  "death.attack.requiem.mortal_dysmorphia": "The soul of %1$s did not belong in the body of %2$s.",
+
+  "gamerule.requiemunofficial:showPossessorNameTag": "(Requiem) Show Possessor Nameplates",
+  "gamerule.requiemunofficial:showPossessorNameTag.description": "Show the nameplates of players possessing entities",
+  "gamerule.requiemunofficial:disableCure": "(Requiem) Disable Cure",
+  "gamerule.requiemunofficial:disableCure.description": "Remove the ability to cure players possessing undeads",
+  "gamerule.requiemunofficial:dropVesselOnDisconnect": "(Requiem) Drop Vessel On Disconnect",
+  "gamerule.requiemunofficial:dropVesselOnDisconnect.description": "Leave a remnant vessel or possessed host behind and reconnect to it on login",
+  "gamerule.requiemunofficial:startingRemnantType": "(Requiem) Remnant Type",
+  "gamerule.requiemunofficial:startingRemnantType.description": "Replaces the choice at first death between demon and mortal",
+  "gamerule.requiemunofficial:startingRemnantType.choose": "choose",
+  "gamerule.requiemunofficial:startingRemnantType.force_remnant": "force remnant",
+  "gamerule.requiemunofficial:startingRemnantType.force_vanilla": "force vanilla",
+  "gamerule.requiemunofficial:possessionKeepInventory": "(Requiem) Keep inventory         after possession ends",
+  "gamerule.requiemunofficial:possessionKeepInventory.never": "never",
+  "gamerule.requiemunofficial:possessionKeepInventory.living": "living",
+  "gamerule.requiemunofficial:possessionKeepInventory.always": "always",
+  "gamerule.requiemunofficial:possessionDetection": "(Requiem) Detect possessed mobs",
+  "gamerule.requiemunofficial:possessionDetection.description": "Mobs detect possessed comrades under some circumstances",
+  "gamerule.requiemunofficial:possessionDetection.disabled": "disabled",
+  "gamerule.requiemunofficial:possessionDetection.normal": "normal",
+  "gamerule.requiemunofficial:possessionDetection.hard": "hard",
+
+  "effect.requiem.attrition": "Attrition",
+  "effect.requiem.emancipation": "Emancipation",
+  "effect.requiem.penance": "Penance",
+  "effect.requiem.reclamation": "Reclamation",
+
+  "enchantment.requiem.humanity": "Humanity",
+  "enchantment.requiemunofficial.humanity": "Humanity",
+
+  "key.requiem.dissociation": "[Requiem] Dissociation",
+  "key.requiemunofficial.dissociation": "Dissociation",
+  "key.requiemunofficial.possession_interact": "Possessed body ability",
+  "key.categories.requiemunofficial": "Requiem Unofficial",
+  "requiemunofficial:shulker.onboard": "Press %s or %s to dissociate",
+  "requiemunofficial:dissociate_hint": "Press %s to dissociate",
+  "requiemunofficial:possess.incompatible_body": "This body is incompatible with your soul",
+  "requiemunofficial:merge_hint": "Press %s to return",
+
+  "entity.requiemunofficial.cured_villager": "Cured Villager",
+  "entity.requiemunofficial.cured_piglin": "Pigman",
+  "entity.requiem.mortician": "Mortician",
+  "entity.requiemunofficial.cured_piglin_brute": "Pigman Brute",
+  "entity.requiem.player_shell": "Player Shell",
+
+  "item.requiem.totem_of_skeletonization": "Totem of Skeletonization",
+  "item.requiem.opus_daemonium": "Opus Daemonium",
+  "item.requiem.empty_soul_vessel": "Empty Soul Vessel",
+  "item.requiem.creative_soul_vessel": "Creative Soul Vessel",
+  "item.requiem.filled_soul_vessel": "Filled Soul Vessel",
+  "item.requiem.ichor_vessel_attrition": "Attrition Ichor Vessel",
+  "item.requiem.ichor_vessel_emancipation": "Emancipation Ichor Vessel",
+  "item.requiem.ichor_vessel_penance": "Penance Ichor Vessel",
+  "item.requiem.ichor_vessel_reclamation": "Reclamation Ichor Vessel",
+  "item.requiem.mortician_spawn_egg": "Mortician Spawn Egg",
+  "item.requiem.pure_soul_vessel": "Pure Soul Vessel",
+  "item.requiem.sealed_remnant_vessel": "Sealed Remnant Vessel",
+  "item.requiem.shattered_soul_vessel": "Shattered Soul Vessel",
+  "requiemunofficial:remnant_vessel.curse": "Curse",
+  "requiemunofficial:remnant_vessel.cure": "Cure",
+  "message.requiemunofficial.remnant_vessel.no_change": "The vessel has no effect on your current soul.",
+  "message.requiemunofficial.remnant_vessel.became_remnant": "Your soul has become a remnant.",
+  "message.requiemunofficial.remnant_vessel.became_mortal": "Your soul has become mortal.",
+  "message.requiemunofficial.runestone.ritual_active": "The head runestone cannot be changed during an active ritual.",
+
+  "origins:layer.requiem.soul_type.name": "Soul Type",
+  "origins:layer.requiem.soul_type.missing_origin.name": "Missing",
+  "origins:layer.requiem.soul_type.missing_origin.description": "You do not have a Soul Type.",
+  "origins:origin.requiem.mortal.name": "Mortal",
+  "origins:origin.requiem.mortal.description": "A mere mortal. Your ordinary Minecraft experience awaits.",
+  "origins:origin.requiem.remnant.name": "Demon",
+  "origins:origin.requiem.remnant.description": "Tales have been told of mysterious demons taking over the bodies of the dead. No one really knows what they are, but few really want to find out.",
+  "origins:origin.requiem.vagrant.name": "Vagrant",
+  "origins:origin.requiem.vagrant.description": "A demon outside of a congruous body. Condemned to wander and take over weaker entities to act as proxies with the physical world.",
+  "origins:power.requiem.remnant.name": "Dissociation",
+  "origins:power.requiem.remnant.description": "When you die, your soul dissociates from your body, becoming a wandering ghost.",
+  "origins:power.requiem.damned.name": "Damned",
+  "origins:power.requiem.damned.description": "Your only way to get a new human body is to get cured while possessing a suitable creature.",
+  "origins:power.requiem.freeform.name": "Freeform",
+  "origins:power.requiem.freeform.description": "Ghosts can move through the air and, with a bit of effort, even through walls.",
+  "origins:power.requiem.possession.name": "Possession",
+  "origins:power.requiem.possession.description": "As a free soul, you may take over the empty bodies that roam this world.",
+  "origins:power.requiem.resurrection.name": "Death Grip",
+  "origins:power.requiem.resurrection.description": "Under some circumstances, your soul may hold on to your disfigured body after its death.",
+  "origins:power.requiem.soul_mending.name": "Soul Mending",
+  "origins:power.requiem.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "origins:power.requiem.banished.name": "Banished",
+  "origins:power.requiem.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiem.mortal.name": "Respawn",
+  "origins:power.requiem.mortal.description": "When you die, and if all goes well, you find yourself at your last resting point with a whole new body.",
+
+  "stat.requiem.interact_with_rift": "[Requiem] Interactions with Obelisk Rift",
+
+  "requiem.message.peaceful_despawn": "This host may not belong to such a peaceful world",
+
+  "ritual.requiem.ritual.decay_zombie": "Decay Zombie",
+  "ritual.requiem.ritual.decay_skeleton": "Decay Skeleton",
+  "container.requiemunofficial.rift": "Rift",
+  "gui.requiemunofficial.rift.consume_energy": "Consume soul energy",
+  "gui.requiemunofficial.rift.stability": "Stability: %s%%",
+  "gui.requiemunofficial.rift.energy": "Soul energy: %s",
+  "gui.requiemunofficial.rift.status": "Ritual: %s",
+  "gui.requiemunofficial.rift.status.active": "active",
+  "gui.requiemunofficial.rift.status.idle": "idle",
+  "gui.requiemunofficial.rift.runes": "Runes A:%s E:%s P:%s R:%s Rift:%s"
+  ,"gui.requiemunofficial.rift.start_resurrection": "Prepare resurrection (5 energy)"
+  ,"message.requiemunofficial.ritual.invalid_rift": "The rift is not stable or its structure is invalid."
+  ,"message.requiemunofficial.ritual.no_permission": "You cannot use this rift."
+  ,"message.requiemunofficial.ritual.too_far": "You are too far away from the rift."
+  ,"message.requiemunofficial.ritual.already_active": "A ritual is already active."
+  ,"message.requiemunofficial.ritual.started": "The ritual has started and will complete in %s seconds."
+  ,"message.requiemunofficial.ritual.interrupted": "The ritual was interrupted because the rift became unstable."
+  ,"message.requiemunofficial.ritual.target_lost": "The ritual target was lost before completion."
+  ,"message.requiemunofficial.ritual.missing_rune": "The required rift rune is missing."
+  ,"message.requiemunofficial.ritual.insufficient_energy": "The ritual requires %s soul energy."
+  ,"message.requiemunofficial.ritual.resurrection_prepared": "Resurrection entry point prepared. %s soul energy consumed."
+  ,"block.requiemunofficial.tachylite_runestone": "Tachylite Runestone"
+  ,"block.requiemunofficial.runic_tachylite_attrition": "Runestone of Attrition"
+  ,"block.requiemunofficial.runic_tachylite_emancipation": "Runestone of Emancipation"
+  ,"block.requiemunofficial.runic_tachylite_penance": "Runestone of Penance"
+  ,"block.requiemunofficial.runic_tachylite_reclamation": "Runestone of Reclamation"
+  ,"block.requiemunofficial.rift_rune": "Soul Rift Runestone"
+  ,"message.requiemunofficial.possession.invalid_host": "This creature cannot be possessed."
+  ,"message.requiemunofficial.possession.not_vagrant": "Only a free soul can possess a body."
+  ,"message.requiemunofficial.possession.already_possessing": "You are already possessing a body."
+  ,"message.requiemunofficial.possession.penance": "Penance prevents possession."
+  ,"message.requiemunofficial.possession.player_body": "This player body cannot be possessed."
+  ,"message.requiemunofficial.possession.dead": "This body is dead."
+  ,"message.requiemunofficial.possession.blacklisted": "This creature is protected from possession."
+  ,"message.requiemunofficial.possession.already_possessed": "This body is already possessed."
+  ,"message.requiemunofficial.possession.occupied": "This body is occupied."
+  ,"message.requiemunofficial.possession.has_soul": "This body still has a soul."
+  ,"message.requiemunofficial.possession.failed": "Possession failed."
+  ,"message.requiemunofficial.possession.started": "Possessing %s. Press the Dissociation key to leave the body."
+  ,"message.requiemunofficial.possession.released": "You left the possessed body."
+  ,"message.requiemunofficial.transformation.not_skeletonizable": "This creature cannot be skeletonized."
+  ,"message.requiemunofficial.transformation.skeletonized": "The body was reduced to bone."
+  ,"tooltip.requiemunofficial.totem_of_skeletonization": "Transforms a compatible creature into its skeletal form."
+  ,"gui.requiemunofficial.rift.decay_zombie": "Decay: Zombie (3)"
+  ,"gui.requiemunofficial.rift.decay_skeleton": "Decay: Skeleton (3)"
+  ,"message.requiemunofficial.ritual.no_target": "No compatible ritual target was found near the rift."
+  ,"message.requiemunofficial.ritual.decay_zombie_complete": "The nearest skeletal body decayed into a zombie."
+  ,"message.requiemunofficial.ritual.decay_skeleton_complete": "The nearest zombie body decayed into a skeleton."
+  ,"message.requiemunofficial.ritual.resurrection_complete": "The rift restored your body at the obelisk."
+  ,"message.requiemunofficial.ritual.resurrection_lost": "The bound rift no longer exists. Resurrection binding was lost."
+  ,"message.requiemunofficial.soul_vessel.absorbed": "Absorbed %s soul energy: +%s."
+  ,"message.requiemunofficial.soul_vessel.captured": "Captured the soul of %s."
+  ,"message.requiemunofficial.soul_vessel.capture_failed": "The soul resisted the vessel."
+  ,"message.requiemunofficial.soul_vessel.target_no_soul": "This body has no soul to capture."
+  ,"message.requiemunofficial.soul_vessel.restored": "Returned the %s soul to its body."
+  ,"message.requiemunofficial.soul_vessel.restore_has_soul": "This body is not an empty soulless body."
+  ,"message.requiemunofficial.soul_vessel.restore_wrong_body": "This vessel holds %s, but this body is %s."
+  ,"message.requiemunofficial.ichor_vessel.absorbed": "Ichor increased to %s (%s)."
+  ,"message.requiemunofficial.obelisk.soul_absorbed": "The obelisk absorbed %s soul energy: +%s."
+  ,"item.requiemunofficial.soul_vessel.named": "%s [%s: %s]"
+  ,"tooltip.requiemunofficial.soul_vessel.type": "Soul type: %s"
+  ,"tooltip.requiemunofficial.soul_vessel.kind": "Soul category: %s"
+  ,"tooltip.requiemunofficial.soul_vessel.amount": "Soul amount: %s/%s"
+  ,"tooltip.requiemunofficial.soul_vessel.energy": "Obelisk energy: %s"
+  ,"soul_kind.requiemunofficial.mortal": "Mortal"
+  ,"soul_kind.requiemunofficial.undead": "Undead"
+  ,"soul_kind.requiemunofficial.beast": "Beast"
+  ,"soul_kind.requiemunofficial.aggregate": "Soul aggregate"
+  ,"message.requiemunofficial.soul.shell_reclaimed": "You returned to your abandoned body."
+  ,"message.requiemunofficial.soul.shell_destroyed": "Your abandoned body was destroyed."
+  ,"message.requiemunofficial.soul.shell_removed": "Your previous abandoned body was removed."
+  ,"message.requiemunofficial.soul.shell_split": "Your soul left your body."
+  ,"tooltip.requiemunofficial.ichor_vessel.type": "Ichor type: %s"
+  ,"tooltip.requiemunofficial.ichor_vessel.use": "Right-click to absorb 1 ichor."
+  ,"soul_type.requiemunofficial.empty": "empty"
+  ,"ichor_type.requiemunofficial.attrition": "Attrition"
+  ,"ichor_type.requiemunofficial.emancipation": "Emancipation"
+  ,"ichor_type.requiemunofficial.penance": "Penance"
+  ,"ichor_type.requiemunofficial.reclamation": "Reclamation"
+  ,"screen.requiemunofficial.soul_choice.title": "Choose Your Soul"
+  ,"screen.requiemunofficial.soul_choice.description": "This choice determines what happens when you die."
+  ,"screen.requiemunofficial.soul_choice.remnant": "Become a Remnant"
+  ,"screen.requiemunofficial.soul_choice.mortal": "Remain Mortal"
+  ,"screen.requiemunofficial.soul_choice.instructions": "Choose a response"
+  ,"item.requiemunofficial.opus_daemonium": "Opus Daemonium"
+  ,"item.requiemunofficial.humanity_enchanted_book": "Humanity"
+  ,"tooltip.requiemunofficial.opus_daemonium": "A readable conversion book. The vessel versions perform the change."
+  ,"tooltip.requiemunofficial.humanity_enchanted_book": "A remnant cure catalyst reserved for Mortician and ritual mechanics."
+  ,"message.requiemunofficial.opus_daemonium.already_chosen": "Your soul has already made this choice."
+  ,"message.requiemunofficial.opus_daemonium.not_enough_xp": "Opus Daemonium requires %s experience levels."
+  ,"message.requiemunofficial.opus_daemonium.became_remnant": "The demon is bound to your soul."
+  ,"message.requiemunofficial.opus_daemonium.became_mortal": "The demon releases your soul."
+  ,"screen.requiemunofficial.config.title": "Requiem Unofficial Settings"
+  ,"screen.requiemunofficial.config.restart_hint": "Common settings are saved to requiemunofficial-common.toml."
+  ,"screen.requiemunofficial.config.soul_capture_chance": "Soul capture chance: %s"
+  ,"screen.requiemunofficial.config.opus_cost": "Legacy Opus XP cost: %s"
+  ,"screen.requiemunofficial.config.rift_cost": "Rift teleport energy: %s"
+  ,"screen.requiemunofficial.config.rune_duration": "Rune effect duration: %s"
+  ,"gui.requiemunofficial.rift.teleport": "Teleport"
+  ,"gui.requiemunofficial.rift.destination.none": "No known destination"
+  ,"message.requiemunofficial.rift.no_destination": "No other active rift is available."
+  ,"message.requiemunofficial.rift.teleport_unavailable": "This rift cannot teleport right now."
+  ,"message.requiemunofficial.rift.teleported": "The rift pulls you through."
+  ,"message.requiemunofficial.rift.witnessed": "You feel the rift at %s."
+  ,"jei.requiemunofficial.info.opus_daemonium": "Opus Daemonium is the readable book form. Use the sealed or pure vessel versions to change soul state."
+  ,"jei.requiemunofficial.info.humanity": "Humanity is a treasure enchantment used by possessed item users. Level I allows humanity-style kills but suppresses experience; level II allows experience."
+  ,"jei.requiemunofficial.info.empty_soul_vessel": "Hold use on a living target to channel soul capture. The soul is removed only when the channel finishes successfully."
+  ,"jei.requiemunofficial.info.filled_soul_vessel": "Stores captured soul data. Active obelisks can absorb filled vessels as stored soul energy."
+  ,"jei.requiemunofficial.info.sealed_remnant_vessel": "Curses a mortal soul into remnant state and returns an empty vessel."
+  ,"jei.requiemunofficial.info.pure_soul_vessel": "Cures a remnant or vagrant soul back toward mortal state and returns an empty vessel. Possessed-body cure still follows the cure lifecycle."
+  ,"jei.requiemunofficial.info.totem_of_skeletonization": "Used by transformation and resurrection rules as the skeletonization catalyst."
+  ,"jei.requiemunofficial.info.runestones": "Runestones are used in obelisk and rift structures. Runic tachylite variants provide the corresponding Requiem effects when the structure is active."
+  ,"origins:layer.requiemunofficial.soul_type.name": "Soul Type"
+  ,"origins:layer.requiemunofficial.soul_type.missing_origin.name": "Missing"
+  ,"origins:layer.requiemunofficial.soul_type.missing_origin.description": "You do not have a Soul Type."
+  ,"origins:origin.requiemunofficial.mortal.name": "Mortal"
+  ,"origins:origin.requiemunofficial.mortal.description": "A mere mortal. Your ordinary Minecraft experience awaits."
+  ,"origins:origin.requiemunofficial.remnant.name": "Demon"
+  ,"origins:origin.requiemunofficial.remnant.description": "Tales have been told of mysterious demons taking over the bodies of the dead. No one really knows what they are, but few really want to find out."
+  ,"origins:origin.requiemunofficial.vagrant.name": "Vagrant"
+  ,"origins:origin.requiemunofficial.vagrant.description": "A demon outside of a congruous body. Condemned to wander and take over weaker entities to act as proxies with the physical world."
+  ,"origins:power.requiemunofficial.remnant.name": "Dissociation"
+  ,"origins:power.requiemunofficial.remnant.description": "When you die, your soul dissociates from your body, becoming a wandering ghost."
+  ,"origins:power.requiemunofficial.damned.name": "Damned"
+  ,"origins:power.requiemunofficial.damned.description": "Your only way to get a new human body is to get cured while possessing a suitable creature."
+  ,"origins:power.requiemunofficial.freeform.name": "Freeform"
+  ,"origins:power.requiemunofficial.freeform.description": "Ghosts can move through the air and, with a bit of effort, even through walls."
+  ,"origins:power.requiemunofficial.possession.name": "Possession"
+  ,"origins:power.requiemunofficial.possession.description": "As a free soul, you may take over the empty bodies that roam this world."
+  ,"origins:power.requiemunofficial.resurrection.name": "Death Grip"
+  ,"origins:power.requiemunofficial.resurrection.description": "Under some circumstances, your soul may hold on to your disfigured body after its death."
+  ,"origins:power.requiemunofficial.mortal.name": "Respawn"
+  ,"origins:power.requiemunofficial.mortal.description": "When you die, and if all goes well, you find yourself at your last resting point with a whole new body."
+}
+

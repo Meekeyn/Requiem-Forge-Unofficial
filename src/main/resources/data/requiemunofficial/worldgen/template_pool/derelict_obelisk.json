@@ -1,0 +1,79 @@
+{
+  "name": "requiemunofficial:derelict_obelisk",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_1",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_2",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_3",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_4",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_5",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_6",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_7",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    },
+    {
+      "weight": 1,
+      "element": {
+        "location": "requiemunofficial:derelict_obelisk_8",
+        "processors": "requiemunofficial:derelict_obelisk",
+        "projection": "rigid",
+        "element_type": "minecraft:single_pool_element"
+      }
+    }
+  ]
+}
+

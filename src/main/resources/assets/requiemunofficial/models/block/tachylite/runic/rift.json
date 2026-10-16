@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "requiemunofficial:block/rift_runestone_top",
+    "side": "requiemunofficial:block/rift_runestone_side"
+  }
+}
+

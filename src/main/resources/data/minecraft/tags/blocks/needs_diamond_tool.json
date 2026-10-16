@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:tachylite",
+    "#requiemunofficial:tachylite_slabs",
+    "#requiemunofficial:tachylite_stairs",
+    "#requiemunofficial:tachylite_runestones",
+    {"id": "requiemunofficial:tachylite/derelict", "required": false}
+  ]
+}
+

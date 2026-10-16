@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:allay",
+    "minecraft:dolphin",
+    "minecraft:enderman",
+    "minecraft:evoker",
+    "minecraft:fox",
+    "minecraft:panda",
+    "minecraft:piglin_brute",
+    "minecraft:pillager",
+    "minecraft:vex",
+    "minecraft:villager",
+    "minecraft:vindicator",
+    "minecraft:wandering_trader",
+    "minecraft:witch",
+    "#requiemunofficial:humanoid_zombies",
+    "#requiemunofficial:humanoid_skeletons",
+    "#requiemunofficial:humans",
+    "#requiemunofficial:piglins",
+    {"id": "alexsmobs:capuchin_monkey", "required": false},
+    {"id": "alexsmobs:crow", "required": false},
+    {"id": "alexsmobs:gorilla", "required": false},
+    {"id": "alexsmobs:raccoon", "required": false}
+  ]
+}

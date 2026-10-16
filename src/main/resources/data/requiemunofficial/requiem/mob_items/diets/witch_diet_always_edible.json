@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "priority": 80,
+  "mob": {
+    "type": "#requiemunofficial:witches"
+  },
+  "override": {
+    "type": "requiemunofficial:diet",
+    "food": {
+      "requiemunofficial:food": {
+        "always_edible": true
+      }
+    }
+  }
+}
+

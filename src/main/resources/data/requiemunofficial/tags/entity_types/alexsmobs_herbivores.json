@@ -1,0 +1,24 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "alexsmobs:anteater", "required": false },
+    { "id": "alexsmobs:banana_slug", "required": false },
+    { "id": "alexsmobs:bison", "required": false },
+    { "id": "alexsmobs:bunfungus", "required": false },
+    { "id": "alexsmobs:elephant", "required": false },
+    { "id": "alexsmobs:emu", "required": false },
+    { "id": "alexsmobs:gazelle", "required": false },
+    { "id": "alexsmobs:gelada_monkey", "required": false },
+    { "id": "alexsmobs:gorilla", "required": false },
+    { "id": "alexsmobs:hummingbird", "required": false },
+    { "id": "alexsmobs:jerboa", "required": false },
+    { "id": "alexsmobs:kangaroo", "required": false },
+    { "id": "alexsmobs:leafcutter_ant", "required": false },
+    { "id": "alexsmobs:moose", "required": false },
+    { "id": "alexsmobs:rain_frog", "required": false },
+    { "id": "alexsmobs:rhinoceros", "required": false },
+    { "id": "alexsmobs:roadrunner", "required": false },
+    { "id": "alexsmobs:terrapin", "required": false },
+    { "id": "alexsmobs:toucan", "required": false }
+  ]
+}

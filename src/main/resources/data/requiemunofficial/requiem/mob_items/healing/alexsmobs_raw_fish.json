@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "priority": 85,
+  "enabled": true,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.zombie_food",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "#requiemunofficial:alexsmobs_fish_eaters"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "tag": "requiemunofficial:raw_fishes"
+    },
+    "use_time": 24,
+    "cooldown": 120,
+    "usage": "eat_to_heal"
+  }
+}

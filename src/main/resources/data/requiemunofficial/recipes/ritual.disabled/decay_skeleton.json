@@ -1,0 +1,22 @@
+{
+  "type": "bewitchment:ritual_recipe",
+  "ingredients": [
+    {
+      "item": "bewitchment:taglock"
+    },
+    {
+      "item": "bewitchment:grim_elixir"
+    },
+    {
+      "item": "bewitchment:ectoplasm"
+    },
+    {
+      "item": "minecraft:bone"
+    }
+  ],
+  "inner": "fiery",
+  "outer": "eldritch",
+  "ritual_function": "requiemunofficial:decay",
+  "cost": 666
+}
+

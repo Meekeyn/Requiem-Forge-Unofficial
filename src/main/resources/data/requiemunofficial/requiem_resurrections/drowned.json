@@ -1,0 +1,26 @@
+{
+  "schema_version": 0,
+  "priority": 100,
+  "killing_blow": {
+    "tags": [
+      {
+        "expected": true,
+        "id": "requiemunofficial:is_drowning"
+      }
+    ]
+  },
+  "player": {
+    "location": {
+      "requiemunofficial:biome_tag": "c:ocean",
+      "light": {
+        "light": {
+          "max": 10
+        }
+      }
+    }
+  },
+  "entity": {
+    "type": "minecraft:drowned"
+  }
+}
+

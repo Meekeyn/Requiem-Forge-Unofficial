@@ -1,0 +1,19 @@
+{
+  "schema_version": 0,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.cure_catalyst",
+    "color": "dark_gray"
+  },
+  "requirements": {
+    "possessed": {
+      "requiemunofficial:can_be_cured": true
+    },
+    "used_item": {
+      "potion": "minecraft:weakness"
+    }
+  },
+  "result": {
+    "action": "requiemunofficial:pass"
+  }
+}
+

@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "MPM",
+    "PBP",
+    "MPM"
+  ],
+  "key": {
+    "M": {
+      "item": "minecraft:phantom_membrane"
+    },
+    "P": {
+      "item": "minecraft:blaze_powder"
+    },
+    "B": {
+      "item": "minecraft:book"
+    }
+  },
+  "result": {
+    "item": "requiemunofficial:opus_daemonium"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["#", "#"],
+  "key": {
+    "#": { "item": "requiemunofficial:tachylite" }
+  },
+  "result": {
+    "item": "requiemunofficial:tachylite/chiseled",
+    "count": 2
+  }
+}

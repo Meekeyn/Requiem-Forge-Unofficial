@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "###",
+    "#O#",
+    "###"
+  ],
+  "key": {
+    "#": {
+      "item": "requiemunofficial:tachylite"
+    },
+    "O": {
+      "item": "minecraft:crying_obsidian"
+    }
+  },
+  "result": {
+    "item": "requiemunofficial:tachylite_runestone"
+  }
+}

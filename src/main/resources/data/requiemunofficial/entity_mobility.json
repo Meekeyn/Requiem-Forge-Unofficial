@@ -1,0 +1,931 @@
+{
+  "minecraft:allay": {
+    "flightMode": "FORCED"
+  },
+  "minecraft:axolotl": {
+    "landedSpeedModifier": -0.85,
+    "waterSpeedModifier": 0.85,
+    "swimMode": "ENABLED"
+  },
+  "minecraft:bat": {
+    "fallSpeedModifier": 0.9,
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.5,
+    "gravity": 0.03
+  },
+  "minecraft:bee": {
+    "fallSpeedModifier": 0.9,
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.8,
+    "gravity": 0.005
+  },
+  "minecraft:blaze": {
+    "flightMode": "FORCED",
+    "inertia": 0.95,
+    "gravity": 0.005
+  },
+  "minecraft:camel": {
+    "gravity": 0.08,
+    "inertia": 0.4
+  },
+  "minecraft:cat": {
+    "gravity": 0.06,
+    "inertia": 0.25
+  },
+  "minecraft:cave_spider": {
+    "climbsWalls": true
+  },
+  "minecraft:chicken": {
+    "fallSpeedModifier": 0.6
+  },
+  "minecraft:cod": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:dolphin": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:donkey": {
+    "gravity": 0.08,
+    "inertia": 0.45
+  },
+  "minecraft:drowned": {
+    "swimMode": "ENABLED"
+  },
+  "minecraft:elder_guardian": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:enderman": {
+    "gravity": 0.08,
+    "inertia": 0.25
+  },
+  "minecraft:endermite": {
+    "gravity": 0.08,
+    "inertia": 0.2
+  },
+  "minecraft:evoker": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:fox": {
+    "gravity": 0.06,
+    "inertia": 0.25
+  },
+  "minecraft:frog": {
+    "landedSpeedModifier": -0.75
+  },
+  "minecraft:ghast": {
+    "flightMode": "FORCED"
+  },
+  "minecraft:glow_squid": {
+    "landedSpeedModifier": -0.95,
+    "swimMode": "FORCED"
+  },
+  "minecraft:guardian": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:goat": {
+    "gravity": 0.08,
+    "inertia": 0.3
+  },
+  "minecraft:hoglin": {
+    "gravity": 0.08,
+    "inertia": 0.45
+  },
+  "minecraft:horse": {
+    "gravity": 0.08,
+    "inertia": 0.4
+  },
+  "minecraft:iron_golem": {
+    "swimMode": "SINKING"
+  },
+  "minecraft:llama": {
+    "gravity": 0.08,
+    "inertia": 0.4
+  },
+  "minecraft:trader_llama": {
+    "gravity": 0.08,
+    "inertia": 0.4
+  },
+  "minecraft:magma_cube": {
+    "swimMode": "FLOATING",
+    "walkMode": "JUMPY"
+  },
+  "minecraft:mooshroom": {
+    "gravity": 0.08,
+    "inertia": 0.4
+  },
+  "minecraft:mule": {
+    "gravity": 0.08,
+    "inertia": 0.45
+  },
+  "minecraft:ocelot": {
+    "gravity": 0.06,
+    "inertia": 0.25
+  },
+  "minecraft:panda": {
+    "gravity": 0.08,
+    "inertia": 0.5
+  },
+  "minecraft:parrot": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.01,
+    "fallSpeedModifier": 0.8,
+    "landedSpeedModifier": -0.8,
+    "required": false
+  },
+  "minecraft:phantom": {
+    "flightMode": "FORCED",
+    "inertia": 0.8
+  },
+  "minecraft:pufferfish": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:pig": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:piglin": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:piglin_brute": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:pillager": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:polar_bear": {
+    "gravity": 0.08,
+    "inertia": 0.45
+  },
+  "minecraft:rabbit": {
+    "walkMode": "JUMPY"
+  },
+  "minecraft:ravager": {
+    "gravity": 0.08,
+    "inertia": 0.55
+  },
+  "minecraft:salmon": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:sheep": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:silverfish": {
+    "gravity": 0.08,
+    "inertia": 0.2
+  },
+  "minecraft:slime": {
+    "swimMode": "FLOATING",
+    "walkMode": "JUMPY"
+  },
+  "minecraft:sniffer": {
+    "gravity": 0.08,
+    "inertia": 0.55
+  },
+  "minecraft:snow_golem": {
+    "swimMode": "SINKING"
+  },
+  "minecraft:squid": {
+    "landedSpeedModifier": -0.95,
+    "swimMode": "FORCED"
+  },
+  "minecraft:spider": {
+    "climbsWalls": true
+  },
+  "minecraft:strider": {
+    "swimMode": "FLOATING",
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:tadpole": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:tropical_fish": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true
+  },
+  "minecraft:turtle": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.5
+  },
+  "minecraft:vex": {
+    "flightMode": "FORCED",
+    "phasesThroughWalls": true
+  },
+  "minecraft:villager": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:vindicator": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:wandering_trader": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:warden": {
+    "gravity": 0.08,
+    "inertia": 0.65
+  },
+  "minecraft:witch": {
+    "gravity": 0.08,
+    "inertia": 0.35
+  },
+  "minecraft:wolf": {
+    "gravity": 0.06,
+    "inertia": 0.25
+  },
+  "minecraft:wither": {
+    "flightMode": "ENABLED",
+    "fallSpeedModifier": 0.8,
+    "gravity": 0.01
+  },
+  "minecraft:ender_dragon": {
+    "flightMode": "FORCED",
+    "inertia": 0.9
+  },
+  "biomemakeover:blightbat": {
+    "fallSpeedModifier": 0.9,
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.5,
+    "gravity": 0.03,
+    "required": false
+  },
+  "biomemakeover:ghost": {
+    "fallSpeedModifier": 0.9,
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.8,
+    "gravity": 0.01,
+    "required": false
+  },
+  "biomemakeover:giant_slime": {
+    "swimMode": "FLOATING",
+    "walkMode": "JUMPY",
+    "required": false
+  },
+  "biomemakeover:lightning_bug": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.1,
+    "required": false
+  },
+  "biomemakeover:lightning_bug_alternate": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.1,
+    "required": false
+  },
+  "biomemakeover:moth": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "inertia": 0.65,
+    "gravity": 0.008,
+    "required": false
+  },
+  "biomemakeover:owl": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.01,
+    "fallSpeedModifier": 0.7,
+    "landedSpeedModifier": -0.8,
+    "required": false
+  },
+  "biomemakeover:tadpole": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "adventurez:blaze_guardian": {
+    "flightMode": "FORCED",
+    "inertia": 0.95,
+    "gravity": 0.005,
+    "required": false
+  },
+  "mobz:frost_entity": {
+    "flightMode": "FORCED",
+    "inertia": 0.95,
+    "gravity": 0.005,
+    "required": false
+  },
+  "mobz:gchicken_entity": {
+    "fallSpeedModifier": 0.6,
+    "required": false
+  },
+  "mobz:islandvex_entity": {
+    "flightMode": "FORCED",
+    "phasesThroughWalls": true,
+    "required": false
+  },
+  "alexsmobs:alligator_snapping_turtle": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.55,
+    "landedSpeedModifier": -0.35,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:anaconda": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "waterSpeedModifier": 0.35,
+    "required": false
+  },
+  "alexsmobs:anteater": {
+    "gravity": 0.08,
+    "inertia": 0.4,
+    "required": false
+  },
+  "alexsmobs:bald_eagle": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.01,
+    "fallSpeedModifier": 0.8,
+    "landedSpeedModifier": -0.45,
+    "required": false
+  },
+  "alexsmobs:banana_slug": {
+    "gravity": 0.08,
+    "inertia": 0.65,
+    "landedSpeedModifier": -0.65,
+    "required": false
+  },
+  "alexsmobs:bison": {
+    "gravity": 0.08,
+    "inertia": 0.5,
+    "required": false
+  },
+  "alexsmobs:blobfish": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:blue_jay": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.012,
+    "fallSpeedModifier": 0.75,
+    "landedSpeedModifier": -0.55,
+    "required": false
+  },
+  "alexsmobs:bone_serpent": {
+    "swimMode": "FLOATING",
+    "gravity": 0.04,
+    "inertia": 0.55,
+    "waterSpeedModifier": 0.25,
+    "required": false
+  },
+  "alexsmobs:bunfungus": {
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:cachalot_whale": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "inertia": 0.75,
+    "required": false
+  },
+  "alexsmobs:caiman": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:capuchin_monkey": {
+    "climbsWalls": true,
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:catfish": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:cave_centipede": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:centipede_head": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:cockroach": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.2,
+    "required": false
+  },
+  "alexsmobs:comb_jelly": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:cosmaw": {
+    "flightMode": "FORCED",
+    "gravity": 0.003,
+    "inertia": 0.9,
+    "required": false
+  },
+  "alexsmobs:cosmic_cod": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:crimson_mosquito": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "gravity": 0.006,
+    "inertia": 0.75,
+    "required": false
+  },
+  "alexsmobs:crocodile": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.5,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:crow": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.012,
+    "fallSpeedModifier": 0.75,
+    "landedSpeedModifier": -0.55,
+    "required": false
+  },
+  "alexsmobs:devils_hole_pupfish": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:dropbear": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:elephant": {
+    "gravity": 0.08,
+    "inertia": 0.65,
+    "required": false
+  },
+  "alexsmobs:emu": {
+    "gravity": 0.08,
+    "inertia": 0.3,
+    "fallSpeedModifier": 0.35,
+    "required": false
+  },
+  "alexsmobs:endergrade": {
+    "flightMode": "FORCED",
+    "gravity": 0.004,
+    "inertia": 0.85,
+    "required": false
+  },
+  "alexsmobs:enderiophage": {
+    "flightMode": "FORCED",
+    "gravity": 0.004,
+    "inertia": 0.85,
+    "required": false
+  },
+  "alexsmobs:farseer": {
+    "flightMode": "FORCED",
+    "gravity": 0.004,
+    "inertia": 0.85,
+    "required": false
+  },
+  "alexsmobs:flutter": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "gravity": 0.006,
+    "inertia": 0.65,
+    "required": false
+  },
+  "alexsmobs:fly": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "gravity": 0.004,
+    "inertia": 0.55,
+    "required": false
+  },
+  "alexsmobs:flying_fish": {
+    "flightMode": "ENABLED",
+    "swimMode": "FORCED",
+    "fallSpeedModifier": 0.65,
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:frilled_shark": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:froststalker": {
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:gazelle": {
+    "gravity": 0.08,
+    "inertia": 0.2,
+    "required": false
+  },
+  "alexsmobs:gelada_monkey": {
+    "climbsWalls": true,
+    "gravity": 0.06,
+    "inertia": 0.3,
+    "required": false
+  },
+  "alexsmobs:ghost_miner": {
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:giant_squid": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "inertia": 0.65,
+    "required": false
+  },
+  "alexsmobs:gorilla": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:grizzly_bear": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:guster": {
+    "flightMode": "FORCED",
+    "gravity": 0.004,
+    "inertia": 0.8,
+    "required": false
+  },
+  "alexsmobs:hammerhead_shark": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:hummingbird": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "gravity": 0.004,
+    "inertia": 0.55,
+    "required": false
+  },
+  "alexsmobs:jerboa": {
+    "walkMode": "JUMPY",
+    "gravity": 0.06,
+    "inertia": 0.18,
+    "required": false
+  },
+  "alexsmobs:kangaroo": {
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:komodo_dragon": {
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:laviathan": {
+    "swimMode": "FLOATING",
+    "gravity": 0.04,
+    "inertia": 0.7,
+    "waterSpeedModifier": 0.35,
+    "required": false
+  },
+  "alexsmobs:leafcutter_ant": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.2,
+    "required": false
+  },
+  "alexsmobs:leafcutter_ant_queen": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.3,
+    "required": false
+  },
+  "alexsmobs:lobster": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "waterSpeedModifier": 0.4,
+    "required": false
+  },
+  "alexsmobs:maned_wolf": {
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:mantis_shrimp": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.3,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:mimic_octopus": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:mimicube": {
+    "swimMode": "FLOATING",
+    "walkMode": "JUMPY",
+    "required": false
+  },
+  "alexsmobs:moose": {
+    "gravity": 0.08,
+    "inertia": 0.55,
+    "required": false
+  },
+  "alexsmobs:mudskipper": {
+    "swimMode": "ENABLED",
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.25,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:mungus": {
+    "gravity": 0.08,
+    "inertia": 0.4,
+    "required": false
+  },
+  "alexsmobs:murmur": {
+    "climbsWalls": true,
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:murmur_head": {
+    "flightMode": "FORCED",
+    "gravity": 0.004,
+    "inertia": 0.8,
+    "required": false
+  },
+  "alexsmobs:orca": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "inertia": 0.65,
+    "required": false
+  },
+  "alexsmobs:platypus": {
+    "swimMode": "ENABLED",
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:potoo": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.012,
+    "fallSpeedModifier": 0.75,
+    "landedSpeedModifier": -0.55,
+    "required": false
+  },
+  "alexsmobs:raccoon": {
+    "climbsWalls": true,
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:rain_frog": {
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:rattlesnake": {
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:rhinoceros": {
+    "gravity": 0.08,
+    "inertia": 0.6,
+    "required": false
+  },
+  "alexsmobs:roadrunner": {
+    "gravity": 0.06,
+    "inertia": 0.2,
+    "fallSpeedModifier": 0.25,
+    "required": false
+  },
+  "alexsmobs:rocky_roller": {
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:sea_bear": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:seagull": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.012,
+    "fallSpeedModifier": 0.75,
+    "landedSpeedModifier": -0.55,
+    "required": false
+  },
+  "alexsmobs:seal": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "landedSpeedModifier": -0.45,
+    "waterSpeedModifier": 0.5,
+    "required": false
+  },
+  "alexsmobs:shoebill": {
+    "flightMode": "ENABLED",
+    "gravity": 0.02,
+    "fallSpeedModifier": 0.55,
+    "required": false
+  },
+  "alexsmobs:skelewag": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:skreecher": {
+    "climbsWalls": true,
+    "gravity": 0.06,
+    "inertia": 0.3,
+    "required": false
+  },
+  "alexsmobs:skunk": {
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:snow_leopard": {
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:soul_vulture": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.01,
+    "fallSpeedModifier": 0.8,
+    "landedSpeedModifier": -0.45,
+    "required": false
+  },
+  "alexsmobs:spectre": {
+    "flightMode": "FORCED",
+    "gravity": 0.003,
+    "inertia": 0.9,
+    "required": false
+  },
+  "alexsmobs:straddler": {
+    "swimMode": "FLOATING",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:stradpole": {
+    "swimMode": "FLOATING",
+    "gravity": 0.06,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:sugar_glider": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.02,
+    "fallSpeedModifier": 0.8,
+    "landedSpeedModifier": -0.25,
+    "required": false
+  },
+  "alexsmobs:sunbird": {
+    "flightMode": "FORCED",
+    "swimMode": "DISABLED",
+    "gravity": 0.004,
+    "inertia": 0.85,
+    "required": false
+  },
+  "alexsmobs:tarantula_hawk": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.008,
+    "fallSpeedModifier": 0.75,
+    "required": false
+  },
+  "alexsmobs:tasmanian_devil": {
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:terrapin": {
+    "swimMode": "ENABLED",
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "landedSpeedModifier": -0.35,
+    "waterSpeedModifier": 0.45,
+    "required": false
+  },
+  "alexsmobs:tiger": {
+    "gravity": 0.06,
+    "inertia": 0.25,
+    "required": false
+  },
+  "alexsmobs:toucan": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.012,
+    "fallSpeedModifier": 0.75,
+    "landedSpeedModifier": -0.55,
+    "required": false
+  },
+  "alexsmobs:triops": {
+    "swimMode": "FORCED",
+    "flopsOnLand": true,
+    "required": false
+  },
+  "alexsmobs:tusklin": {
+    "gravity": 0.08,
+    "inertia": 0.45,
+    "required": false
+  },
+  "alexsmobs:underminer": {
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "required": false
+  },
+  "alexsmobs:void_worm": {
+    "flightMode": "FORCED",
+    "gravity": 0.003,
+    "inertia": 0.9,
+    "required": false
+  },
+  "alexsmobs:warped_mosco": {
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "gravity": 0.006,
+    "inertia": 0.75,
+    "required": false
+  },
+  "alexsmobs:warped_toad": {
+    "swimMode": "ENABLED",
+    "walkMode": "JUMPY",
+    "gravity": 0.08,
+    "inertia": 0.35,
+    "waterSpeedModifier": 0.25,
+    "required": false
+  },
+  "bewitchment:owl": {
+    "fallSpeedModifier": 0.9,
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "inertia": 0.5,
+    "gravity":0.03,
+    "required": false
+  },
+  "bewitchment:raven": {
+    "fallSpeedModifier": 0.8,
+    "flightMode": "ENABLED",
+    "swimMode": "DISABLED",
+    "inertia": 0.4,
+    "gravity":0.02,
+    "required": false
+  }
+}

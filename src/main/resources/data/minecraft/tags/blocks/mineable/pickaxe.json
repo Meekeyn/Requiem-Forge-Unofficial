@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "requiemunofficial:tachylite",
+    "requiemunofficial:tachylite/chiseled",
+    "requiemunofficial:tachylite/chiseled_pillar",
+    "requiemunofficial:tachylite/chiseled_slab",
+    "requiemunofficial:tachylite/chiseled_stairs",
+    "requiemunofficial:tachylite/scraped",
+    "requiemunofficial:tachylite/derelict",
+    "requiemunofficial:tachylite_runestone",
+    "requiemunofficial:runic_tachylite_attrition",
+    "requiemunofficial:runic_tachylite_emancipation",
+    "requiemunofficial:runic_tachylite_penance",
+    "requiemunofficial:runic_tachylite_reclamation",
+    "requiemunofficial:rift_rune"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "powers": [
+    "requiemunofficial:remnant",
+    "requiemunofficial:freeform",
+    "requiemunofficial:possession",
+    "requiemunofficial:resurrection",
+    "requiemunofficial:damned"
+  ],
+  "icon": "requiemunofficial:sealed_remnant_vessel",
+  "name": "origins:origin.requiemunofficial.remnant.name",
+  "description": "origins:origin.requiemunofficial.remnant.description",
+  "order": 1,
+  "impact": 3
+}

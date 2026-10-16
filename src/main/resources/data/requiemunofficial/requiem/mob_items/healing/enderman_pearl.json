@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "priority": 100,
+  "enabled": true,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.enderman_pearl",
+    "color": "dark_purple"
+  },
+  "mob": {
+    "type": "minecraft:enderman"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "items": [
+        "minecraft:ender_pearl"
+      ]
+    },
+    "use_time": 16,
+    "cooldown": 80,
+    "usage": "eat_to_heal"
+  }
+}

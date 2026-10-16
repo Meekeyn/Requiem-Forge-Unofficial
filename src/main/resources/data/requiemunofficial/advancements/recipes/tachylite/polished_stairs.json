@@ -1,0 +1,33 @@
+{
+  "parent": "minecraft:recipes/root",
+  "rewards": {
+    "recipes": [
+      "requiemunofficial:tachylite/polished_stairs"
+    ]
+  },
+  "criteria": {
+    "has_tachylite": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "tag": "requiemunofficial:tachylite"
+          }
+        ]
+      }
+    },
+    "has_the_recipe": {
+      "trigger": "minecraft:recipe_unlocked",
+      "conditions": {
+        "recipe": "requiemunofficial:tachylite/polished_stairs"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_tachylite",
+      "has_the_recipe"
+    ]
+  ]
+}
+        

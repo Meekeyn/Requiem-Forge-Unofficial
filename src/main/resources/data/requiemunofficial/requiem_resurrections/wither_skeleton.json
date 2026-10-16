@@ -1,0 +1,21 @@
+{
+  "schema_version": 0,
+  "priority": 100,
+  "player": {
+    "location": {
+      "dimension": "minecraft:the_nether"
+    }
+  },
+  "killing_blow": {
+    "tags": [
+      {
+        "expected": true,
+        "id": "requiemunofficial:is_lava"
+      }
+    ]
+  },
+  "entity": {
+    "type": "minecraft:wither_skeleton"
+  }
+}
+

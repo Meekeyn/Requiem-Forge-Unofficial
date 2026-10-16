@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "priority": 80,
+  "enabled": true,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.villager_food",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "#requiemunofficial:alexsmobs_herbivores"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "tag": "requiemunofficial:food/plant_based"
+    },
+    "use_time": 32,
+    "cooldown": 120,
+    "usage": "eat_to_heal"
+  }
+}

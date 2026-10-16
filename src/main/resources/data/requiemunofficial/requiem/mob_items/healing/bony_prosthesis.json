@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.bony_prosthesis",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "#requiemunofficial:humanoid_skeletons"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "tag": "requiemunofficial:bones"
+    },
+    "use_time": 0,
+    "cooldown": 60,
+    "usage": "replace_bone"
+  }
+}
+

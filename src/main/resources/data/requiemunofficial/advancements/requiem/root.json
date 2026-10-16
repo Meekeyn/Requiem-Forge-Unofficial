@@ -1,0 +1,32 @@
+{
+  "display": {
+    "icon": {
+      "item": "requiemunofficial:sealed_remnant_vessel"
+    },
+    "title": {
+      "translate": "requiemunofficial:advancements.requiem.root.title"
+    },
+    "description": {
+      "translate": "requiemunofficial:advancements.requiem.root.description"
+    },
+    "frame": "task",
+    "show_toast": false,
+    "announce_to_chat": false,
+    "hidden": false,
+    "background": "requiemunofficial:textures/gui/advancements/backgrounds/requiem.png"
+  },
+  "criteria": {
+    "remnant_choice": {
+      "trigger": "requiemunofficial:made_remnant_choice",
+      "conditions": {
+        "remnant_type": "requiemunofficial:remnant"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "remnant_choice"
+    ]
+  ]
+}
+

@@ -1,0 +1,24 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:humanoid_zombies",
+    "#requiemunofficial:humanoid_skeletons",
+    "minecraft:evoker",
+    "minecraft:piglin",
+    "minecraft:piglin_brute",
+    "minecraft:villager",
+    "minecraft:pillager",
+    "minecraft:vindicator",
+    "minecraft:wandering_trader",
+    "minecraft:witch",
+    {"id": "requiemunofficial:cured_piglin", "required": false},
+    {"id": "mobz:dwarf_entity", "required": false},
+    {"id": "mobz:friend_entity", "required": false},
+    {"id": "mobz:knight_entity", "required": false},
+    {"id": "mobz:knight2_entity", "required": false},
+    {"id": "mobz:knight3_entity", "required": false},
+    {"id": "mobz:knight4_entity", "required": false},
+    {"id": "mobz:knight5_entity", "required": false}
+  ]
+}
+

@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/runic/reclamation"
+      }
+    },
+    {
+      "when": {
+        "activated": "true"
+      },
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/rune_overlay/reclamation"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "priority": 80,
+  "enabled": true,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.villager_base_food",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "#requiemunofficial:villager_folk"
+  },
+  "override": {
+    "type": "requiemunofficial:diet",
+    "food": {
+      "tag": "requiemunofficial:food/villager_base_diet"
+    }
+  }
+}
+

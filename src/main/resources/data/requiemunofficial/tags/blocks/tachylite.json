@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "requiemunofficial:tachylite",
+    "requiemunofficial:tachylite/chiseled",
+    "requiemunofficial:tachylite/chiseled_pillar",
+    "requiemunofficial:tachylite/scraped",
+    {"id": "requiemunofficial:tachylite/tachylite", "required": false}
+  ]
+}
+

@@ -1,0 +1,23 @@
+{
+  "targets": [
+    "swap"
+  ],
+  "passes": [
+    {
+      "name": "requiemunofficial:za_warudo",
+      "intarget": "minecraft:main",
+      "outtarget": "swap",
+      "auxtargets": [
+        {
+          "name": "DepthSampler",
+          "id": "minecraft:main:depth"
+        }
+      ]
+    },
+    {
+      "name": "requiemunofficial:fish_eye",
+      "intarget": "swap",
+      "outtarget": "minecraft:main"
+    }
+  ]
+}

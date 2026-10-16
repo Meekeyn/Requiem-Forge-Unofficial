@@ -1,0 +1,369 @@
+{
+  "requiemunofficial:advancements.requiemunofficial.root.title": "Реквием",
+  "requiemunofficial:advancements.requiemunofficial.root.description": "Выбери странную вечность",
+  "requiemunofficial:advancements.requiemunofficial.first_possession.title": "Я это заберу",
+  "requiemunofficial:advancements.requiemunofficial.first_possession.description": "Овладей существом",
+  "requiemunofficial:advancements.requiemunofficial.i_hate_sand.title": "Я ненавижу песок.",
+  "requiemunofficial:advancements.requiemunofficial.i_hate_sand.description": "Воскресни как кадавр",
+  "requiemunofficial:advancements.requiemunofficial.good_as_new.title": "Как новенький!",
+  "requiemunofficial:advancements.requiemunofficial.good_as_new.description": "Исцели неживое тело, пока владеешь им",
+  "requiemunofficial:advancements.requiemunofficial.makeshift_makeover.title": "Импровизированное преображение",
+  "requiemunofficial:advancements.requiemunofficial.makeshift_makeover.description": "Замени каждую кость скелета-иссушителя",
+  "requiemunofficial:advancements.adventure.the_choice.title": "Дьявольская дилемма",
+  "requiemunofficial:advancements.adventure.the_choice.description": "Выбери между обычной жизнью и странной вечностью",
+  "requiemunofficial:advancements.requiemunofficial.classic_look.title": "Классический вид",
+  "requiemunofficial:advancements.requiemunofficial.classic_look.description": "Овладей обновлённым эндерменом",
+  "requiemunofficial:advancements.requiemunofficial.piglin_seppukku.title": "Что я наделал?",
+  "requiemunofficial:advancements.requiemunofficial.piglin_seppukku.description": "Заставь зомбифицированного пиглина пожалеть о своих действиях",
+  "requiemunofficial:advancements.requiemunofficial.kung_fu_panda.title": "Кунг-фу Панда",
+  "requiemunofficial:advancements.requiemunofficial.kung_fu_panda.description": "Будучи пандой, ударь кого-нибудь деревянным мечом",
+  "requiemunofficial:argument.entity.options.possessor.description": "Существа, которыми владеет",
+  "requiemunofficial:remnant_type.requiemunofficial.mortal.name": "Смертный",
+  "requiemunofficial:remnant_type.requiemunofficial.remnant.name": "Остаток",
+  "requiemunofficial:commands.query.success.other": "%2$s является %1$s",
+  "requiemunofficial:commands.query.success.self": "Вы являетесь %s",
+  "requiemunofficial:commands.ethereal.set.fail.mortal": "Не удалось сделать %s эфирным, так как он смертный",
+  "requiemunofficial:commands.ethereal.set.fail": "Не удалось изменить эфирное состояние %s",
+  "requiemunofficial:commands.ethereal.set.success.other": "Эфирное состояние %s установлено на %s",
+  "requiemunofficial:commands.ethereal.set.success.self": "Ваше эфирное состояние установлено на %s",
+  "requiemunofficial:commands.ethereal.set.target": "Ваше эфирное состояние изменено на %s",
+  "requiemunofficial:commands.remnant.set.success.other": "Состояние остатка %s установлено на %s",
+  "requiemunofficial:commands.remnant.set.success.self": "Ваше состояние остатка установлено на %s",
+  "requiemunofficial:commands.remnant.set.target": "Ваше состояние остатка обновлено на %s",
+  "requiemunofficial:commands.remnant.soul.query.has_soul": "%s имеет душу",
+  "requiemunofficial:commands.remnant.soul.query.no_soul": "%s не имеет души",
+  "requiemunofficial:commands.remnant.soul.set.fail.not_living": "%s не может иметь душу",
+  "requiemunofficial:commands.remnant.soul.remove.success": "Душа %s удалена",
+  "requiemunofficial:commands.remnant.soul.restore.success": "Душа %s восстановлена",
+  "requiemunofficial:ethereal": "Эфирный",
+  "requiemunofficial:not_ethereal": "Материальный",
+  "requiemunofficial:dialogue.not_found": "Неизвестный диалог: %s",
+  "requiemunofficial:remnant_type.not_found": "Неизвестный тип остатка: %s",
+  "requiemunofficial:commands.possession.start.fail.not_mob": "%s нельзя захватить, так как это не моб",
+  "requiemunofficial:commands.possession.start.fail.not_incorporeal": "%s не является бесплотным",
+  "requiemunofficial:commands.possession.start.fail": "Не удалось овладеть %s",
+  "requiemunofficial:commands.possession.start.success.other": "%s начал овладевать %s",
+  "requiemunofficial:commands.possession.start.success.self": "Вы начали овладевать %s",
+  "requiemunofficial:commands.possession.stop.success.other": "%s перестал овладевать %s",
+  "requiemunofficial:commands.possession.stop.success.self": "Вы прекратили овладение %s",
+  "requiemunofficial:commands.shell.split.fail.mortal": "Невозможно разделить %s, так как он смертный",
+  "requiemunofficial:commands.shell.split.fail.vagrant": "Невозможно разделить %s, так как он уже Скиталец",
+  "requiemunofficial:commands.shell.fail.not_shell": "%s не является оболочкой игрока",
+  "requiemunofficial:commands.soul.query.has_soul": "%s сейчас имеет душу",
+  "requiemunofficial:commands.soul.query.no_soul": "%s сейчас не имеет души",
+  "requiemunofficial:commands.soul.set.fail.not_living": "%s не является живым существом",
+  "requiemunofficial:commands.soul.set.fail.permanently_soulless": "%s не может иметь собственную душу",
+  "requiemunofficial:commands.soul.remove.success": "Душа успешно удалена у %s",
+  "requiemunofficial:commands.soul.restore.success": "Душа успешно возвращена %s",
+  "requiemunofficial:container.obelisk_rift": "Разлом",
+  "requiemunofficial:toast.rift_witnessed": "Разлом обнаружен!",
+  "requiemunofficial:block.minecraft.bed.invalid_body": "Это тело не может спать",
+  "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
+  "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
+  "requiemunofficial:opus.wanderer_sentence": "Ad Vitam Vagrate",
+  "requiemunofficial:dialogue.first_contact.introduction.text": "Вы слышите голос, обращающийся к вам, но не можете понять, откуда он исходит.",
+  "requiemunofficial:dialogue.first_contact.introduction.explain": "Что происходит?",
+  "requiemunofficial:dialogue.first_contact.introduction.yes": "Сделай меня демоном.",
+  "requiemunofficial:dialogue.first_contact.introduction.no": "Я не хочу иметь с этим ничего общего.",
+  "requiemunofficial:dialogue.first_contact.explanation.text": "Откажись от своей человечности и будь проклят вечностью. Откажись — и продолжай обычную жизнь среди других. Это шанс получить совершенно новый опыт после смерти, но он потребует изменить привычки.",
+  "requiemunofficial:dialogue.first_contact.explanation.ok": "Понятно.",
+  "requiemunofficial:dialogue.first_contact.interested.text": "Если выберешь этот путь, после каждой смерти тебе придётся искать новое тело. Полученные способности помогут в этом, а найденные тела могут оказаться гораздо интереснее обычного человеческого.",
+  "requiemunofficial:dialogue.first_contact.disinterested.text": "Если откажешься, ты пропустишь всё, что предлагает requiemunofficial. Ты будешь возрождаться как обычно и продолжишь играть человеком.",
+  "requiemunofficial:dialogue.first_contact.confirm": "Я этого хочу.",
+  "requiemunofficial:dialogue.first_contact.doubt": "Я передумал...",
+  "requiemunofficial:dialogue.first_contact.very_interested.text": "Ты уверен, что хочешь стать демоном?",
+  "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Ты уверен, что хочешь остаться человеком?",
+  "requiemunofficial:dialogue.first_contact.final_confirm": "Подтвердить",
+  "requiemunofficial:dialogue.first_contact.final_doubt": "Назад",
+  "requiemunofficial:subtitles.block.obelisk.activate": "Обелиск формируется",
+  "requiemunofficial:subtitles.block.obelisk.ambient": "Обелиск шепчет",
+  "requiemunofficial:subtitles.block.obelisk.deactivate": "Обелиск разрушается",
+  "requiemunofficial:subtitles.block.runestone.carve": "Рунический камень высечен",
+  "requiemunofficial:subtitles.block.runestone.clear": "Рунический камень очищен",
+  "requiemunofficial:subtitles.effect.become.mortal": "Становление смертным",
+  "requiemunofficial:subtitles.effect.become.remnant": "Получение демона",
+  "requiemunofficial:subtitles.effect.dissociating": "Игрок отделяется",
+  "requiemunofficial:subtitles.effect.phasing": "Игрок проходит сквозь",
+  "requiemunofficial:subtitles.effect.possession.attempt": "Попытка овладения",
+  "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
+  "requiemunofficial:subtitles.entity.mortician.death": "Гробовщик умирает",
+  "requiemunofficial:subtitles.entity.mortician.hurt": "Гробовщик ранен",
+  "requiemunofficial:subtitles.entity.mortician.prepare_attack": "Гробовщик готовит атаку",
+  "requiemunofficial:tooltip.ammo_generator": "Генерация боеприпасов",
+  "requiemunofficial:tooltip.bolt_hoarder": "Коллекционер болтов",
+  "requiemunofficial:tooltip.bony_prosthesis": "Костяной протез",
+  "requiemunofficial:tooltip.calcium_bucket": "Кальциевая польза",
+  "requiemunofficial:tooltip.cure_catalyst": "Катализатор лечения",
+  "requiemunofficial:tooltip.cure_reagent": "Реагент лечения",
+  "requiemunofficial:tooltip.drowned_food": "Деликатес утопленника",
+  "requiemunofficial:tooltip.drowned_grip": "Хватка утопленника",
+  "entity.requiemunofficial.cured_piglin": "Пигмен",
+  "entity.requiemunofficial.cured_villager": "Исцелённый житель",
+  "entity.requiemunofficial.mortician": "Гробовщик",
+  "entity.requiemunofficial.cured_piglin_brute": "Пигмен-громила",
+  "entity.requiemunofficial.player_shell": "Оболочка игрока",
+  "item.requiemunofficial.totem_of_skeletonization": "Тотем скелетизации",
+  "item.requiemunofficial.opus_daemonium": "Opus Daemonium",
+  "item.requiemunofficial.empty_soul_vessel": "Пустой сосуд души",
+  "item.requiemunofficial.creative_soul_vessel": "Креативный сосуд души",
+  "item.requiemunofficial.filled_soul_vessel": "Заполненный сосуд души",
+  "origins:origin.requiemunofficial.mortal.name": "Смертный",
+  "origins:origin.requiemunofficial.mortal.description": "Обычный смертный. Тебя ждёт обычный опыт Minecraft.",
+  "origins:origin.requiemunofficial.remnant.name": "Демон",
+  "origins:origin.requiemunofficial.remnant.description": "Существуют истории о таинственных демонах, захватывающих тела мёртвых. Никто не знает, что они такое, но мало кто хочет это выяснить.",
+  "origins:origin.requiemunofficial.vagrant.name": "Скиталец",
+  "origins:origin.requiemunofficial.vagrant.description": "Демон вне подходящего тела. Обречён скитаться и захватывать более слабые существа.",
+  "origins:power.requiemunofficial.remnant.name": "Отделение",
+  "origins:power.requiemunofficial.remnant.description": "Когда ты умираешь, твоя душа отделяется от тела и становится блуждающим призраком.",
+  "origins:power.requiemunofficial.freeform.name": "Свободная форма",
+  "origins:power.requiemunofficial.freeform.description": "Призраки могут летать и даже проходить сквозь стены.",
+  "origins:power.requiemunofficial.possession.name": "Овладение",
+  "origins:power.requiemunofficial.possession.description": "Будучи свободной душой, ты можешь захватывать пустые тела существ.",
+  "origins:power.requiemunofficial.mortal.name": "Возрождение",
+  "origins:power.requiemunofficial.mortal.description": "После смерти ты возрождаешься в точке последнего отдыха с новым телом.",
+  "requiemunofficial:subtitles.effect.reclamation.clear": "Очищение снимается",
+  "requiemunofficial:subtitles.entity.mortician.ambient": "Гробовщик гремит",
+  "requiemunofficial:subtitles.entity.mortician.cast_spell": "Гробовщик читает заклинание",
+  "requiemunofficial:subtitles.entity.mortician.no": "Гробовщик не согласен",
+  "requiemunofficial:subtitles.entity.mortician.yes": "Гробовщик соглашается",
+  "requiemunofficial:subtitles.entity.soul.teleport": "Душа телепортируется",
+  "requiemunofficial:subtitles.entity.soul.disintegrate": "Душа распадается",
+  "requiemunofficial:subtitles.item.empty_vessel.use": "Сосуд активируется",
+  "requiemunofficial:subtitles.item.filled_vessel.use": "Душа высвобождается",
+  "requiemunofficial:subtitles.item.soul_vessel.use": "Сосуд души активируется",
+  "requiemunofficial:tooltip.filled_vessel": "Душа %s",
+  "requiemunofficial:tooltip.foxy_berry": "Лисья ягода",
+  "requiemunofficial:tooltip.illager_food": "Мясоед",
+  "requiemunofficial:tooltip.mushroom_food": "Грибы",
+  "requiemunofficial:tooltip.piglin_food": "Рацион пиглина",
+  "requiemunofficial:tooltip.skeletal_efficiency": "Скелетная эффективность",
+  "requiemunofficial:tooltip.villager_base_food": "Деревенская еда",
+  "requiemunofficial:tooltip.villager_food": "Вегетарианец",
+  "requiemunofficial:tooltip.witch_brew_base": "Основа ведьминого зелья",
+  "requiemunofficial:tooltip.witch_food": "Рацион ведьмы",
+  "requiemunofficial:tooltip.zombie_food": "Закуска зомби",
+  "block.requiemunofficial.tachylite.runestone": "Рунический камень тахилита",
+  "block.requiemunofficial.tachylite.runic.attrition": "Рунический камень тахилита истощения",
+  "block.requiemunofficial.tachylite.runic.emancipation": "Рунический камень тахилита освобождения",
+  "block.requiemunofficial.tachylite.runic.penance": "Рунический камень тахилита искупления",
+  "block.requiemunofficial.tachylite.runic.reclamation": "Рунический камень тахилита восстановления",
+  "block.requiemunofficial.tachylite.runic.rift": "Разлом души",
+  "block.requiemunofficial.tachylite.derelict": "Заброшенный тахилит",
+  "block.requiemunofficial.tachylite.chiseled": "Резной тахилит",
+  "block.requiemunofficial.tachylite.chiseled_pillar": "Резная колонна тахилита",
+  "block.requiemunofficial.tachylite.chiseled_slab": "Резная плита тахилита",
+  "block.requiemunofficial.tachylite.chiseled_stairs": "Резные ступени тахилита",
+  "block.requiemunofficial.tachylite.polished": "Полированный тахилит",
+  "block.requiemunofficial.tachylite.polished_pillar": "Полированная колонна тахилита",
+  "block.requiemunofficial.tachylite.scraped": "Очищенный тахилит",
+  "block.requiemunofficial.tachylite.tachylite": "Тахилит",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Плита тахилита",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Ступени тахилита",
+  "config.requiemunofficial.title": "Меню настроек Requiem",
+  "config.requiemunofficial.graphics": "Графика",
+  "config.requiemunofficial.fancy_demon_render": "Улучшенный рендер демона",
+  "config.requiemunofficial.more": "Больше...",
+  "config.requiemunofficial.more_info": "Requiem можно настроить через %1$s и %2$s. Для получения дополнительной информации о доступных параметрах посетите %3$s.",
+  "config.requiemunofficial.more_info.datapacks": "Пакеты данных",
+  "config.requiemunofficial.more_info.gamerules": "Игровые правила",
+  "config.requiemunofficial.more_info.official_doc": "официальную документацию на сайте Ladysnake",
+  "death.attack.requiemunofficial.attrition.hardcore": "%1$s был упокоен навсегда.",
+  "death.attack.requiemunofficial.attrition.hardcore.player": "%2$s навсегда упокоил %1$s.",
+  "death.attack.requiemunofficial.mortal_dysmorphia": "Душа %1$s не принадлежала телу %2$s.",
+  "gamerule.requiemunofficial:showPossessorNameTag": "(Requiem) Показывать имя овладевшего",
+  "gamerule.requiemunofficial:showPossessorNameTag.description": "Показывать имена игроков, которые овладели существами",
+  "gamerule.requiemunofficial:disableCure": "(Requiem) Отключить лечение",
+  "gamerule.requiemunofficial:disableCure.description": "Удаляет возможность лечить игроков, овладевших нежитью",
+  "gamerule.requiemunofficial:dropVesselOnDisconnect": "(Requiem) Оставлять сосуд при выходе",
+  "gamerule.requiemunofficial:dropVesselOnDisconnect.description": "Оставляет оболочку остатка или захваченное тело в мире и возвращает игрока к нему при входе",
+  "gamerule.requiemunofficial:startingRemnantType": "(Requiem) Тип остатка",
+  "gamerule.requiemunofficial:startingRemnantType.description": "Заменяет выбор между демоном и смертным при первой смерти",
+  "gamerule.requiemunofficial:startingRemnantType.choose": "выбор",
+  "gamerule.requiemunofficial:startingRemnantType.force_remnant": "принудительно демон",
+  "gamerule.requiemunofficial:startingRemnantType.force_vanilla": "принудительно ваниль",
+  "gamerule.requiemunofficial:possessionKeepInventory": "(Requiem) Сохранять инвентарь после окончания овладения",
+  "gamerule.requiemunofficial:possessionKeepInventory.never": "никогда",
+  "gamerule.requiemunofficial:possessionKeepInventory.living": "для живых",
+  "gamerule.requiemunofficial:possessionKeepInventory.always": "всегда",
+  "gamerule.requiemunofficial:possessionDetection": "(Requiem) Обнаружение одержимых мобов",
+  "gamerule.requiemunofficial:possessionDetection.description": "Мобы могут распознавать одержимых союзников при некоторых условиях",
+  "gamerule.requiemunofficial:possessionDetection.disabled": "отключено",
+  "gamerule.requiemunofficial:possessionDetection.normal": "нормально",
+  "gamerule.requiemunofficial:possessionDetection.hard": "сложно",
+  "effect.requiemunofficial.attrition": "Истощение",
+  "effect.requiemunofficial.emancipation": "Освобождение",
+  "effect.requiemunofficial.penance": "Искупление",
+  "effect.requiemunofficial.reclamation": "Восстановление",
+  "enchantment.requiemunofficial.humanity": "Человечность",
+  "key.requiemunofficial.dissociation": "[Requiem] Отделение",
+  "key.requiemunofficial.possession_interact": "[Requiem] Способность тела",
+  "key.categories.requiemunofficial": "Requiem Unofficial",
+  "requiemunofficial:shulker.onboard": "Нажмите %s или %s чтобы отделиться",
+  "requiemunofficial:dissociate_hint": "Нажмите %s чтобы отделиться",
+  "requiemunofficial:possess.incompatible_body": "Это тело несовместимо с вашей душой",
+  "requiemunofficial:merge_hint": "Нажмите %s чтобы вернуться",
+  "item.requiemunofficial.ichor_vessel_attrition": "Сосуд ихора истощения",
+  "item.requiemunofficial.ichor_vessel_emancipation": "Сосуд ихора освобождения",
+  "item.requiemunofficial.ichor_vessel_penance": "Сосуд ихора искупления",
+  "item.requiemunofficial.ichor_vessel_reclamation": "Сосуд ихора восстановления",
+  "item.requiemunofficial.mortician_spawn_egg": "Яйцо призыва гробовщика",
+  "item.requiemunofficial.pure_soul_vessel": "Чистый сосуд души",
+  "item.requiemunofficial.sealed_remnant_vessel": "Запечатанный сосуд остатка",
+  "item.requiemunofficial.shattered_soul_vessel": "Разбитый сосуд души",
+  "requiemunofficial:remnant_vessel.curse": "Проклятие",
+  "requiemunofficial:remnant_vessel.cure": "Исцеление",
+  "message.requiemunofficial.remnant_vessel.no_change": "Сосуд не действует на текущее состояние вашей души.",
+  "message.requiemunofficial.remnant_vessel.became_remnant": "Ваша душа стала остатком.",
+  "message.requiemunofficial.remnant_vessel.became_mortal": "Ваша душа снова стала смертной.",
+  "message.requiemunofficial.runestone.ritual_active": "Головную руну нельзя изменить во время активного ритуала.",
+  "origins:layer.requiemunofficial.soul_type.name": "Тип души",
+  "origins:layer.requiemunofficial.soul_type.missing_origin.name": "Отсутствует",
+  "origins:layer.requiemunofficial.soul_type.missing_origin.description": "У вас нет типа души.",
+  "origins:power.requiemunofficial.damned.name": "Проклятый",
+  "origins:power.requiemunofficial.damned.description": "Единственный способ получить новое человеческое тело — исцелиться, владея подходящим существом.",
+  "origins:power.requiemunofficial.resurrection.name": "Хватка смерти",
+  "origins:power.requiemunofficial.resurrection.description": "Иногда ваша душа может удерживать ваше искажённое тело после смерти.",
+  "origins:power.requiemunofficial.soul_mending.name": "Восстановление души",
+  "origins:power.requiemunofficial.soul_mending.description": "Ваша душа постепенно восстанавливается во время овладения.",
+  "origins:power.requiemunofficial.banished.name": "Изгнанный",
+  "origins:power.requiemunofficial.banished.description": "Вы не можете получить новое человеческое тело, исцеляя других существ.",
+  "stat.requiemunofficial.interact_with_rift": "[Requiem] Взаимодействия с разломом обелиска",
+  "requiemunofficial.message.peaceful_despawn": "Этот носитель не может существовать в таком мирном мире",
+  "ritual.requiemunofficial.ritual.decay_zombie": "Разложение зомби",
+  "ritual.requiemunofficial.ritual.decay_skeleton": "Разложение скелета",
+  "block.requiemunofficial.tachylite": "Тахилит",
+  "block.requiemunofficial.tachylite_runestone": "Рунический камень тахилита",
+
+  "item.requiemunofficial.debug_item": "Отладочный предмет",
+  "item.requiemunofficial.empty_soul_vessel": "Пустой сосуд души",
+  "item.requiemunofficial.filled_soul_vessel": "Заполненный сосуд души",
+  "item.requiemunofficial.pure_soul_vessel": "Чистый сосуд души",
+  "item.requiemunofficial.sealed_remnant_vessel": "Запечатанный сосуд остатка",
+  "item.requiemunofficial.shattered_soul_vessel": "Разбитый сосуд души",
+  "item.requiemunofficial.creative_soul_vessel": "Креативный сосуд души",
+  "item.requiemunofficial.totem_of_skeletonization": "Тотем скелетизации",
+  "item.requiemunofficial.ichor_vessel_attrition": "Сосуд ихора истощения",
+  "item.requiemunofficial.ichor_vessel_emancipation": "Сосуд ихора освобождения",
+  "item.requiemunofficial.ichor_vessel_penance": "Сосуд ихора искупления",
+  "item.requiemunofficial.ichor_vessel_reclamation": "Сосуд ихора восстановления",
+
+  "entity.requiemunofficial.mortician": "Гробовщик",
+  "entity.requiemunofficial.obelisk_soul": "Душа обелиска",
+  "entity.requiemunofficial.released_soul": "Освобождённая душа",
+  "entity.requiemunofficial.player_shell": "Оболочка игрока",
+
+  "effect.requiemunofficial.attrition": "Истощение",
+  "effect.requiemunofficial.emancipation": "Освобождение",
+  "effect.requiemunofficial.penance": "Искупление",
+  "effect.requiemunofficial.reclamation": "Восстановление",
+
+  "menu.requiemunofficial.dummy": "Техническое меню",
+  "item.requiemunofficial.mortician_spawn_egg": "Яйцо призыва Гробовщика",
+  "container.requiemunofficial.rift": "Разлом",
+  "gui.requiemunofficial.rift.consume_energy": "Расходовать энергию души",
+  "gui.requiemunofficial.rift.stability": "Стабильность: %s%%",
+  "gui.requiemunofficial.rift.energy": "Энергия душ: %s",
+  "gui.requiemunofficial.rift.status": "Ритуал: %s",
+  "gui.requiemunofficial.rift.status.active": "активен",
+  "gui.requiemunofficial.rift.status.idle": "неактивен",
+  "gui.requiemunofficial.rift.runes": "Руны И:%s О:%s П:%s В:%s Разлом:%s"
+  ,"gui.requiemunofficial.rift.start_resurrection": "Подготовить возрождение (5 энергии)"
+  ,"message.requiemunofficial.ritual.invalid_rift": "Разлом нестабилен или структура обелиска нарушена."
+  ,"message.requiemunofficial.ritual.no_permission": "Вы не можете использовать этот разлом."
+  ,"message.requiemunofficial.ritual.too_far": "Вы слишком далеко от разлома."
+  ,"message.requiemunofficial.ritual.already_active": "Другой ритуал уже активен."
+  ,"message.requiemunofficial.ritual.started": "Ритуал начат и завершится через %s сек."
+  ,"message.requiemunofficial.ritual.interrupted": "Ритуал прерван: разлом потерял стабильность."
+  ,"message.requiemunofficial.ritual.target_lost": "Цель ритуала исчезла до его завершения."
+  ,"message.requiemunofficial.ritual.missing_rune": "В структуре отсутствует необходимая руна разлома."
+  ,"message.requiemunofficial.ritual.insufficient_energy": "Для ритуала требуется энергии душ: %s."
+  ,"message.requiemunofficial.ritual.resurrection_prepared": "Точка возрождения подготовлена. Расход энергии душ: %s."
+  ,"block.requiemunofficial.runic_tachylite_attrition": "Рунический камень истощения"
+  ,"block.requiemunofficial.runic_tachylite_emancipation": "Рунический камень освобождения"
+  ,"block.requiemunofficial.runic_tachylite_penance": "Рунический камень искупления"
+  ,"block.requiemunofficial.runic_tachylite_reclamation": "Рунический камень восстановления"
+  ,"block.requiemunofficial.rift_rune": "Рунический камень разлома душ"
+  ,"message.requiemunofficial.possession.invalid_host": "Эту сущность нельзя захватить."
+  ,"message.requiemunofficial.possession.not_vagrant": "Только свободная душа может захватывать тело."
+  ,"message.requiemunofficial.possession.already_possessing": "Вы уже захватили тело."
+  ,"message.requiemunofficial.possession.penance": "Искупление не позволяет захватывать тела."
+  ,"message.requiemunofficial.possession.player_body": "Это тело игрока нельзя захватить."
+  ,"message.requiemunofficial.possession.dead": "Это тело мертво."
+  ,"message.requiemunofficial.possession.blacklisted": "Эта сущность защищена от захвата."
+  ,"message.requiemunofficial.possession.already_possessed": "Это тело уже захвачено."
+  ,"message.requiemunofficial.possession.occupied": "Это тело занято."
+  ,"message.requiemunofficial.possession.has_soul": "В этом теле ещё есть душа."
+  ,"message.requiemunofficial.possession.failed": "Захват не удался."
+  ,"message.requiemunofficial.possession.started": "Захвачено тело: %s. Нажмите клавишу отделения, чтобы покинуть его."
+  ,"message.requiemunofficial.possession.released": "Вы покинули захваченное тело."
+  ,"message.requiemunofficial.transformation.not_skeletonizable": "Эту сущность нельзя скелетизировать."
+  ,"message.requiemunofficial.transformation.skeletonized": "От тела остались только кости."
+  ,"tooltip.requiemunofficial.totem_of_skeletonization": "Превращает совместимую сущность в скелетную форму."
+  ,"gui.requiemunofficial.rift.decay_zombie": "Распад: зомби (3)"
+  ,"gui.requiemunofficial.rift.decay_skeleton": "Распад: скелет (3)"
+  ,"message.requiemunofficial.ritual.no_target": "Рядом с разломом нет подходящей цели ритуала."
+  ,"message.requiemunofficial.ritual.decay_zombie_complete": "Ближайшее скелетное тело превратилось в зомби."
+  ,"message.requiemunofficial.ritual.decay_skeleton_complete": "Ближайшее тело зомби превратилось в скелета."
+  ,"message.requiemunofficial.ritual.resurrection_complete": "Разлом восстановил ваше тело у обелиска."
+  ,"message.requiemunofficial.ritual.resurrection_lost": "Привязанный разлом больше не существует. Связь возрождения потеряна."
+  ,"message.requiemunofficial.soul_vessel.absorbed": "Поглощена энергия души «%s»: +%s."
+  ,"message.requiemunofficial.soul_vessel.captured": "Душа «%s» заключена в сосуд."
+  ,"message.requiemunofficial.soul_vessel.capture_failed": "Душа сопротивляется сосуду."
+  ,"message.requiemunofficial.soul_vessel.target_no_soul": "В этом теле нет души для захвата."
+  ,"message.requiemunofficial.soul_vessel.restored": "Душа «%s» возвращена в тело."
+  ,"message.requiemunofficial.soul_vessel.restore_has_soul": "Это тело не является пустой бездушной оболочкой."
+  ,"message.requiemunofficial.soul_vessel.restore_wrong_body": "В сосуде душа «%s», а это тело относится к «%s»."
+  ,"message.requiemunofficial.ichor_vessel.absorbed": "Уровень ихора повышен до %s (%s)."
+  ,"message.requiemunofficial.obelisk.soul_absorbed": "Обелиск поглотил энергию души «%s»: +%s."
+  ,"item.requiemunofficial.soul_vessel.named": "%s [%s: %s]"
+  ,"tooltip.requiemunofficial.soul_vessel.type": "Тип души: %s"
+  ,"tooltip.requiemunofficial.soul_vessel.kind": "Категория души: %s"
+  ,"tooltip.requiemunofficial.soul_vessel.amount": "Количество души: %s/%s"
+  ,"tooltip.requiemunofficial.soul_vessel.energy": "Энергия для обелиска: %s"
+  ,"soul_kind.requiemunofficial.mortal": "Смертная"
+  ,"soul_kind.requiemunofficial.undead": "Нежить"
+  ,"soul_kind.requiemunofficial.beast": "Звериная"
+  ,"soul_kind.requiemunofficial.aggregate": "Скопление душ"
+  ,"message.requiemunofficial.soul.shell_reclaimed": "Вы вернулись в своё покинутое тело."
+  ,"message.requiemunofficial.soul.shell_destroyed": "Ваше покинутое тело было уничтожено."
+  ,"message.requiemunofficial.soul.shell_removed": "Предыдущее покинутое тело было удалено."
+  ,"message.requiemunofficial.soul.shell_split": "Ваша душа покинула тело."
+  ,"tooltip.requiemunofficial.ichor_vessel.type": "Тип ихора: %s"
+  ,"tooltip.requiemunofficial.ichor_vessel.use": "Нажмите ПКМ, чтобы поглотить 1 единицу ихора."
+  ,"soul_type.requiemunofficial.empty": "пусто"
+  ,"ichor_type.requiemunofficial.attrition": "Истощение"
+  ,"ichor_type.requiemunofficial.emancipation": "Освобождение"
+  ,"ichor_type.requiemunofficial.penance": "Искупление"
+  ,"ichor_type.requiemunofficial.reclamation": "Восстановление"
+  ,"screen.requiemunofficial.soul_choice.title": "Выберите природу души"
+  ,"screen.requiemunofficial.soul_choice.description": "Этот выбор определяет, что произойдёт после смерти."
+  ,"screen.requiemunofficial.soul_choice.remnant": "Стать остатком"
+  ,"screen.requiemunofficial.soul_choice.mortal": "Остаться смертным"
+  ,"item.requiemunofficial.humanity_enchanted_book": "Человечность"
+  ,"tooltip.requiemunofficial.opus_daemonium": "Тратит уровни опыта, чтобы привязать или отпустить демона."
+  ,"tooltip.requiemunofficial.humanity_enchanted_book": "Катализатор исцеления остатка для механик гробовщика и ритуалов."
+  ,"message.requiemunofficial.opus_daemonium.already_chosen": "Ваша душа уже сделала этот выбор."
+  ,"message.requiemunofficial.opus_daemonium.not_enough_xp": "Opus Daemonium требует %s уровней опыта."
+  ,"message.requiemunofficial.opus_daemonium.became_remnant": "Демон привязан к вашей душе."
+  ,"message.requiemunofficial.opus_daemonium.became_mortal": "Демон отпускает вашу душу."
+  ,"screen.requiemunofficial.config.title": "Настройки Requiem Unofficial"
+  ,"screen.requiemunofficial.config.restart_hint": "Общие настройки сохраняются в requiemunofficial-common.toml."
+  ,"screen.requiemunofficial.config.soul_capture_chance": "Шанс забора души: %s"
+  ,"screen.requiemunofficial.config.opus_cost": "Стоимость Opus в уровнях: %s"
+  ,"screen.requiemunofficial.config.rift_cost": "Энергия телепорта rift: %s"
+  ,"screen.requiemunofficial.config.rune_duration": "Длительность эффекта рун: %s"
+  ,"gui.requiemunofficial.rift.teleport": "Телепорт"
+  ,"gui.requiemunofficial.rift.destination.none": "Нет известных целей"
+  ,"message.requiemunofficial.rift.no_destination": "Нет другого активного разлома."
+  ,"message.requiemunofficial.rift.teleport_unavailable": "Этот разлом сейчас не может телепортировать."
+  ,"message.requiemunofficial.rift.teleported": "Разлом протягивает вас сквозь себя."
+  ,"message.requiemunofficial.rift.witnessed": "Вы ощущаете разлом в %s."
+  ,"jei.requiemunofficial.info.opus_daemonium": "Opus Daemonium переключает состояние между смертным и демоном, расходуя настроенное количество уровней опыта."
+  ,"jei.requiemunofficial.info.humanity": "Humanity — это зачарование-сокровище для пользователей одержимых предметов. Уровень I блокирует получение опыта, уровень II позволяет получать опыт."
+  ,"jei.requiemunofficial.info.empty_soul_vessel": "Удерживайте использование на живой цели, чтобы начать захват души. Душа извлекается только после полного завершения процесса."
+  ,"jei.requiemunofficial.info.filled_soul_vessel": "Хранит данные захваченной души. Активные обелиски могут поглощать заполненные сосуды как запасённую энергию душ."
+  ,"jei.requiemunofficial.info.sealed_remnant_vessel": "Проклинает смертную душу, переводя её в состояние остатка, и расходует настроенное количество опыта Opus."
+  ,"jei.requiemunofficial.info.pure_soul_vessel": "Исцеляет душу остатка или скитальца, возвращая её к смертному состоянию, и расходует настроенное количество опыта Opus."
+  ,"jei.requiemunofficial.info.totem_of_skeletonization": "Используется правилами трансформации и воскрешения как катализатор скелетизации."
+  ,"jei.requiemunofficial.info.runestones": "Рунические камни используются в структурах обелисков и разломов. Варианты из рунического тахилита при активации дают соответствующие эффекты."
+}

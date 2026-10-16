@@ -1,0 +1,17 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/runic/rift"
+      }
+    },
+    {
+      "when": {
+        "activated": "true"
+      },
+      "apply": {
+        "model": "requiemunofficial:block/tachylite/rune_overlay/rift"
+      }
+    }
+  ]
+}

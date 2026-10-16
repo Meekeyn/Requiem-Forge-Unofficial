@@ -1,0 +1,24 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "BOB",
+    "OSO",
+    "BOB"
+  ],
+  "key": {
+    "B": {
+      "item": "minecraft:basalt"
+    },
+    "O": {
+      "item": "minecraft:obsidian"
+    },
+    "S": {
+      "item": "requiemunofficial:filled_soul_vessel"
+    }
+  },
+  "result": {
+    "item": "requiemunofficial:tachylite/tachylite",
+    "count": 8
+  }
+}
+

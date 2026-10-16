@@ -1,0 +1,26 @@
+{
+  "replace": false,
+  "values": [
+    { "id": "alexsmobs:alligator_snapping_turtle", "required": false },
+    { "id": "alexsmobs:anaconda", "required": false },
+    { "id": "alexsmobs:bald_eagle", "required": false },
+    { "id": "alexsmobs:bone_serpent", "required": false },
+    { "id": "alexsmobs:caiman", "required": false },
+    { "id": "alexsmobs:crocodile", "required": false },
+    { "id": "alexsmobs:dropbear", "required": false },
+    { "id": "alexsmobs:frilled_shark", "required": false },
+    { "id": "alexsmobs:grizzly_bear", "required": false },
+    { "id": "alexsmobs:hammerhead_shark", "required": false },
+    { "id": "alexsmobs:komodo_dragon", "required": false },
+    { "id": "alexsmobs:maned_wolf", "required": false },
+    { "id": "alexsmobs:orca", "required": false },
+    { "id": "alexsmobs:rattlesnake", "required": false },
+    { "id": "alexsmobs:sea_bear", "required": false },
+    { "id": "alexsmobs:snow_leopard", "required": false },
+    { "id": "alexsmobs:soul_vulture", "required": false },
+    { "id": "alexsmobs:tarantula_hawk", "required": false },
+    { "id": "alexsmobs:tasmanian_devil", "required": false },
+    { "id": "alexsmobs:tiger", "required": false },
+    { "id": "alexsmobs:warped_mosco", "required": false }
+  ]
+}

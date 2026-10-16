@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "priority": 80,
+  "enabled": true,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.zombie_food",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "#requiemunofficial:alexsmobs_carnivores"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "tag": "requiemunofficial:raw_meats"
+    },
+    "use_time": 24,
+    "cooldown": 120,
+    "usage": "eat_to_heal"
+  }
+}

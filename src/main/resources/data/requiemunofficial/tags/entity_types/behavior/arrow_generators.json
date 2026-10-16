@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:humanoid_skeletons",
+    { "id": "biomemakeover:stone_golem", "required": false }
+  ]
+}

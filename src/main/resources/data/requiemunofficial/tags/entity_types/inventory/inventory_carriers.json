@@ -1,0 +1,27 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:humans",
+    "#requiemunofficial:humanoid_zombies",
+    "#requiemunofficial:humanoid_skeletons",
+    "minecraft:donkey",
+    "minecraft:evoker",
+    "minecraft:llama",
+    "minecraft:trader_llama",
+    "minecraft:mule",
+    "minecraft:panda",
+    "minecraft:piglin",
+    "minecraft:piglin_brute",
+    "minecraft:pillager",
+    "minecraft:enderman",
+    "minecraft:villager",
+    "minecraft:vindicator",
+    "minecraft:wandering_trader",
+    "minecraft:witch",
+    "requiemunofficial:cured_piglin",
+    {"id": "alexsmobs:capuchin_monkey", "required": false},
+    {"id": "alexsmobs:crow", "required": false},
+    {"id": "alexsmobs:gorilla", "required": false},
+    {"id": "alexsmobs:raccoon", "required": false}
+  ]
+}

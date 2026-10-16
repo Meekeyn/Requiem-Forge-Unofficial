@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "tooltip": {
+    "translate": "requiemunofficial:tooltip.foxy_berry",
+    "color": "dark_gray"
+  },
+  "mob": {
+    "type": "minecraft:fox"
+  },
+  "override": {
+    "type": "requiemunofficial:healing",
+    "item": {
+      "items": ["minecraft:sweet_berries"]
+    },
+    "use_time": 16,
+    "cooldown": 48,
+    "usage": "eat_to_heal"
+  }
+}
+

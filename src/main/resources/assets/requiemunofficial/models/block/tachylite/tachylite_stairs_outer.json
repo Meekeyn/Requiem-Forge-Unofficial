@@ -1,0 +1,9 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "requiemunofficial:block/tachylite",
+    "top": "requiemunofficial:block/tachylite",
+    "side": "requiemunofficial:block/tachylite"
+  }
+}
+

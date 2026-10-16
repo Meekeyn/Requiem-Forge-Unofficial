@@ -1,0 +1,31 @@
+{
+  "processors": [
+    {
+      "processor_type": "minecraft:block_ignore",
+      "blocks": [
+        {
+          "Name": "minecraft:air"
+        }
+      ]
+    },
+    {
+      "processor_type": "minecraft:rule",
+      "rules": [
+        {
+          "output_state": {
+            "Name": "requiemunofficial:tachylite/derelict"
+          },
+          "input_predicate": {
+            "block": "requiemunofficial:tachylite",
+            "probability": 0.2,
+            "predicate_type": "minecraft:random_block_match"
+          },
+          "location_predicate": {
+            "predicate_type": "minecraft:always_true"
+          }
+        }
+      ]
+    }
+  ]
+}
+

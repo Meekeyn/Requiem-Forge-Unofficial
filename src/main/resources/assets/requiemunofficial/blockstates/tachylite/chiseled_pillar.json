@@ -1,0 +1,17 @@
+{
+  "variants": {
+    "axis=x": {
+      "model": "requiemunofficial:block/tachylite/chiseled_pillar",
+      "x": 90,
+      "y": 90
+    },
+    "axis=y": {
+      "model": "requiemunofficial:block/tachylite/chiseled_pillar"
+    },
+    "axis=z": {
+      "model": "requiemunofficial:block/tachylite/chiseled_pillar",
+      "x": 90
+    }
+  }
+}
+

@@ -1,0 +1,27 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_filled_vessel": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "requiemunofficial:filled_soul_vessel"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_filled_vessel"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "requiemunofficial:tachylite/tachylite"
+    ]
+  }
+}

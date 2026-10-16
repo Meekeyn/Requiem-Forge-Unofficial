@@ -1,0 +1,10 @@
+{
+  "powers": [
+    "requiemunofficial:mortal"
+  ],
+  "icon": "requiemunofficial:empty_soul_vessel",
+  "name": "origins:origin.requiemunofficial.mortal.name",
+  "description": "origins:origin.requiemunofficial.mortal.description",
+  "order": 0,
+  "impact": 0
+}

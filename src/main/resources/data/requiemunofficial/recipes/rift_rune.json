@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "ORO",
+    "RER",
+    "ORO"
+  ],
+  "key": {
+    "E": {
+      "item": "minecraft:ender_pearl"
+    },
+    "O": {
+      "item": "minecraft:crying_obsidian"
+    },
+    "R": {
+      "item": "requiemunofficial:tachylite_runestone"
+    }
+  },
+  "result": {
+    "item": "requiemunofficial:rift_rune"
+  }
+}
