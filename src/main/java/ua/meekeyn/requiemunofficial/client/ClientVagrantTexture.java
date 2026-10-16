@@ -13,10 +13,6 @@ public final class ClientVagrantTexture {
     public static final float GREEN = 1.0F;
     public static final float BLUE = 1.0F;
     public static final float ALPHA = 1.0F;
-    // Beta.16-style soft skin edge: halo passes around the base pass (gaussian-like falloff).
-    // Body and hand share these arrays, so their transparency always matches.
-    public static final float[] HALO_SCALES = {1.05F, 1.10F, 1.15F};
-    public static final float[] HALO_ALPHAS = {0.12F, 0.09F, 0.06F};
     private static final int COLOR = 0x00F0F2F5;
     private static final int MAX_ALPHA = 77;
     private static boolean registered;

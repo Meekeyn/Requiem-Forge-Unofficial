@@ -62,45 +62,6 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         ci.cancel();
     }
 
-    // Soft edge analog of the beta.16 gaussian blur: halo passes duplicate the body slightly
-    // scaled up with low alpha. Runs after the base pass so the halo never occludes it.
-    // shortcut: halo skips death/sleep poseStack rotations (uses model pose only), upgrade if visible
-    @Inject(method = "render", at = @At("TAIL"))
-    private void requiemunofficial$vagrantHaloBody(AbstractClientPlayer player,
-                                                  float entityYaw,
-                                                  float partialTicks,
-                                                  PoseStack poseStack,
-                                                  MultiBufferSource buffer,
-                                                  int packedLight,
-                                                  CallbackInfo ci) {
-        if (!requiemunofficial$isVisibleVagrant(player)) {
-            return;
-        }
-        PlayerModel<AbstractClientPlayer> playerModel = this.getModel();
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(ClientVagrantTexture.location()));
-        for (int i = 0; i < ClientVagrantTexture.HALO_SCALES.length; i++) {
-            float scale = ClientVagrantTexture.HALO_SCALES[i];
-            poseStack.pushPose();
-            // match vanilla model placement (LivingEntityRenderer.render), scale around mid-body
-            poseStack.scale(-1.0F, -1.0F, 1.0F);
-            poseStack.translate(0.0F, -1.501F, 0.0F);
-            poseStack.translate(0.0F, 0.6F, 0.0F);
-            poseStack.scale(scale, scale, scale);
-            poseStack.translate(0.0F, -0.6F, 0.0F);
-            playerModel.renderToBuffer(
-                    poseStack,
-                    consumer,
-                    packedLight,
-                    OverlayTexture.NO_OVERLAY,
-                    ClientVagrantTexture.RED,
-                    ClientVagrantTexture.GREEN,
-                    ClientVagrantTexture.BLUE,
-                    ClientVagrantTexture.HALO_ALPHAS[i]
-            );
-            poseStack.popPose();
-        }
-    }
-
     @Inject(method = "renderRightHand", at = @At("HEAD"), cancellable = true)
     private void requiemunofficial$hidePossessedSoulRightHand(PoseStack poseStack,
                                                               MultiBufferSource buffer,
@@ -203,22 +164,6 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
                 ClientVagrantTexture.BLUE,
                 ClientVagrantTexture.ALPHA
         );
-        // same halo passes as the body, so the first-person hand edge matches the third-person look
-        for (int i = 0; i < ClientVagrantTexture.HALO_SCALES.length; i++) {
-            poseStack.pushPose();
-            poseStack.scale(ClientVagrantTexture.HALO_SCALES[i], ClientVagrantTexture.HALO_SCALES[i], ClientVagrantTexture.HALO_SCALES[i]);
-            arm.render(
-                    poseStack,
-                    consumer,
-                    packedLight,
-                    OverlayTexture.NO_OVERLAY,
-                    ClientVagrantTexture.RED,
-                    ClientVagrantTexture.GREEN,
-                    ClientVagrantTexture.BLUE,
-                    ClientVagrantTexture.HALO_ALPHAS[i]
-            );
-            poseStack.popPose();
-        }
         return true;
     }
 
