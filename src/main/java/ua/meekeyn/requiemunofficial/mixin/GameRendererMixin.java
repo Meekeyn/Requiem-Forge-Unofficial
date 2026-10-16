@@ -9,6 +9,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionFx;
+import ua.meekeyn.requiemunofficial.client.ClientShadowPlayerFx;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 
 import java.util.function.Predicate;
@@ -17,10 +18,21 @@ import java.util.function.Predicate;
 public abstract class GameRendererMixin {
 
     /**
-     * Проигрывает анимацию входа в сущность. Точка вызова повторяет бету-16:
-     * Satin диспетчеризовал {@code ShaderEffectRenderCallback} сразу после
+     * Начало кадра: сбрасывает флаг отрисовки в цель {@code players}, чтобы
+     * первая же душа кадра очистила её (бета-16: {@code ShadowPlayerFx}
+     * делал это в {@code EntitiesPreRenderCallback}).
+     */
+    @Inject(method = "render(FJZ)V", at = @At("HEAD"))
+    private void requiemunofficial$beginShadowPlayerFrame(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+        ClientShadowPlayerFx.beginFrame();
+    }
+
+    /**
+     * Проигрывает пост-эффекты. Точка вызова повторяет бету-16: Satin
+     * диспетчеризовал {@code ShaderEffectRenderCallback} сразу после
      * {@code LevelRenderer.doEntityOutline()}, до ванильного
-     * {@code postEffect.process}.
+     * {@code postEffect.process}. К этому моменту и тело, и рука уже сброшены
+     * в цель {@code players} теневого игрока.
      */
     @Inject(
             method = "render(FJZ)V",
@@ -30,7 +42,8 @@ public abstract class GameRendererMixin {
                     shift = At.Shift.AFTER
             )
     )
-    private void requiemunofficial$renderPossessionZoom(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+    private void requiemunofficial$renderPostEffects(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+        ClientShadowPlayerFx.renderShaderEffects(partialTick);
         ClientPossessionFx.renderShaderEffects(partialTick);
     }
 

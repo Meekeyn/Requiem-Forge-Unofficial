@@ -86,6 +86,15 @@ public final class ClientDeathSuspensionFx {
         return !suspended || freezeTicks > FREEZE_ANIMATION_TICKS;
     }
 
+    /**
+     * Приостановлена ли смерть локального игрока (экран выбора души).
+     * Используется {@link ClientShadowPlayerFx}, чтобы игрок в это время
+     * выглядел как призрак — в бете-16 это был {@code isLifeTransient()}.
+     */
+    public static boolean isSuspended() {
+        return suspended;
+    }
+
     public static void playChoicePulse(SoulState choice) {
         playPulse(choice, VESSEL_PULSE_MAX_ALPHA);
     }

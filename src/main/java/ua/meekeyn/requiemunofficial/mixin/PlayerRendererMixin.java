@@ -18,34 +18,24 @@ import net.minecraft.client.renderer.entity.player.PlayerRenderer;
 import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import ua.meekeyn.requiemunofficial.client.ClientVagrantTexture;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionRenderHelper;
-import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
-import ua.meekeyn.requiemunofficial.common.soul.SoulState;
+import ua.meekeyn.requiemunofficial.client.ClientShadowPlayerFx;
 
 @Mixin(PlayerRenderer.class)
 public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
+
+    @Unique
+    private static boolean requiemunofficial$shadowHand;
 
     public PlayerRendererMixin(EntityRendererProvider.Context context,
                                PlayerModel<AbstractClientPlayer> model,
                                float shadowRadius) {
         super(context, model, shadowRadius);
-    }
-
-    @Inject(method = "setModelProperties", at = @At("TAIL"))
-    private void requiemunofficial$singleLayerVagrant(AbstractClientPlayer player, CallbackInfo ci) {
-        if (requiemunofficial$isVisibleVagrant(player)) {
-            PlayerModel<AbstractClientPlayer> model = getModel();
-            model.hat.visible = false;
-            model.jacket.visible = false;
-            model.leftSleeve.visible = false;
-            model.rightSleeve.visible = false;
-            model.leftPants.visible = false;
-            model.rightPants.visible = false;
-        }
     }
 
     @Inject(method = "render", at = @At("HEAD"), cancellable = true)
@@ -72,10 +62,6 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
             ci.cancel();
             return;
         }
-        if (requiemunofficial$renderVagrantArm(poseStack, buffer, packedLight, player, HumanoidArm.RIGHT)) {
-            ci.cancel();
-            return;
-        }
         if (requiemunofficial$shouldHideSoulHands(player)) {
             ci.cancel();
         }
@@ -91,13 +77,39 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
             ci.cancel();
             return;
         }
-        if (requiemunofficial$renderVagrantArm(poseStack, buffer, packedLight, player, HumanoidArm.LEFT)) {
-            ci.cancel();
-            return;
-        }
         if (requiemunofficial$shouldHideSoulHands(player)) {
             ci.cancel();
         }
+    }
+
+    /**
+     * Рука от первого лица бессмертной души рисуется в цель {@code players}
+     * пост-эффекта теневого игрока — точно так же, как тело от третьего лица.
+     * В бете-16 первое лицо этим эффектом не покрывалось (рука там либо
+     * скрывалась, либо рисовалась как рука хозяина), здесь рука и тело
+     * выглядят одинаково. Сам предмет в руке остаётся ванильным.
+     */
+    @Inject(method = "renderHand", at = @At("HEAD"))
+    private void requiemunofficial$captureShadowHand(PoseStack poseStack,
+                                                     MultiBufferSource buffer,
+                                                     int packedLight,
+                                                     AbstractClientPlayer player,
+                                                     ModelPart rightArm,
+                                                     ModelPart leftArm,
+                                                     CallbackInfo ci) {
+        requiemunofficial$shadowHand = ClientShadowPlayerFx.isShadowPlayer(player);
+    }
+
+    @ModifyArg(
+            method = "renderHand",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/MultiBufferSource;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"
+            ),
+            index = 0
+    )
+    private RenderType requiemunofficial$shadowHandRenderType(RenderType base) {
+        return requiemunofficial$shadowHand ? ClientShadowPlayerFx.getShadowRenderType(base) : base;
     }
 
     private static boolean requiemunofficial$renderPossessedBodyArm(PoseStack poseStack,
@@ -136,45 +148,8 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
         return true;
     }
 
-    private boolean requiemunofficial$renderVagrantArm(PoseStack poseStack,
-                                                       MultiBufferSource buffer,
-                                                       int packedLight,
-                                                       AbstractClientPlayer player,
-                                                       HumanoidArm armSide) {
-        if (!requiemunofficial$isVisibleVagrant(player)) {
-            return false;
-        }
-
-        PlayerModel<AbstractClientPlayer> playerModel = this.getModel();
-        playerModel.attackTime = 0.0F;
-        playerModel.crouching = false;
-        playerModel.swimAmount = 0.0F;
-        playerModel.setupAnim(player, 0.0F, 0.0F, player.tickCount, 0.0F, 0.0F);
-
-        ModelPart arm = armSide == HumanoidArm.RIGHT ? playerModel.rightArm : playerModel.leftArm;
-        arm.xRot = 0.0F;
-        VertexConsumer consumer = buffer.getBuffer(RenderType.entityTranslucent(ClientVagrantTexture.location()));
-        arm.render(
-                poseStack,
-                consumer,
-                packedLight,
-                OverlayTexture.NO_OVERLAY,
-                ClientVagrantTexture.RED,
-                ClientVagrantTexture.GREEN,
-                ClientVagrantTexture.BLUE,
-                ClientVagrantTexture.ALPHA
-        );
-        return true;
-    }
-
     private static boolean requiemunofficial$shouldHideSoulHands(AbstractClientPlayer player) {
         return ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player)
                 && ClientPossessionRenderHelper.getPossessedHost(player) != null;
-    }
-
-    private static boolean requiemunofficial$isVisibleVagrant(AbstractClientPlayer player) {
-        return SoulManager.getState(player) == SoulState.VAGRANT
-                && SoulManager.getPossessedEntityId(player) == null
-                && !player.isSpectator();
     }
 }

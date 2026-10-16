@@ -5,7 +5,9 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.monster.Spider;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -279,7 +281,7 @@ public final class ClientPossessionInput {
         if (PossessionManager.isUsingBeta16PlayerBody(minecraft.player)) {
             return;
         }
-        if (shouldAllowSkeletonSpiderMount(minecraft)) {
+        if (shouldAllowPossessedMount(minecraft)) {
             return;
         }
         if (!event.isAttack()
@@ -292,16 +294,31 @@ public final class ClientPossessionInput {
         event.setSwingHand(false);
     }
 
-    private static boolean shouldAllowSkeletonSpiderMount(Minecraft minecraft) {
+    // Left/right click is normally swallowed while possessing a host so the player's own body does
+    // not interact. Let it through for the specific mount targets (spider + undead horses) so the
+    // server-side riding events can put the possessed host onto the vehicle.
+    private static boolean shouldAllowPossessedMount(Minecraft minecraft) {
         if (!(minecraft.getCameraEntity() instanceof LivingEntity host)
-                || !host.getType().is(ModTags.HUMANOID_SKELETONS)
                 || host.isPassenger()
                 || minecraft.hitResult == null
-                || minecraft.hitResult.getType() != HitResult.Type.ENTITY
-                || !(((EntityHitResult) minecraft.hitResult).getEntity() instanceof Spider spider)) {
+                || minecraft.hitResult.getType() != HitResult.Type.ENTITY) {
             return false;
         }
-        return spider.getPassengers().isEmpty();
+        Entity target = ((EntityHitResult) minecraft.hitResult).getEntity();
+        if (!target.getPassengers().isEmpty()) {
+            return false;
+        }
+        boolean skeletonRider = host.getType().is(ModTags.HUMANOID_SKELETONS);
+        boolean zombieRider = host.getType().is(ModTags.HUMANOID_ZOMBIES);
+        if (target instanceof Spider) {
+            return skeletonRider;
+        }
+        if (target instanceof AbstractHorse horse) {
+            return horse.getMobType() == MobType.UNDEAD
+                    && host.getMobType() == MobType.UNDEAD
+                    && (skeletonRider || zombieRider);
+        }
+        return false;
     }
 
     private static boolean isMiningBlock(Minecraft minecraft) {

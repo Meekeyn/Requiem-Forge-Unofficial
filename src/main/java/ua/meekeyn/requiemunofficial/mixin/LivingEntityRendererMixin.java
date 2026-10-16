@@ -12,8 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionFx;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionRenderHelper;
-import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
-import ua.meekeyn.requiemunofficial.common.soul.SoulState;
+import ua.meekeyn.requiemunofficial.client.ClientShadowPlayerFx;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -21,16 +20,20 @@ import java.util.Iterator;
 @Mixin(LivingEntityRenderer.class)
 public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
 
-    @Inject(method = "getRenderType", at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$useTranslucentRenderType(T entity,
-                                                            boolean bodyVisible,
-                                                            boolean translucent,
-                                                            boolean glowing,
-                                                            CallbackInfoReturnable<RenderType> cir) {
-        if (requiemunofficial$isVisibleVagrantPlayer(entity)) {
-            cir.setReturnValue(RenderType.entityTranslucent(
-                    ua.meekeyn.requiemunofficial.client.ClientVagrantTexture.location()
-            ));
+    /**
+     * Тело бессмертной души рисуется не в главную цель, а в цель
+     * {@code players} пост-эффекта теневого игрока (бета-16: метод
+     * {@code PlayerRendererLayerMixin#requiem$replaceRenderLayer} возвращал
+     * {@code ShadowPlayerFx#getRenderLayer}).
+     */
+    @Inject(method = "getRenderType", at = @At("RETURN"), cancellable = true)
+    private void requiemunofficial$useShadowRenderType(T entity,
+                                                       boolean bodyVisible,
+                                                       boolean translucent,
+                                                       boolean glowing,
+                                                       CallbackInfoReturnable<RenderType> cir) {
+        if (entity instanceof AbstractClientPlayer player && ClientShadowPlayerFx.isShadowPlayer(player)) {
+            cir.setReturnValue(ClientShadowPlayerFx.getShadowRenderType(cir.getReturnValue()));
         }
     }
 
@@ -61,22 +64,11 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
     )
     private Iterator<RenderLayer<T, ?>> requiemunofficial$hideVagrantFeatureLayers(Iterator<RenderLayer<T, ?>> iterator,
                                                                                    T entity) {
-        if (requiemunofficial$isVisibleVagrantPlayer(entity)
-                || requiemunofficial$isHiddenPossessedSoulPlayer(entity)) {
+        if (entity instanceof AbstractClientPlayer player
+                && (ClientShadowPlayerFx.isShadowPlayer(player)
+                || ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player))) {
             return Collections.emptyIterator();
         }
         return iterator;
-    }
-
-    private static boolean requiemunofficial$isVisibleVagrantPlayer(LivingEntity entity) {
-        return entity instanceof AbstractClientPlayer player
-                && SoulManager.getState(player) == SoulState.VAGRANT
-                && SoulManager.getPossessedEntityId(player) == null
-                && !player.isSpectator();
-    }
-
-    private static boolean requiemunofficial$isHiddenPossessedSoulPlayer(LivingEntity entity) {
-        return entity instanceof AbstractClientPlayer player
-                && ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player);
     }
 }

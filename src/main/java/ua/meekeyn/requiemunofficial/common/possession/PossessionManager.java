@@ -188,6 +188,9 @@ public final class PossessionManager {
     private static final Map<UUID, Boolean> POSSESSION_TARGET_HINTS = new HashMap<>();
     private static final Map<UUID, List<Integer>> VAGRANT_SENSE_TARGETS = new HashMap<>();
     private static final Map<UUID, Long> POSSESSION_STARTED_AT = new HashMap<>();
+    private static final Map<UUID, Boolean> POSSESSED_RIDING_STATE = new HashMap<>();
+    private static final Map<UUID, Integer> SPIDER_AI_HOLD = new HashMap<>();
+    private static final int SPIDER_CONTROL_RETURN_TICKS = 6;
     private static final Set<String> ALEX_NIGHT_EYED = Set.of(
             "cave_centipede",
             "cockroach",
@@ -614,6 +617,8 @@ public final class PossessionManager {
             release(player, storedHost);
             return;
         }
+
+        handlePossessedRiderTransition(player, storedHost);
 
         if (usesBeta16PlayerBody(storedHost)) {
             updateBeta16PlayerBodyParameters(player, storedHost);
@@ -1256,7 +1261,11 @@ public final class PossessionManager {
     }
 
     public static boolean usesBeta16PlayerBody(LivingEntity host) {
-        return host != null && (host.getType().is(ModTags.HUMANOID_SKELETONS) || host instanceof Blaze);
+        // A possessed body that is riding a vehicle must be driven through the vehicle's own
+        // travel/ai pipeline (classic control) instead of the beta16 teleport-the-body mode.
+        return host != null
+                && !host.isPassenger()
+                && (host.getType().is(ModTags.HUMANOID_SKELETONS) || host instanceof Blaze);
     }
 
     public static void syncBeta16HostToPlayer(Player player, LivingEntity host) {
@@ -3087,6 +3096,7 @@ public final class PossessionManager {
         POSSESSION_INPUTS.remove(player.getUUID());
         POSSESSION_TARGET_HINTS.remove(player.getUUID());
         POSSESSION_STARTED_AT.remove(player.getUUID());
+        POSSESSED_RIDING_STATE.remove(player.getUUID());
         clearVagrantSenseTargets(player);
         ModNetwork.sendToConnectedPlayer(player, new PossessionTargetHintPacket(false));
         restoreBeta16PlayerBodyParameters(player);
@@ -3373,6 +3383,14 @@ public final class PossessionManager {
     public static void preparePossessedHostForAiStep(LivingEntity entity) {
         PossessionControl control = findPossessionControl(entity);
         if (control != null) {
+            if (isRiddenVehicleControl(control, entity)) {
+                prepareRiddenVehicleControl(control.player(), control.host(), entity);
+                return;
+            }
+            if (control.host() == entity && entity.isPassenger()) {
+                // A ridden host is a passive passenger; its vehicle's own aiStep drives movement.
+                return;
+            }
             if (usesBeta16PlayerBody(control.host())) {
                 suppressControlledMobAi(control.host());
                 return;
@@ -3384,6 +3402,13 @@ public final class PossessionManager {
     public static void finishPossessedHostAiStep(LivingEntity entity) {
         PossessionControl control = findPossessionControl(entity);
         if (control == null) {
+            return;
+        }
+        if (isRiddenVehicleControl(control, entity)) {
+            finishRiddenVehicleControl(control.player(), control.host());
+            return;
+        }
+        if (control.host() == entity && entity.isPassenger()) {
             return;
         }
         if (usesBeta16PlayerBody(control.host())) {
@@ -3418,6 +3443,14 @@ public final class PossessionManager {
         if (control == null) {
             return originalTravelVector;
         }
+        if (isRiddenVehicleControl(control, entity)) {
+            // The vehicle's input was already written during prepare; keep whatever the vehicle
+            // currently travels with so player input and spider AI never fight over the same tick.
+            return new Vec3(entity.xxa, entity.yya, entity.zza);
+        }
+        if (control.host() == entity && entity.isPassenger()) {
+            return originalTravelVector;
+        }
         if (usesBeta16PlayerBody(control.host())) {
             return Vec3.ZERO;
         }
@@ -3426,11 +3459,149 @@ public final class PossessionManager {
         return entity == movementHost ? new Vec3(entity.xxa, entity.yya, entity.zza) : originalTravelVector;
     }
 
+    private static boolean isRiddenVehicleControl(PossessionControl control, LivingEntity entity) {
+        LivingEntity host = control.host();
+        return host.isPassenger() && host.getVehicle() == entity;
+    }
+
+    private static void prepareRiddenVehicleControl(ServerPlayer player, LivingEntity host, LivingEntity vehicle) {
+        PossessionInput input = inputForPlayer(player);
+        if (input.shifting()) {
+            // Shift always dismounts the rider from its vehicle (spider or horse).
+            host.stopRiding();
+            if (vehicle instanceof Spider) {
+                host.setDeltaMovement(host.getDeltaMovement().add(0.0D, 0.08D, 0.0D));
+                host.hasImpulse = true;
+            }
+            return;
+        }
+        // The rider (camera body) always faces the player's look so bow/aim stay independent
+        // of whether the player or the vehicle's AI is currently driving movement.
+        applyControlledRotation(host, input.yRot(), input.xRot(), true);
+        if (vehicle instanceof Spider spider) {
+            driveRiddenSpider(player, spider, input);
+        } else if (vehicle instanceof AbstractHorse horse) {
+            driveRiddenHorse(player, horse, input);
+        }
+    }
+
+    private static void finishRiddenVehicleControl(ServerPlayer player, LivingEntity host) {
+        PossessionInput input = inputForPlayer(player);
+        applyControlledRotation(host, input.yRot(), input.xRot(), true);
+    }
+
+    private static void driveRiddenSpider(ServerPlayer player, Spider spider, PossessionInput input) {
+        UUID spiderId = spider.getUUID();
+        if (isSpiderAiActive(spider)) {
+            // Spider AI (chase/flee) has full priority: leave the spider's navigation and rotation
+            // untouched and never suppress its AI.
+            SPIDER_AI_HOLD.put(spiderId, SPIDER_CONTROL_RETURN_TICKS);
+            return;
+        }
+        int hold = SPIDER_AI_HOLD.getOrDefault(spiderId, 0);
+        if (hold > 0) {
+            // Small delay after AI stops before handing control back, to avoid jitter.
+            SPIDER_AI_HOLD.put(spiderId, hold - 1);
+            return;
+        }
+
+        // Player drives the spider at its normal speed; no artificial slowdown, no jump input,
+        // and sprint is ignored so it cannot accelerate. Wall climbing happens naturally through
+        // the spider's own travel because the entity_mobility profile marks it climbsWalls.
+        applyControlledYaw(spider, input.yRot(), true);
+        float forward = input.forward();
+        float strafe = input.strafe();
+        spider.setSpeed((float) spider.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        spider.xxa = strafe;
+        spider.zza = forward;
+        spider.hasImpulse = Math.abs(strafe) > 1.0E-4F || Math.abs(forward) > 1.0E-4F;
+    }
+
+    private static void driveRiddenHorse(ServerPlayer player, AbstractHorse horse, PossessionInput input) {
+        // Mirror vanilla ridden-horse input shaping: strafe halved, backward scaled to a quarter.
+        float forward = input.forward();
+        float strafe = input.strafe() * 0.5F;
+        if (forward <= 0.0F) {
+            forward *= 0.25F;
+        }
+        horse.setSpeed((float) horse.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        horse.xxa = strafe;
+        horse.zza = forward;
+        horse.hasImpulse = Math.abs(strafe) > 1.0E-4F || Math.abs(forward) > 1.0E-4F;
+        applyControlledYaw(horse, input.yRot(), true);
+        if (input.jumping() && horse.onGround()) {
+            jump(horse, EntityMobilityManager.get(horse.getType()));
+        }
+    }
+
+    private static boolean isSpiderAiActive(Spider spider) {
+        return spider.getTarget() != null || spider.getNavigation().isInProgress();
+    }
+
+    private static PossessionInput inputForPlayer(ServerPlayer player) {
+        return POSSESSION_INPUTS.getOrDefault(
+                player.getUUID(),
+                new PossessionInput(
+                        player.zza,
+                        player.xxa,
+                        false,
+                        player.isShiftKeyDown(),
+                        player.getYRot(),
+                        player.getXRot()
+                )
+        );
+    }
+
+    // Called from the vehicle mixin so a ridden spider keeps its MOVE/JUMP/LOOK goals enabled even
+    // though its controlling passenger is a Mob (which would otherwise disable them). Horses must
+    // NOT be preserved here so their panic/wander AI stays off while a rider steers them.
+    public static boolean shouldPreserveVehicleAi(Mob vehicle) {
+        return vehicle instanceof Spider && possessedRiderPassenger(vehicle) != null;
+    }
+
+    private static void handlePossessedRiderTransition(ServerPlayer player, LivingEntity host) {
+        UUID playerId = player.getUUID();
+        boolean riding = host.isPassenger();
+        boolean wasRiding = POSSESSED_RIDING_STATE.getOrDefault(playerId, false);
+        POSSESSED_RIDING_STATE.put(playerId, riding);
+        if (!wasRiding || riding) {
+            return;
+        }
+
+        // The rider just dismounted: hand the player's own body back and re-enter the beta16
+        // player-body mode (only humanoid hosts use it) so the host snaps back to being a body
+        // the player walks around in instead of a ridden vehicle.
+        restorePossessorBody(player);
+        if (player.connection != null && player.getCamera() != player) {
+            player.setCamera(player);
+        }
+        if (usesBeta16PlayerBody(host)) {
+            if (host instanceof Mob mob) {
+                mob.setNoAi(true);
+                mob.getNavigation().stop();
+                mob.setTarget(null);
+            }
+            host.noPhysics = true;
+            host.setNoGravity(true);
+            if (player.connection != null) {
+                player.connection.teleport(host.getX(), host.getY(), host.getZ(), host.getYRot(), host.getXRot());
+            } else {
+                player.absMoveTo(host.getX(), host.getY(), host.getZ(), host.getYRot(), host.getXRot());
+            }
+            player.setDeltaMovement(host.getDeltaMovement());
+            player.fallDistance = host.fallDistance;
+            syncBeta16HostToPlayer(player, host);
+        } else {
+            // Non-beta16 host: just re-anchor the camera/suppressed body onto the host.
+            syncPossessorToHost(player, host, true);
+        }
+    }
+
     private static PossessionControl findPossessionControl(LivingEntity entity) {
         LivingEntity host = entity;
         UUID possessorId = getPossessor(host);
         if (possessorId == null) {
-            host = possessedSkeletonPassenger(entity);
+            host = possessedRiderPassenger(entity);
             possessorId = host == null ? null : getPossessor(host);
         }
         if (host == null || possessorId == null || !(entity.level() instanceof ServerLevel level)) {
@@ -3444,14 +3615,21 @@ public final class PossessionManager {
         return new PossessionControl(player, host);
     }
 
-    private static LivingEntity possessedSkeletonPassenger(LivingEntity entity) {
-        if (!(entity instanceof Spider)) {
+    private static LivingEntity possessedRiderPassenger(LivingEntity entity) {
+        boolean spider = entity instanceof Spider;
+        boolean horse = entity instanceof AbstractHorse;
+        if (!spider && !horse) {
             return null;
         }
         for (Entity passenger : entity.getPassengers()) {
-            if (passenger instanceof LivingEntity living
-                    && living.getType().is(ModTags.HUMANOID_SKELETONS)
-                    && getPossessor(living) != null) {
+            if (!(passenger instanceof LivingEntity living) || getPossessor(living) == null) {
+                continue;
+            }
+            if (spider && living.getType().is(ModTags.HUMANOID_SKELETONS)) {
+                return living;
+            }
+            if (horse && (living.getType().is(ModTags.HUMANOID_SKELETONS)
+                    || living.getType().is(ModTags.HUMANOID_ZOMBIES))) {
                 return living;
             }
         }
@@ -3701,6 +3879,18 @@ public final class PossessionManager {
         entity.yBodyRotO = preservePrevious ? previousYBodyRot : yRot;
         entity.setXRot(xRot);
         entity.xRotO = preservePrevious ? previousXRot : xRot;
+    }
+
+    private static void applyControlledYaw(LivingEntity entity, float yRot, boolean preservePrevious) {
+        float previousYRot = entity.getYRot();
+        float previousYHeadRot = entity.yHeadRot;
+        float previousYBodyRot = entity.yBodyRot;
+        entity.setYRot(yRot);
+        entity.setYHeadRot(yRot);
+        entity.yBodyRot = yRot;
+        entity.yRotO = preservePrevious ? previousYRot : yRot;
+        entity.yHeadRotO = preservePrevious ? previousYHeadRot : yRot;
+        entity.yBodyRotO = preservePrevious ? previousYBodyRot : yRot;
     }
 
     private static boolean hasGroundSupport(LivingEntity host) {
