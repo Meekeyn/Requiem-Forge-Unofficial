@@ -116,6 +116,7 @@ import ua.meekeyn.requiemunofficial.mixin.GuardianAccessor;
 import ua.meekeyn.requiemunofficial.mixin.EntityAccessor;
 import ua.meekeyn.requiemunofficial.mixin.LivingEntityAccessor;
 import ua.meekeyn.requiemunofficial.mixin.ShulkerAccessor;
+import ua.meekeyn.requiemunofficial.mixin.WalkAnimationStateAccessor;
 import ua.meekeyn.requiemunofficial.mixin.BlazeAccessor;
 
 import java.util.Comparator;
@@ -1331,6 +1332,21 @@ public final class PossessionManager {
         host.verticalCollisionBelow = player.verticalCollisionBelow;
         host.setOnGround(player.onGround());
         host.hasImpulse = true;
+        // Хода окремих тіл (скелет/зомбі/blaze) не рухається у власному aiStep: travel
+        // перенаправлено, а хост лише телепортується з тіка гравця, тож його walkAnimation
+        // не бачить переміщення. Копіюємо стан кроку фізичного гравця — це суто візуальне
+        // джерело для моделі й не змінює керування тілом.
+        if (!usesExtendedPlayerBody(host)) {
+            copyWalkAnimation(player, host);
+        }
+    }
+
+    private static void copyWalkAnimation(LivingEntity source, LivingEntity target) {
+        WalkAnimationStateAccessor from = (WalkAnimationStateAccessor) source.walkAnimation;
+        WalkAnimationStateAccessor to = (WalkAnimationStateAccessor) target.walkAnimation;
+        to.requiemunofficial$setSpeedOld(from.requiemunofficial$getSpeedOld());
+        to.requiemunofficial$setWalkSpeed(from.requiemunofficial$getWalkSpeed());
+        to.requiemunofficial$setWalkPosition(from.requiemunofficial$getWalkPosition());
     }
 
     private static void syncBeta16HostItemUse(Player player, LivingEntity host) {

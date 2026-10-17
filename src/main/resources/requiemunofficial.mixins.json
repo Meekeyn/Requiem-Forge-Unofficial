@@ -38,6 +38,7 @@
     "TargetingConditionsMixin",
     "TridentItemMixin",
     "VillagerMixin",
+    "WalkAnimationStateAccessor",
     "WeightedPressurePlateBlockMixin",
     "WitchMixin"
   ],
