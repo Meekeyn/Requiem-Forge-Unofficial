@@ -4077,8 +4077,10 @@ public final class PossessionManager {
 
     private static double beta16PlayerBodyMovementSpeed(ServerPlayer player, LivingEntity host) {
         double hostSpeed = Math.max(0.0D, host.getAttributeValue(Attributes.MOVEMENT_SPEED));
-        if (usesExtendedPlayerBody(host) && host.isSprinting()) {
-            // Множник спринту вже застосовує фізичний гравець.
+        if (host.isSprinting()) {
+            // syncBeta16HostToPlayer дзеркалить прапорець спринту гравця на хоста, тому ванільний
+            // множник спринту вже вбудовано в атрибут хоста; фізичний гравець застосовує власний
+            // множник спринту поверх тому він не має подвоюватись для жодної категорії тіл.
             hostSpeed /= 1.3D;
         }
         double targetSpeed = isHumanoidWalkingHost(host)
@@ -4087,6 +4089,32 @@ public final class PossessionManager {
                 ? hostSpeed * SPECIAL_MOBILITY_CONTROL_SCALE
                 : hostSpeed;
         return Math.max(0.0D, targetSpeed);
+    }
+
+    /**
+     * The Player Body writes the host movement speed onto the physical player so the vanilla
+     * travel pipeline keeps the host's mobility, but vanilla also derives the FOV modifier from
+     * that same attribute, which would widen the camera for every possessed body. The FOV
+     * calculation therefore removes the body substitution and keeps the speed an unpossessed
+     * player would have, so sprint, Speed and Slowness still move the FOV like vanilla.
+     */
+    public static double beta16BodyFovMovementSpeed(Player player, double bodySpeed) {
+        AttributeInstance speed = player.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed == null) {
+            return bodySpeed;
+        }
+        AttributeModifier body = speed.getModifier(BETA16_PLAYER_SPEED_MODIFIER);
+        if (body == null) {
+            return bodySpeed;
+        }
+        double base = speed.getBaseValue();
+        double substituted = base + body.getAmount();
+        if (Math.abs(substituted) < 1.0E-6D) {
+            return base;
+        }
+        // The body speed is the substituted base multiplied by the remaining (sprint, effect)
+        // multipliers, so scaling by the pure base ratio restores the vanilla FOV speed exactly.
+        return bodySpeed * (base / substituted);
     }
 
     private static void applyBeta16MobilityToPlayer(ServerPlayer player, LivingEntity host) {

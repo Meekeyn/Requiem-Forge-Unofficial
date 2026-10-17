@@ -5049,6 +5049,24 @@ public final class CoreDataGameTests {
         helper.succeed();
     }
 
+    /**
+     * The zombie death resurrection rule only matches in darkness (light ≤ 8), so tests that
+     * resurrect from a zombie killing blow must not depend on the time of day the test happens
+     * to run at. Sealing the player cell in opaque blocks makes the light condition stable; the
+     * actual test body has to wait a few ticks because the light engine flushes asynchronously
+     * and would otherwise be observed with stale sky light.
+     */
+    private static void sealPlayerCellInDarkness(GameTestHelper helper, BlockPos playerCell) {
+        helper.setBlock(playerCell.offset(-1, 0, 0), net.minecraft.world.level.block.Blocks.STONE);
+        helper.setBlock(playerCell.offset(1, 0, 0), net.minecraft.world.level.block.Blocks.STONE);
+        helper.setBlock(playerCell.offset(0, -1, 0), net.minecraft.world.level.block.Blocks.STONE);
+        helper.setBlock(playerCell.offset(0, 1, 0), net.minecraft.world.level.block.Blocks.STONE);
+        helper.setBlock(playerCell.offset(0, 0, -1), net.minecraft.world.level.block.Blocks.STONE);
+        helper.setBlock(playerCell.offset(0, 0, 1), net.minecraft.world.level.block.Blocks.STONE);
+    }
+
+    private static final int SEALED_DARKNESS_SETTLE_TICKS = 5;
+
     @GameTest(template = "empty")
     public static void stage9DeathResurrectionBeatsShellCreation(GameTestHelper helper) {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
@@ -5057,24 +5075,27 @@ public final class CoreDataGameTests {
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-death-test")
         );
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
 
-        boolean resurrected = DeathResurrectionManager.tryHandleRemnantDeath(
-                player,
-                player.damageSources().mobAttack(zombie)
-        );
+        helper.runAfterDelay(SEALED_DARKNESS_SETTLE_TICKS, () -> {
+            boolean resurrected = DeathResurrectionManager.tryHandleRemnantDeath(
+                    player,
+                    player.damageSources().mobAttack(zombie)
+            );
 
-        helper.assertTrue(resurrected, "Matching death rule should resurrect the remnant");
-        helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
-                "Death resurrection should leave the player vagrant");
-        helper.assertTrue(SoulManager.getPlayerShellId(player) == null,
-                "Death resurrection must not create a Stage 8 shell");
-        helper.assertTrue(SoulManager.getPossessedEntityId(player) != null,
-                "Death resurrection should possess the resulting body");
-        helper.succeed();
+            helper.assertTrue(resurrected, "Matching death rule should resurrect the remnant");
+            helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
+                    "Death resurrection should leave the player vagrant");
+            helper.assertTrue(SoulManager.getPlayerShellId(player) == null,
+                    "Death resurrection must not create a Stage 8 shell");
+            helper.assertTrue(SoulManager.getPossessedEntityId(player) != null,
+                    "Death resurrection should possess the resulting body");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty")
@@ -5085,16 +5106,19 @@ public final class CoreDataGameTests {
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-duplicate-test")
         );
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
 
-        helper.assertTrue(DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
-                "First matching death should resurrect");
-        helper.assertTrue(!DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
-                "Second same-tick death should not create another body");
-        helper.succeed();
+        helper.runAfterDelay(SEALED_DARKNESS_SETTLE_TICKS, () -> {
+            helper.assertTrue(DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
+                    "First matching death should resurrect");
+            helper.assertTrue(!DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
+                    "Second same-tick death should not create another body");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty")
@@ -5105,6 +5129,7 @@ public final class CoreDataGameTests {
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-inventory-test")
         );
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
         ItemStack soulbound = new ItemStack(Items.AMETHYST_SHARD);
         soulbound.getOrCreateTag().putBoolean("RequiemSoulbound", true);
@@ -5114,16 +5139,18 @@ public final class CoreDataGameTests {
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
 
-        helper.assertTrue(DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
-                "Matching death should resurrect");
-        helper.assertTrue(player.getInventory().items.get(3).is(Items.AMETHYST_SHARD),
-                "Soulbound stack should remain soul-owned");
-        helper.assertTrue(player.getInventory().items.get(4).is(Items.DIRT)
-                        && player.getInventory().items.get(4).getCount() == 4,
-                "Forge death-resurrection adaptation must not duplicate or clear soul inventory");
-        helper.assertTrue(SoulLifecycleManager.findShell(player) == null,
-                "No shell should receive a duplicate body inventory");
-        helper.succeed();
+        helper.runAfterDelay(SEALED_DARKNESS_SETTLE_TICKS, () -> {
+            helper.assertTrue(DeathResurrectionManager.tryHandleRemnantDeath(player, player.damageSources().mobAttack(zombie)),
+                    "Matching death should resurrect");
+            helper.assertTrue(player.getInventory().items.get(3).is(Items.AMETHYST_SHARD),
+                    "Soulbound stack should remain soul-owned");
+            helper.assertTrue(player.getInventory().items.get(4).is(Items.DIRT)
+                            && player.getInventory().items.get(4).getCount() == 4,
+                    "Forge death-resurrection adaptation must not duplicate or clear soul inventory");
+            helper.assertTrue(SoulLifecycleManager.findShell(player) == null,
+                    "No shell should receive a duplicate body inventory");
+            helper.succeed();
+        });
     }
 
     @GameTest(template = "empty")
@@ -5666,6 +5693,125 @@ public final class CoreDataGameTests {
         PossessionManager.release(player, host);
         helper.assertTrue(Math.abs(playerSpeed.getValue() - playerBase) < 1.0E-6D,
                 "Release should restore the player's base movement speed");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void beta16PlayerBodyFovIgnoresHostSpeedSubstitution(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-fov-speed-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        SoulManager.setState(player, SoulState.VAGRANT);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(2, 2, 1)), 0.0F, 0.0F);
+        skeleton.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED).setBaseValue(0.35D);
+        helper.getLevel().addFreshEntity(skeleton);
+        EntitySoulManager.removeSoul(skeleton);
+
+        double walkFovSpeed = PossessionManager.beta16BodyFovMovementSpeed(
+                player, player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
+        helper.assertTrue(Math.abs(walkFovSpeed - player.getAbilities().getWalkingSpeed()) < 1.0E-6D,
+                "Unpossessed FOV speed must stay the vanilla player walking speed");
+
+        player.setSprinting(true);
+        double sprintFovSpeed = PossessionManager.beta16BodyFovMovementSpeed(
+                player, player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
+        helper.assertTrue(Math.abs(sprintFovSpeed - player.getAbilities().getWalkingSpeed() * 1.3D) < 1.0E-6D,
+                "Unpossessed sprint FOV speed must keep the vanilla sprint multiplier");
+
+        player.setSprinting(false);
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton), "Skeleton possession should start");
+        double bodySpeed = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(Math.abs(bodySpeed - 0.14D) < 1.0E-6D,
+                "Possessed skeleton body should carry the scaled host speed on the player attribute");
+        helper.assertTrue(Math.abs(PossessionManager.beta16BodyFovMovementSpeed(player, bodySpeed)
+                        - player.getAbilities().getWalkingSpeed()) < 1.0E-6D,
+                "Walking possessed FOV speed must ignore the host speed substitution");
+
+        player.setSprinting(true);
+        PossessionManager.controlHostForTest(player, skeleton);
+        PossessionManager.controlHostForTest(player, skeleton);
+        double sprintBodySpeed = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(Math.abs(sprintBodySpeed - 0.182D) < 1.0E-6D,
+                "Possessed skeleton sprint should apply the player sprint multiplier exactly once");
+        helper.assertTrue(Math.abs(PossessionManager.beta16BodyFovMovementSpeed(player, sprintBodySpeed)
+                        - player.getAbilities().getWalkingSpeed() * 1.3D) < 1.0E-6D,
+                "Sprinting possessed FOV speed must keep only the vanilla sprint multiplier");
+
+        PossessionManager.release(player, skeleton);
+        player.setSprinting(false);
+        double restoredFovSpeed = PossessionManager.beta16BodyFovMovementSpeed(
+                player, player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
+        helper.assertTrue(Math.abs(restoredFovSpeed - player.getAbilities().getWalkingSpeed()) < 1.0E-6D,
+                "Released player FOV speed must return to the vanilla walking speed");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void beta16SprintSpeedAppliesOncePerBodyCategory(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-sprint-once-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        SoulManager.setState(player, SoulState.VAGRANT);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(2, 2, 1)), 0.0F, 0.0F);
+        skeleton.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED).setBaseValue(0.35D);
+        helper.getLevel().addFreshEntity(skeleton);
+        EntitySoulManager.removeSoul(skeleton);
+
+        net.minecraft.world.entity.monster.Zombie zombie =
+                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
+        zombie.moveTo(helper.absolutePos(new BlockPos(3, 2, 1)), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(zombie);
+        EntitySoulManager.removeSoul(zombie);
+
+        net.minecraft.world.entity.monster.Spider spider =
+                new net.minecraft.world.entity.monster.Spider(EntityType.SPIDER, helper.getLevel());
+        spider.moveTo(helper.absolutePos(new BlockPos(4, 2, 1)), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(spider);
+        EntitySoulManager.removeSoul(spider);
+
+        player.setSprinting(true);
+
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton), "Skeleton possession should start");
+        PossessionManager.controlHostForTest(player, skeleton);
+        PossessionManager.controlHostForTest(player, skeleton);
+        helper.assertTrue(Math.abs(player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)
+                        - 0.182D) < 1.0E-6D,
+                "Humanoid body sprint must not stack the mirrored host sprint modifier");
+        PossessionManager.release(player, skeleton);
+
+        helper.assertTrue(PossessionManager.tryPossess(player, zombie), "Zombie possession should start");
+        PossessionManager.controlHostForTest(player, zombie);
+        PossessionManager.controlHostForTest(player, zombie);
+        helper.assertTrue(Math.abs(player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)
+                        - 0.23D * 0.4D * 1.3D) < 1.0E-6D,
+                "Zombie body sprint must not stack the mirrored host sprint modifier");
+        PossessionManager.release(player, zombie);
+
+        double spiderBase = spider.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(PossessionManager.tryPossess(player, spider), "Spider possession should start");
+        PossessionManager.controlHostForTest(player, spider);
+        PossessionManager.controlHostForTest(player, spider);
+        double spiderSprintSpeed = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+        helper.assertTrue(Math.abs(spiderSprintSpeed - spiderBase * 1.3D) < 1.0E-6D,
+                "Extended body sprint must keep the host base speed with a single player sprint multiplier");
+        PossessionManager.release(player, spider);
+
+        player.setSprinting(false);
+        helper.assertTrue(Math.abs(player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)
+                        - 0.1D) < 1.0E-6D,
+                "Release should restore the player base movement speed after every body category");
         helper.succeed();
     }
 
