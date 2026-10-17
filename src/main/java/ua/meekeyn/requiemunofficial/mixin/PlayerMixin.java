@@ -103,4 +103,9 @@ public abstract class PlayerMixin {
             cir.setReturnValue(cir.getReturnValue() * REQUIEMUNOFFICIAL_VAGRANT_SPRINT_MULTIPLIER);
         }
     }
+    @org.spongepowered.asm.mixin.injection.ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)
+    private net.minecraft.world.phys.Vec3 requiemunofficial$bodyTravel(net.minecraft.world.phys.Vec3 input) {
+        return ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.prepareTravel((Player) (Object) this, input);
+    }
+
 }

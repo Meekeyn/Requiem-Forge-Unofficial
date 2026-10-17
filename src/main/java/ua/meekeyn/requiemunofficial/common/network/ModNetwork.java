@@ -10,7 +10,7 @@ import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
 public final class ModNetwork {
 
-    private static final String PROTOCOL_VERSION = "16";
+    private static final String PROTOCOL_VERSION = "17";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ModIds.id("main"),
@@ -27,6 +27,9 @@ public final class ModNetwork {
     public static void register() {
         RequiemUnofficial.LOGGER.info("Registering network channel");
         nextId = 0;
+        CHANNEL.registerMessage(nextId(), MobilityProfilesPacket.class, MobilityProfilesPacket::encode,
+                MobilityProfilesPacket::decode, MobilityProfilesPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(
                 nextId(),
                 SyncSoulDataPacket.class,

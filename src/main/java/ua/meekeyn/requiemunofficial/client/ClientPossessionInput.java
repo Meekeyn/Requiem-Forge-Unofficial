@@ -160,7 +160,7 @@ public final class ClientPossessionInput {
 
     private static void applyLocalBeta16VerticalPrediction(Minecraft minecraft, LivingEntity host) {
         LocalPlayer player = minecraft.player;
-        if (player == null) {
+        if (player == null || PossessionManager.usesExtendedPlayerBody(host)) {
             return;
         }
 

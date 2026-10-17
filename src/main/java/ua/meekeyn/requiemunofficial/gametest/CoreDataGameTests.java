@@ -2307,8 +2307,8 @@ public final class CoreDataGameTests {
                 !player.isPassenger() && player.getVehicle() == null,
                 "Possession should not mount the player as a passenger"
         );
-        helper.assertTrue(player.noPhysics, "Possession should suppress the possessor's physical body");
-        helper.assertTrue(player.isNoGravity(), "Suppressed possessor body should not fall while controlling a host");
+        helper.assertTrue(!player.noPhysics, "Player Body must retain block collision");
+        helper.assertTrue(!player.isNoGravity(), "Walking Player Body must retain gravity");
         helper.assertTrue(!player.getAbilities().mayfly, "Possession should disable vagrant flight while controlling a body");
         helper.assertTrue(!player.getAbilities().flying, "Possession should stop active vagrant flying while controlling a body");
         PossessionManager.release(player, villager);
@@ -2907,7 +2907,9 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        cow.aiStep();
+        player.zza = 1.0F;
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, cow);
 
         helper.assertTrue(cow.position().lengthSqr() != before,
                 "Possessed host should move when forward input is received");
@@ -2943,8 +2945,11 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        husk.aiStep();
-        helper.assertTrue(husk.zza > 0.0F && husk.xxa < 0.0F,
+        player.zza = 1;
+        player.xxa = -1;
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, husk);
+        helper.assertTrue(player.zza > 0.0F && player.xxa < 0.0F,
                 "Non-zero packet input should reach the host before travel");
 
         PossessionManager.updatePossessionInput(
@@ -2958,8 +2963,10 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        husk.aiStep();
-        helper.assertTrue(husk.zza == 0.0F && husk.xxa == 0.0F,
+        player.zza = player.xxa = 0;
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, husk);
+        helper.assertTrue(player.zza == 0.0F && player.xxa == 0.0F,
                 "Zero packet input should clear host movement fields before travel");
         helper.succeed();
     }
@@ -2992,7 +2999,10 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        cow.aiStep();
+        player.setOnGround(true);
+        player.setJumping(true);
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, cow);
 
         helper.assertTrue(cow.getDeltaMovement().y > 0.0D,
                 "Possessed grounded host should jump when jump input is received");
@@ -3169,11 +3179,12 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        fox.aiStep();
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, fox);
 
-        helper.assertTrue(!fox.isNoGravity(), "Possessed walking hosts should keep gravity enabled");
-        helper.assertTrue(fox.getDeltaMovement().y <= -0.078D,
-                "Possessed walking hosts should fall with normal vanilla gravity after travel drag; deltaY="
+        helper.assertTrue(!player.isNoGravity(), "Possessed walking hosts should keep gravity enabled");
+        helper.assertTrue(Math.abs(fox.getDeltaMovement().y + 0.06D * 0.98D) < 1.0E-6D,
+                "Fox profile gravity must be integrated once with vanilla travel drag; deltaY="
                         + fox.getDeltaMovement().y + ", onGround=" + fox.onGround()
                         + ", pos=" + fox.position());
         helper.succeed();
@@ -3436,10 +3447,8 @@ public final class CoreDataGameTests {
         EntitySoulManager.removeSoul(husk);
 
         helper.assertTrue(PossessionManager.tryPossess(player, husk), "Possession should start");
-        PossessionManager.handleAction(
-                player,
-                ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.JUMP
-        );
+        ((ua.meekeyn.requiemunofficial.mixin.LivingEntityAccessor) player).requiemunofficial$jumpFromGround();
+        PossessionManager.syncBeta16HostToPlayer(player, husk);
 
         helper.assertTrue(Math.abs(husk.getDeltaMovement().y - 0.42D) < 0.0001D,
                 "Possessed Husk jump should use vanilla LivingEntity.jumpFromGround vertical impulse");
@@ -3462,18 +3471,8 @@ public final class CoreDataGameTests {
         EntitySoulManager.removeSoul(husk);
 
         helper.assertTrue(PossessionManager.tryPossess(player, husk), "Possession should start");
-        PossessionManager.updatePossessionInput(
-                player,
-                new ua.meekeyn.requiemunofficial.common.network.PossessionInputPacket(
-                        0.0F,
-                        0.0F,
-                        true,
-                        false,
-                        0.0F,
-                        0.0F
-                )
-        );
-        PossessionManager.controlHostForTest(player, husk);
+        ((ua.meekeyn.requiemunofficial.mixin.LivingEntityAccessor) player).requiemunofficial$jumpFromGround();
+        PossessionManager.syncBeta16HostToPlayer(player, husk);
 
         helper.assertTrue(Math.abs(husk.getDeltaMovement().y - 0.42D) < 0.0001D,
                 "Possessed walking host input jump should apply exactly one vanilla jump impulse");

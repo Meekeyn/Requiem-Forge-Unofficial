@@ -1285,8 +1285,12 @@ public final class PossessionManager {
         // travel/ai pipeline (classic control) instead of the beta16 teleport-the-body mode.
         return host != null
                 && !host.isPassenger()
-                && (host.getType().is(ModTags.HUMANOID_SKELETONS) || host instanceof Blaze
-                    || host.getType() == EntityType.ZOMBIE);
+                && host instanceof Mob;
+    }
+
+    public static boolean usesExtendedPlayerBody(LivingEntity host) {
+        return usesBeta16PlayerBody(host) && !host.getType().is(ModTags.HUMANOID_SKELETONS)
+                && !(host instanceof Blaze) && host.getType() != EntityType.ZOMBIE;
     }
 
     public static void syncBeta16HostToPlayer(Player player, LivingEntity host) {
@@ -1306,6 +1310,7 @@ public final class PossessionManager {
         host.setShiftKeyDown(player.isShiftKeyDown());
         host.setSprinting(player.isSprinting());
         host.setDeltaMovement(player.getDeltaMovement());
+        PlayerBodyMovement.syncAnimation(player, host);
         host.absMoveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
         syncBeta16HostItemUse(player, host);
         if (host.distanceToSqr(previousX, previousY, previousZ) < 0.25D) {
@@ -1669,7 +1674,7 @@ public final class PossessionManager {
                 && alexPath(type) == null;
     }
 
-    private static double jumpPower(LivingEntity host, EntityMobilityManager.MobilityProfile mobility) {
+    public static double jumpPower(LivingEntity host, EntityMobilityManager.MobilityProfile mobility) {
         EntityType<?> type = host.getType();
         String alexPath = alexPath(type);
         if (type == EntityType.FROG) {
@@ -2359,7 +2364,7 @@ public final class PossessionManager {
             if (!canStandAt(level, host, candidate)) {
                 continue;
             }
-            host.teleportTo(candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
+            teleportControlledBody(host, candidate.getX() + 0.5D, candidate.getY(), candidate.getZ() + 0.5D);
             host.level().playSound(null, host.blockPosition(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.HOSTILE, 1.0F, 1.0F);
             return;
         }
@@ -3000,10 +3005,25 @@ public final class PossessionManager {
 
         level.playSound(null, host.getX(), host.getY(), host.getZ(),
                 SoundEvents.ENDERMAN_TELEPORT, host.getSoundSource(), 1.0F, 1.0F);
-        host.teleportTo(target.x, target.y, target.z);
+        teleportControlledBody(host, target.x, target.y, target.z);
         level.playSound(null, target.x, target.y, target.z,
                 SoundEvents.ENDERMAN_TELEPORT, host.getSoundSource(), 1.0F, 1.0F);
         return true;
+    }
+
+    private static void teleportControlledBody(LivingEntity host, double x, double y, double z) {
+        PossessionControl control = usesExtendedPlayerBody(host) ? findPossessionControl(host) : null;
+        if (control != null) {
+            ServerPlayer player = control.player();
+            if (player.connection != null) {
+                player.connection.teleport(x, y, z, player.getYRot(), player.getXRot());
+            } else {
+                player.absMoveTo(x, y, z, player.getYRot(), player.getXRot());
+            }
+            syncBeta16HostToPlayer(player, host);
+        } else {
+            host.teleportTo(x, y, z);
+        }
     }
 
     private static Vec3 findHitBlockTeleportTarget(ServerLevel level, LivingEntity host, BlockPos hitBlock) {
@@ -3588,6 +3608,10 @@ public final class PossessionManager {
         return spider.getTarget() != null || spider.getNavigation().isInProgress();
     }
 
+    public static float playerBodyVerticalInput(ServerPlayer player) {
+        return verticalInput(inputForPlayer(player));
+    }
+
     private static PossessionInput inputForPlayer(ServerPlayer player) {
         PossessionInput input = POSSESSION_INPUTS.get(player.getUUID());
         long age = input == null ? -1L : player.level().getGameTime() - input.receivedAt();
@@ -4053,6 +4077,10 @@ public final class PossessionManager {
 
     private static double beta16PlayerBodyMovementSpeed(ServerPlayer player, LivingEntity host) {
         double hostSpeed = Math.max(0.0D, host.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        if (usesExtendedPlayerBody(host) && host.isSprinting()) {
+            // Множник спринту вже застосовує фізичний гравець.
+            hostSpeed /= 1.3D;
+        }
         double targetSpeed = isHumanoidWalkingHost(host)
                 ? hostSpeed * HUMANOID_PLAYER_BODY_SPEED_SCALE
                 : isBeta16FlyingHost(host)
@@ -4063,6 +4091,9 @@ public final class PossessionManager {
 
     private static void applyBeta16MobilityToPlayer(ServerPlayer player, LivingEntity host) {
         EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
+        if (usesExtendedPlayerBody(host)) {
+            return;
+        }
         applyBeta16FlightAbilities(player, host);
         PossessionInput input = inputForPlayer(player);
         if (!isBeta16FlyingHost(host)) {
@@ -4081,6 +4112,13 @@ public final class PossessionManager {
 
     private static void applyBeta16FlightAbilities(ServerPlayer player, LivingEntity host) {
         boolean flyingHost = isBeta16FlyingHost(host);
+        if (usesExtendedPlayerBody(host)) {
+            if (!player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
+                player.getPersistentData().putBoolean(ORIGINAL_PLAYER_MAYFLY, player.getAbilities().mayfly);
+                player.getPersistentData().putBoolean(ORIGINAL_PLAYER_FLYING, player.getAbilities().flying);
+            }
+            flyingHost = false;
+        }
         player.setNoGravity(flyingHost);
         if (player.isCreative() || player.isSpectator()) {
             return;

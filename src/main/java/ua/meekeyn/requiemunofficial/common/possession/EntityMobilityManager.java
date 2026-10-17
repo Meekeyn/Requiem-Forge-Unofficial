@@ -29,6 +29,7 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
 
     private static final ResourceLocation RESOURCE = ModIds.id("entity_mobility.json");
     private static volatile Map<ResourceLocation, MobilityProfile> profiles = Map.of();
+    private static volatile Map<ResourceLocation, MobilityProfile> clientProfiles = Map.of();
     private static final List<Function<LivingEntity, MobilityProfile>> resolvers = new CopyOnWriteArrayList<>();
 
     private EntityMobilityManager() {
@@ -63,7 +64,8 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
     }
 
     public static MobilityProfile get(LivingEntity entity) {
-        MobilityProfile configured = profiles.get(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
+        MobilityProfile configured = (entity.level().isClientSide() && PossessionManager.usesExtendedPlayerBody(entity)
+                ? clientProfiles : profiles).get(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
         if (configured != null) {
             return configured;
         }
@@ -85,8 +87,25 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
             return new MobilityProfile(MobilityMode.DISABLED, MobilityMode.FORCED, WalkMode.NORMAL,
                     0.08D, 0.35D, 0.0D, 0.0D, 0.0D, false, false, false);
         }
-        // Невідомі реалізації зберігають власний travel та стандартні атрибути фізики.
+        // Невідомі наземні види використовують стандартні параметри Player Body.
         return MobilityProfile.DEFAULT;
+    }
+
+    @SubscribeEvent
+    public static void syncProfiles(net.minecraftforge.event.OnDatapackSyncEvent event) {
+        var packet = new ua.meekeyn.requiemunofficial.common.network.MobilityProfilesPacket(
+                new com.google.gson.Gson().toJson(profiles));
+        if (event.getPlayer() != null) {
+            ua.meekeyn.requiemunofficial.common.network.ModNetwork.sendToConnectedPlayer(event.getPlayer(), packet);
+        } else {
+            for (var player : event.getPlayerList().getPlayers()) {
+                ua.meekeyn.requiemunofficial.common.network.ModNetwork.sendToConnectedPlayer(player, packet);
+            }
+        }
+    }
+
+    public static void applyClientProfiles(String json) {
+        clientProfiles = Map.copyOf(parse(JsonParser.parseString(json).getAsJsonObject()));
     }
 
     public static Map<ResourceLocation, MobilityProfile> parse(JsonObject root) {

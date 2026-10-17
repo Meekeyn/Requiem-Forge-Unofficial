@@ -55,6 +55,9 @@ public abstract class LivingEntityMixin {
     @Inject(method = "aiStep", at = @At("HEAD"))
     private void requiemunofficial$preparePossessedHostInput(CallbackInfo ci) {
         LivingEntity self = (LivingEntity) (Object) this;
+        if (self instanceof net.minecraft.world.entity.player.Player player) {
+            ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.prepareStep(player);
+        }
         if (!self.level().isClientSide()) {
             PossessionManager.preparePossessedHostForAiStep(self);
         }
@@ -73,4 +76,39 @@ public abstract class LivingEntityMixin {
     private void requiemunofficial$usePossessedTravelInput(LivingEntity self, Vec3 travelVector) {
         ua.meekeyn.requiemunofficial.common.possession.PossessionMovementController.travel(self, travelVector);
     }
+    @Redirect(method = "travel", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/ai/attributes/AttributeInstance;getValue()D"))
+    private double requiemunofficial$bodyGravity(net.minecraft.world.entity.ai.attributes.AttributeInstance gravity) {
+        double value = gravity.getValue();
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player) {
+            LivingEntity host = ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.host(player);
+            if (host != null) {
+                value *= ua.meekeyn.requiemunofficial.common.possession.EntityMobilityManager.get(host).gravity() / 0.08D;
+            }
+        }
+        return value;
+    }
+
+    @Inject(method = "getJumpPower", at = @At("RETURN"), cancellable = true)
+    private void requiemunofficial$bodyJumpPower(CallbackInfoReturnable<Float> cir) {
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player) {
+            cir.setReturnValue(ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.jumpPower(player, cir.getReturnValue()));
+        }
+    }
+
+    @Inject(method = "jumpFromGround", at = @At("RETURN"))
+    private void requiemunofficial$bodyJumpAnimation(CallbackInfo ci) {
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player) {
+            ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.afterJump(player);
+        }
+    }
+
+    @Inject(method = "onClimbable", at = @At("RETURN"), cancellable = true)
+    private void requiemunofficial$bodyClimbing(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player
+                && ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.climbs(player)) {
+            cir.setReturnValue(true);
+        }
+    }
+
 }

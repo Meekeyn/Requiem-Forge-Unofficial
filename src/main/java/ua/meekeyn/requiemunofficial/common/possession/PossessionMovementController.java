@@ -32,7 +32,10 @@ public final class PossessionMovementController {
 
     public static void travel(LivingEntity body, Vec3 input) {
         // Відображуване тіло копіює позицію гравця; друга фізика зсунула б його повторно.
-        if (PossessionManager.usesBeta16PlayerBody(body) && PossessionManager.getPossessorId(body) != null) {
+        boolean clientProxy = body.level().isClientSide() && PossessionManager.usesExtendedPlayerBody(body)
+                && body.level().players().stream().anyMatch(player -> PossessionManager.isBeta16HostForPlayer(player, body));
+        if (PossessionManager.usesBeta16PlayerBody(body)
+                && (PossessionManager.getPossessorId(body) != null || clientProxy)) {
             body.calculateEntityAnimation(false);
             return;
         }
@@ -60,15 +63,7 @@ public final class PossessionMovementController {
         });
     }
 
-    public static Vec3 prepareTravel(LivingEntity body, Vec3 input,
-                                     EntityMobilityManager.MobilityProfile profile) {
-        if (body.getType().is(ModTags.IMMOVABLE)) {
-            body.xxa = body.yya = body.zza = 0.0F;
-            return Vec3.ZERO;
-        }
-        boolean swimming = profile.canSwim() && body.isInWater();
-        boolean flying = !swimming && (profile.forcesFlight()
-                || profile.canFly() && (!body.onGround() || input.y > 0.0D));
+    public static void updateFlightState(LivingEntity body, EntityMobilityManager.MobilityProfile profile, boolean flying) {
         if (profile.canFly() && !FAILED_FLIGHT_SETTERS.contains(body.getClass())
                 && "alexsmobs".equals(BuiltInRegistries.ENTITY_TYPE.getKey(body.getType()).getNamespace())) {
             // Використовуємо власний стан польоту мода для навігації та анімації крил.
@@ -85,6 +80,18 @@ public final class PossessionMovementController {
                 }
             });
         }
+    }
+
+    public static Vec3 prepareTravel(LivingEntity body, Vec3 input,
+                                     EntityMobilityManager.MobilityProfile profile) {
+        if (body.getType().is(ModTags.IMMOVABLE)) {
+            body.xxa = body.yya = body.zza = 0.0F;
+            return Vec3.ZERO;
+        }
+        boolean swimming = profile.canSwim() && body.isInWater();
+        boolean flying = !swimming && (profile.forcesFlight()
+                || profile.canFly() && (!body.onGround() || input.y > 0.0D));
+        updateFlightState(body, profile, flying);
         if (flying && body instanceof Bat bat) {
             bat.setResting(false);
         }
