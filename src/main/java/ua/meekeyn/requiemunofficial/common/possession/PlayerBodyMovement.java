@@ -19,6 +19,18 @@ public final class PlayerBodyMovement {
         return PossessionManager.usesExtendedPlayerBody(host) ? host : null;
     }
 
+    public static boolean usesGroundMoveControl(LivingEntity host) {
+        if (!(host instanceof net.minecraft.world.entity.Mob mob)
+                || !PossessionManager.usesExtendedPlayerBody(host)
+                || host.getType().is(ModTags.HUMANOID_ZOMBIES)
+                || mob.getMoveControl().getClass() != net.minecraft.world.entity.ai.control.MoveControl.class
+                || host.getType().is(ModTags.IMMOVABLE)) return false;
+        var profile = EntityMobilityManager.get(host);
+        return !profile.canFly()
+                && profile.walkMode() == EntityMobilityManager.WalkMode.NORMAL
+                && profile.landedSpeedModifier() == 0;
+    }
+
     public static void prepareStep(Player player) {
         LivingEntity host = host(player);
         var state = player.getPersistentData();
@@ -79,6 +91,12 @@ public final class PlayerBodyMovement {
             return Vec3.ZERO;
         }
         boolean fluid = player.isInWater() || player.isInLava();
+        if (!fluid && usesGroundMoveControl(host)) {
+            // Mob.setSpeed feeds both acceleration and input; keep vanilla input normalization and air control.
+            player.setSpeed((float) player.getAttributeValue(Attributes.MOVEMENT_SPEED));
+            double length = input.horizontalDistance();
+            return input.scale(player.getSpeed() * (length > 0.98F ? 0.98F / length : 1.0D));
+        }
         boolean swim = fluid && profile.canSwim();
         boolean fly = !fluid && player.isNoGravity() && profile.canFly();
         double modifier = fluid ? profile.waterSpeedModifier()

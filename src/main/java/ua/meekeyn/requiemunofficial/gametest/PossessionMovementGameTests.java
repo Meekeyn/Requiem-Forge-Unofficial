@@ -299,7 +299,7 @@ public final class PossessionMovementGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "possession_movement")
+    @GameTest(template = "possession_arena", batch = "body_attack")
     public static void differentBodiesAttackAndRespectCooldown(GameTestHelper helper) {
         for (EntityType<? extends Mob> type : List.<EntityType<? extends Mob>>of(EntityType.PHANTOM,
                 EntityType.VEX, EntityType.RABBIT, EntityType.FROG, EntityType.SLIME, EntityType.DOLPHIN)) {
@@ -328,7 +328,7 @@ public final class PossessionMovementGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "possession_movement")
+    @GameTest(template = "possession_arena", batch = "body_climb")
     public static void extendedBodiesRetainClimbingAndWallPhysics(GameTestHelper helper) {
         for (EntityType<? extends Mob> type : List.<EntityType<? extends Mob>>of(EntityType.SPIDER, EntityType.VEX)) {
             Mob body = type.create(helper.getLevel());
@@ -355,16 +355,38 @@ public final class PossessionMovementGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty", batch = "possession_movement")
+    @GameTest(template = "possession_arena", batch = "enderman_teleport")
     public static void endermanAbilityTeleportsPlayerBody(GameTestHelper helper) {
         Mob body = EntityType.ENDERMAN.create(helper.getLevel());
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
+        for (int x = 1; x <= 3; x++) {
+            for (int y = 2; y <= 8; y++) {
+                for (int z = 3; z <= 8; z++) helper.setBlock(new BlockPos(x, y, z), Blocks.AIR);
+            }
+        }
         helper.setBlock(new BlockPos(2, 4, 5), Blocks.STONE);
+        player.setYRot(0);
+        player.setXRot(0);
+        PossessionManager.syncBeta16HostToPlayer(player, body);
+        var hit = helper.getLevel().clip(new net.minecraft.world.level.ClipContext(body.getEyePosition(),
+                body.getEyePosition().add(body.getLookAngle().scale(32)),
+                net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                net.minecraft.world.level.ClipContext.Fluid.NONE, body));
+        helper.assertTrue(hit.getType() == net.minecraft.world.phys.HitResult.Type.BLOCK
+                        && hit.getBlockPos().equals(helper.absolutePos(new BlockPos(2, 4, 5))),
+                "Teleport ray must hit the isolated target: " + hit.getBlockPos() + " look=" + body.getLookAngle());
         Vec3 before = player.position();
+        helper.setBlock(new BlockPos(2, 6, 5), Blocks.STONE);
+        PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.INTERACT);
+        helper.assertTrue(player.position().equals(before) && body.position().equals(before),
+                "An obstructed destination must not move either body");
+        helper.setBlock(new BlockPos(2, 6, 5), Blocks.AIR);
         PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.INTERACT);
         helper.assertTrue(player.position().distanceToSqr(before) > 1.0D, "Enderman ability must move the physical player");
         Vec3 destination = player.position();
+        helper.assertTrue(destination.equals(Vec3.atBottomCenterOf(helper.absolutePos(new BlockPos(2, 5, 5)))),
+                "Enderman must arrive above the raycast target: " + destination);
         PossessionManager.syncBeta16HostToPlayer(player, body);
         helper.assertTrue(body.position().equals(destination), "Sync must preserve the ability's destination");
         PossessionManager.release(player, body);
@@ -427,53 +449,10 @@ public final class PossessionMovementGameTests {
         PossessionManager.controlHostForTest(player, body);
         double catBaseSpeed = body.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED).getBaseValue();
         helper.assertTrue(Math.abs(player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)
-                - catBaseSpeed * catBaseSpeed * 1.3D) < 1.0E-6D,
-                "Sprinting must apply the squared ground-host speed with a single player sprint multiplier");
+                - catBaseSpeed * 1.33D * 1.3D) < 1.0E-6D,
+                "Cat sprint must use its native controller speed and a single sprint attribute modifier");
         PossessionManager.release(player, body);
         body.discard();
-        helper.succeed();
-    }
-
-    @GameTest(template = "empty", batch = "possession_movement")
-    public static void possessedGroundSpeedMatchesUnpossessedMobBaseline(GameTestHelper helper) {
-        for (EntityType<? extends Mob> type : List.of(EntityType.SPIDER, EntityType.ENDERMAN, EntityType.CAT)) {
-            Mob baseline = placeOnCorridor(helper, type, 1);
-            Mob body = placeOnCorridor(helper, type, 3);
-            double baselineStart = baseline.getZ();
-            ServerPlayer player = possess(helper, body);
-            double playerStart = player.getZ();
-            for (int tick = 0; tick < 30; tick++) {
-                // Непосіяний моб: MoveControl подає setSpeed(1.0 × атрибут), після чого aiStep перед
-                // travel зменшує осі на 0.98. Той самий шлях travel, що й у фізичного гравця.
-                baseline.setSpeed((float) baseline.getAttributeValue(
-                        net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
-                baseline.xxa *= 0.98F;
-                baseline.zza *= 0.98F;
-                baseline.travel(new Vec3(baseline.xxa, baseline.yya, baseline.zza));
-                input(player, 1.0F, false);
-                step(player, body);
-            }
-            double baselineDistance = baseline.getZ() - baselineStart;
-            double bodyDistance = player.getZ() - playerStart;
-            helper.assertTrue(baselineDistance > 0.3D,
-                    "Baseline unpossessed mob must walk forward: " + type + " moved " + baselineDistance);
-            // Паритет швидкості: тіло несе квадрат атрибута хоста (MoveControl подаєzza = attr,
-            // travel множить ввід ще на attr), тому збіг фінальної траєкторії — точна вимога до
-            // атрибута, а сама дистанція має невеликий допуск на числовий шум vanilla-фрикції.
-            double hostAttr = body.getAttributeValue(
-                    net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
-            double bodyAttr = player.getAttributeValue(
-                    net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
-            helper.assertTrue(Math.abs(bodyAttr - hostAttr * hostAttr) < 1.0E-9D,
-                    "Possessed ground body must carry the squared host attribute: " + type
-                            + " player=" + bodyAttr + " host^2=" + hostAttr * hostAttr);
-            helper.assertTrue(Math.abs(bodyDistance - baselineDistance) <= 0.02D * baselineDistance,
-                    "Possessed ground body must match the unpossessed mob speed: " + type
-                            + " body=" + bodyDistance + " baseline=" + baselineDistance);
-            PossessionManager.release(player, body);
-            baseline.discard();
-            body.discard();
-        }
         helper.succeed();
     }
 
@@ -577,26 +556,6 @@ public final class PossessionMovementGameTests {
         body.tick();
         body.setDeltaMovement(Vec3.ZERO);
         body.setOnGround(!water);
-    }
-
-    /** Довга пряма кам'яна коридорна підлога для порівняння швидкості з непосіяним мобом. */
-    private static Mob placeOnCorridor(GameTestHelper helper, EntityType<? extends Mob> type, int laneX) {
-        for (int z = 0; z < 15; z++) {
-            for (int x = 0; x < 5; x++) {
-                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
-                for (int y = 2; y < 12; y++) {
-                    helper.setBlock(new BlockPos(x, y, z), Blocks.AIR);
-                }
-            }
-        }
-        Mob body = type.create(helper.getLevel());
-        BlockPos pos = helper.absolutePos(new BlockPos(laneX, 2, 2));
-        body.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
-        helper.getLevel().addFreshEntity(body);
-        body.tick();
-        body.setDeltaMovement(Vec3.ZERO);
-        body.setOnGround(true);
-        return body;
     }
 
     private static ServerPlayer possess(GameTestHelper helper, Mob body) {

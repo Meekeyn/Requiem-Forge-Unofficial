@@ -5804,8 +5804,8 @@ public final class CoreDataGameTests {
         PossessionManager.controlHostForTest(player, spider);
         PossessionManager.controlHostForTest(player, spider);
         double spiderSprintSpeed = player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
-        helper.assertTrue(Math.abs(spiderSprintSpeed - spiderBase * spiderBase * 1.3D) < 1.0E-6D,
-                "Extended ground body sprint must carry the squared host speed with a single player sprint multiplier");
+        helper.assertTrue(Math.abs(spiderSprintSpeed - spiderBase * 1.3D) < 1.0E-6D,
+                "Ground body must carry the native speed with a single sprint attribute modifier");
         PossessionManager.release(player, spider);
 
         player.setSprinting(false);

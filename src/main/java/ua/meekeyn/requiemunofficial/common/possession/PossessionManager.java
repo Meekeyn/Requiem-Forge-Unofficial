@@ -1300,6 +1300,9 @@ public final class PossessionManager {
         double previousX = host.getX();
         double previousY = host.getY();
         double previousZ = host.getZ();
+        if (!player.isInWater() && !player.isInLava() && PlayerBodyMovement.usesGroundMoveControl(host)) {
+            host.setSprinting(player.isSprinting());
+        }
         if (player instanceof ServerPlayer serverPlayer) {
             updateBeta16PlayerBodyParameters(serverPlayer, host);
         }
@@ -4085,7 +4088,13 @@ public final class PossessionManager {
         }
         EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         double targetSpeed;
-        if (isHumanoidWalkingHost(host)) {
+        if (PlayerBodyMovement.usesGroundMoveControl(host) && !player.isInWater() && !player.isInLava()) {
+            // Cat.customServerAiStep selects MoveControl's 1.33 speed modifier when sprinting.
+            double controlSpeed = host instanceof net.minecraft.world.entity.npc.Villager
+                    ? net.minecraft.world.entity.npc.Villager.SPEED_MODIFIER
+                    : host instanceof net.minecraft.world.entity.animal.Cat && player.isSprinting() ? 1.33D : 1.0D;
+            targetSpeed = hostSpeed * controlSpeed;
+        } else if (isHumanoidWalkingHost(host)) {
             targetSpeed = hostSpeed * HUMANOID_PLAYER_BODY_SPEED_SCALE;
         } else if (mobility.canFly()
                 || mobility.canSwim() && (host.isInWater() || isInPossessedLavaFluid(host))) {
@@ -4094,11 +4103,7 @@ public final class PossessionManager {
             // вони використовують ту саму special-mobility шкалу, що й польоти.
             targetSpeed = hostSpeed * SPECIAL_MOBILITY_CONTROL_SCALE;
         } else {
-            // Ванільний наземний моб прискорюється на (speedModifier × attr)²: MoveControl подає не
-            // нормалізований ввід zza = speedModifier × attr, а travel множить цей ввід ще на цей
-            // самий атрибут (getFrictionInfluencedSpeed). Гравець із одиничним ввідом клавіатури
-            // отримує прискорення рівне своєму атрибуту, тому тіло має нести квадрат атрибута хоста
-            // (при speedModifier 1.0), щоб наземний рух збігався з непосіяним мобом.
+            // shortcut: custom ground controllers retain the WIP mapping; validate their own physics before extending the adapter.
             targetSpeed = hostSpeed * hostSpeed;
         }
         return Math.max(0.0D, targetSpeed);
