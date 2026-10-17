@@ -204,6 +204,8 @@ public final class ClientVagrantState {
                     leafPhaseGraceTicks = 0;
                     VagrantRules.setLeafPhaseActive(player, false);
                 }
+            } else if (insideLeaves) {
+                phaseChargeTicks = Math.min(VagrantRules.PHASE_REQUIRED_TICKS, phaseChargeTicks + 1);
             }
             updateClientLeafPhaseCharge(player, phaseAttempt, insideLeaves);
         } else if (phaseAttempt) {

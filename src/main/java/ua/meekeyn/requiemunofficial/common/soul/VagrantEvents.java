@@ -328,6 +328,12 @@ public final class VagrantEvents {
                     player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, 0);
                     VagrantRules.setLeafPhaseActive(player, false);
                 }
+            } else if (insideLeaves) {
+                int ticks = player.getPersistentData().getInt(VagrantRules.PHASE_CHARGE_TICKS);
+                player.getPersistentData().putInt(
+                        VagrantRules.PHASE_CHARGE_TICKS,
+                        Math.min(VagrantRules.PHASE_REQUIRED_TICKS, ticks + 1)
+                );
             }
             updateLeafPhaseCharge(player, attempting, insideLeaves);
         } else if (attempting || VagrantRules.isPhaseCharged(player) && VagrantRules.shouldChargePhaseEntry(player)) {

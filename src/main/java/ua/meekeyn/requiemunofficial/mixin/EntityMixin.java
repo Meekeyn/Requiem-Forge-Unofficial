@@ -120,7 +120,6 @@ public abstract class EntityMixin {
                                                                                boolean leavesOnly) {
         List<VoxelShape> shapes = new java.util.ArrayList<>();
         VoxelShape entityShape = Shapes.create(box);
-        boolean leafSolidPassage = VagrantRules.isLeafPhaseSolidPassage(player);
         int minX = Mth.floor(box.minX);
         int minY = Mth.floor(box.minY);
         int minZ = Mth.floor(box.minZ);
@@ -129,7 +128,7 @@ public abstract class EntityMixin {
         int maxZ = Mth.floor(box.maxZ);
         for (BlockPos pos : BlockPos.betweenClosed(minX, minY, minZ, maxX, maxY, maxZ)) {
             BlockState state = level.getBlockState(pos);
-            if (state.isAir() || VagrantRules.shouldSuppressCollisionWith(player, state, leafSolidPassage)) {
+            if (state.isAir() || VagrantRules.shouldSuppressCollisionWith(player, state)) {
                 continue;
             }
             VoxelShape shape = state.getCollisionShape(level, pos).move(pos.getX(), pos.getY(), pos.getZ());

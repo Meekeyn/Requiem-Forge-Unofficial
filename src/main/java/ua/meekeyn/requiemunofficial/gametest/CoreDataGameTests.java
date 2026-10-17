@@ -1819,35 +1819,33 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 List.of()
         );
-        helper.assertTrue(crownStairs.x > 0.95D, "Inside the leaf crown the vagrant should pass adjacent stairs");
-        helper.assertTrue(crownSlab.z > 0.95D, "Inside the leaf crown the vagrant should pass adjacent slab");
+        helper.assertTrue(crownStairs.x < 1.0D, "Leaf-only phasing must keep adjacent stair collision");
+        helper.assertTrue(crownSlab.z < 1.0D, "Leaf-only phasing must keep adjacent slab collision");
 
-        player.moveTo(helper.absolutePos(new BlockPos(5, 2, 1)), 0.0F, 0.0F);
-        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(6, 2, 1)),
-                net.minecraft.world.level.block.Blocks.STONE_STAIRS.defaultBlockState(), 3);
-        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(5, 2, 2)),
-                net.minecraft.world.level.block.Blocks.STONE_SLAB.defaultBlockState(), 3);
-        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(7, 2, 1)),
-                net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState(), 3);
+        for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS; i++) {
+            tickVagrantPlayer(player);
+        }
+        helper.assertTrue(VagrantRules.isPhaseCharged(player),
+                "Staying inside the leaf crown should fill the 60 tick solid passage charge");
 
-        net.minecraft.world.phys.AABB openBox = player.getBoundingBox();
-        net.minecraft.world.phys.Vec3 openStairs = net.minecraft.world.entity.Entity.collideBoundingBox(
+        net.minecraft.world.phys.Vec3 chargedStairs = net.minecraft.world.entity.Entity.collideBoundingBox(
                 player,
                 new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D),
-                openBox,
+                player.getBoundingBox(),
                 helper.getLevel(),
                 List.of()
         );
-        net.minecraft.world.phys.Vec3 openSlab = net.minecraft.world.entity.Entity.collideBoundingBox(
+        net.minecraft.world.phys.Vec3 chargedSlab = net.minecraft.world.entity.Entity.collideBoundingBox(
                 player,
                 new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D),
-                openBox,
+                player.getBoundingBox(),
                 helper.getLevel(),
                 List.of()
         );
-
-        helper.assertTrue(openStairs.x < 1.0D, "Leaf-only phasing must keep adjacent stair collision outside the crown");
-        helper.assertTrue(openSlab.z < 1.0D, "Leaf-only phasing must keep adjacent slab collision outside the crown");
+        helper.assertTrue(chargedStairs.x > 0.95D,
+                "After the 60 tick charge the vagrant should pass the adjacent stairs");
+        helper.assertTrue(chargedSlab.z > 0.95D,
+                "After the 60 tick charge the vagrant should pass the adjacent slab");
         helper.succeed();
     }
 
@@ -2055,15 +2053,16 @@ public final class CoreDataGameTests {
 
         double stoneX = player.getX();
         player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D));
-        helper.assertTrue(player.getX() - stoneX > 0.95D,
-                "Inside the leaf crown the vagrant should cross the stone behind the leaves");
+        helper.assertTrue(player.getX() - stoneX < 0.95D,
+                "Leaf-only filtered phasing must not pass through adjacent stone");
 
-        helper.setBlock(new BlockPos(2, 4, 1), net.minecraft.world.level.block.Blocks.STONE);
-        player.moveTo(helper.absolutePos(new BlockPos(1, 4, 1)), 0.0F, 0.0F);
-        double outsideStoneX = player.getX();
+        for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS; i++) {
+            tickVagrantPlayer(player);
+        }
+        double chargedStoneX = player.getX();
         player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D));
-        helper.assertTrue(player.getX() - outsideStoneX < 0.95D,
-                "Outside the crown leaf permission must not pass adjacent stone");
+        helper.assertTrue(player.getX() - chargedStoneX > 0.95D,
+                "After the 60 tick charge inside the crown the vagrant should cross the stone");
         helper.succeed();
     }
 
@@ -5697,8 +5696,20 @@ public final class CoreDataGameTests {
         });
     }
 
-    @GameTest(template = "empty", timeoutTicks = 180)
+    @GameTest(template = "empty", timeoutTicks = 180, batch = "blaze_projectile_regression")
     public static void beta16BlazeFireballDamagesAndIgnitesTarget(GameTestHelper helper) {
+        helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+                new net.minecraft.world.phys.AABB(helper.absolutePos(new BlockPos(0, 3, 0)),
+                        helper.absolutePos(new BlockPos(4, 7, 10))))
+                .forEach(net.minecraft.world.entity.Entity::discard);
+        // Траса виходить за межі empty; очищаємо залишки інших тестових конструкцій.
+        for (int x = 0; x <= 3; x++) {
+            for (int y = 3; y <= 6; y++) {
+                for (int z = 0; z <= 9; z++) {
+                    helper.setBlock(new BlockPos(x, y, z), net.minecraft.world.level.block.Blocks.AIR);
+                }
+            }
+        }
         net.minecraft.server.level.ServerPlayer player = createPossessedBlazePlayer(helper, "blaze-hit-test");
         net.minecraft.world.entity.LivingEntity host = PossessionManager.findPossessedHost(
                 player,
@@ -5709,18 +5720,27 @@ public final class CoreDataGameTests {
 
         net.minecraft.world.entity.animal.Cow target =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
+        // Нерухома ціль ізолює влучання від випадкового руху та падіння між перевірками.
+        target.setNoAi(true);
+        target.setNoGravity(true);
         target.moveTo(helper.absolutePos(new BlockPos(1, 4, 8)), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(target);
         float initialHealth = target.getHealth();
 
         helper.assertTrue(PossessionManager.trySpecialAttackForTest(player, host, target),
                 "Possessed Blaze should accept a target fireball attack");
-        helper.runAfterDelay(61, () -> PossessionManager.processHostAbilitiesForTest(host));
+        helper.runAfterDelay(61, () -> {
+            // Сталий розкид перевіряє зіткнення, а не випадкову влучність одного пострілу.
+            host.getRandom().setSeed(0L);
+            helper.assertTrue(host.hasLineOfSight(target), "The fireball test corridor must remain clear");
+            PossessionManager.processHostAbilitiesForTest(host);
+        });
         helper.runAfterDelay(90, () -> {
             helper.assertTrue(target.getHealth() < initialHealth,
                     "A real SmallFireball hit should damage the target through vanilla projectile damage");
             helper.assertTrue(target.getRemainingFireTicks() > 0,
-                    "A real SmallFireball hit should ignite a burnable target");
+                    "A real SmallFireball hit should ignite a burnable target; water=" + target.isInWater()
+                            + ", health=" + target.getHealth() + ", fireTicks=" + target.getRemainingFireTicks());
             helper.succeed();
         });
     }
@@ -5889,28 +5909,36 @@ public final class CoreDataGameTests {
 
         helper.assertTrue(VagrantRules.shouldSuppressOnlyLeafCollision(player),
                 "Charged leaf entry should use leaf-only collision filtering");
-        helper.assertTrue(VagrantRules.shouldSuppressCollisionWith(
-                        player,
-                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
-                ),
-                "Inside the leaf crown the vagrant should pass the stone that sits in it");
-
-        double crownZ = player.getZ();
-        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D));
-        helper.assertTrue(player.getZ() - crownZ > 0.95D,
-                "Inside the leaf crown the vagrant should fly through the stone behind the leaves");
-
-        player.moveTo(helper.absolutePos(new BlockPos(3, 2, 1)), 0.0F, 0.0F);
-        helper.getLevel().setBlock(helper.absolutePos(new BlockPos(4, 2, 1)),
-                net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
-
         helper.assertTrue(!VagrantRules.shouldSuppressCollisionWith(
                         player,
                         net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
                 ),
-                "Outside the crown leaf permission must not suppress stone collision");
+                "Leaf permission must not suppress stone collision before the 60 tick charge");
+
+        for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS - 1; i++) {
+            tickVagrantPlayer(player);
+        }
         helper.assertTrue(!VagrantRules.isPhaseCharged(player),
-                "Leaf-only charge must not become normal wall charge");
+                "The crown should not hand out solid passage before the full 60 tick charge");
+        helper.assertTrue(!VagrantRules.shouldSuppressCollisionWith(
+                        player,
+                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
+                ),
+                "Stone must stay solid inside the crown until the charge is complete");
+
+        tickVagrantPlayer(player);
+        helper.assertTrue(VagrantRules.isPhaseCharged(player),
+                "Staying inside the leaf crown should complete the 60 tick charge");
+
+        helper.assertTrue(VagrantRules.shouldSuppressCollisionWith(
+                        player,
+                        net.minecraft.world.level.block.Blocks.STONE.defaultBlockState()
+                ),
+                "After the charge the vagrant should pass the stone inside the crown");
+        double crownZ = player.getZ();
+        player.move(net.minecraft.world.entity.MoverType.SELF, new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D));
+        helper.assertTrue(player.getZ() - crownZ > 0.95D,
+                "After the charge the vagrant should fly through the stone behind the leaves");
         helper.succeed();
     }
 
@@ -6160,8 +6188,6 @@ public final class CoreDataGameTests {
         player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, VagrantRules.LEAF_PHASE_REQUIRED_TICKS);
         VagrantRules.setLeafPhaseActive(player, true);
 
-        helper.assertTrue(!VagrantRules.isLeafPhaseSolidPassage(player),
-                "A vagrant outside the crown should not receive solid block passage from leaf permission");
         helper.assertTrue(VagrantRules.shouldSuppressCollisionWith(
                         player,
                         net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState()
