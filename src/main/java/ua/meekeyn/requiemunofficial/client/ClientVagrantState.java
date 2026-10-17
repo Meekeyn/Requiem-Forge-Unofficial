@@ -193,7 +193,7 @@ public final class ClientVagrantState {
         boolean insideLeaves = VagrantRules.isInsideLeaves(player);
         player.getPersistentData().putBoolean(VagrantRules.PHASE_ATTEMPTING, phaseAttempt);
         if (insideBlock) {
-            if (VagrantRules.isInsideNonLeafPhaseableBlock(player) && !VagrantRules.isInsideLeaves(player)) {
+            if (VagrantRules.isInsideNonLeafPhaseableBlock(player) && !insideLeaves) {
                 if (phaseChargeTicks >= VagrantRules.PHASE_REQUIRED_TICKS) {
                     phaseChargeTicks = VagrantRules.PHASE_REQUIRED_TICKS;
                 } else {

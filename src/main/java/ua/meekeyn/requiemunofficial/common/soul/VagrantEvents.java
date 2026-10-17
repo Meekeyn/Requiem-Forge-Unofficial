@@ -318,7 +318,7 @@ public final class VagrantEvents {
                 && (VagrantRules.shouldChargePhaseEntry(player) || player.horizontalCollision);
         player.getPersistentData().putBoolean(VagrantRules.PHASE_ATTEMPTING, attempting);
         if (insideBlock) {
-            if (VagrantRules.isInsideNonLeafPhaseableBlock(player) && !VagrantRules.isInsideLeaves(player)) {
+            if (VagrantRules.isInsideNonLeafPhaseableBlock(player) && !insideLeaves) {
                 if (VagrantRules.isPhaseCharged(player)) {
                     player.getPersistentData().putInt(VagrantRules.PHASE_CHARGE_TICKS, VagrantRules.PHASE_REQUIRED_TICKS);
                 } else {
