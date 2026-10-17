@@ -4083,11 +4083,24 @@ public final class PossessionManager {
             // множник спринту поверх тому він не має подвоюватись для жодної категорії тіл.
             hostSpeed /= 1.3D;
         }
-        double targetSpeed = isHumanoidWalkingHost(host)
-                ? hostSpeed * HUMANOID_PLAYER_BODY_SPEED_SCALE
-                : isBeta16FlyingHost(host)
-                ? hostSpeed * SPECIAL_MOBILITY_CONTROL_SCALE
-                : hostSpeed;
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
+        double targetSpeed;
+        if (isHumanoidWalkingHost(host)) {
+            targetSpeed = hostSpeed * HUMANOID_PLAYER_BODY_SPEED_SCALE;
+        } else if (mobility.canFly()
+                || mobility.canSwim() && (host.isInWater() || isInPossessedLavaFluid(host))) {
+            // Плавці й літуни задають абсолютну швидкість напряму (PlayerBodyMovement.prepareTravel),
+            // а їхні ванільні атрибути не призначені для player-travel (дельфін має attr 1.2!), тому
+            // вони використовують ту саму special-mobility шкалу, що й польоти.
+            targetSpeed = hostSpeed * SPECIAL_MOBILITY_CONTROL_SCALE;
+        } else {
+            // Ванільний наземний моб прискорюється на (speedModifier × attr)²: MoveControl подає не
+            // нормалізований ввід zza = speedModifier × attr, а travel множить цей ввід ще на цей
+            // самий атрибут (getFrictionInfluencedSpeed). Гравець із одиничним ввідом клавіатури
+            // отримує прискорення рівне своєму атрибуту, тому тіло має нести квадрат атрибута хоста
+            // (при speedModifier 1.0), щоб наземний рух збігався з непосіяним мобом.
+            targetSpeed = hostSpeed * hostSpeed;
+        }
         return Math.max(0.0D, targetSpeed);
     }
 

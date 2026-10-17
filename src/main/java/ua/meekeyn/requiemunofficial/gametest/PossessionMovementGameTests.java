@@ -425,9 +425,76 @@ public final class PossessionMovementGameTests {
         player.setSprinting(true);
         PossessionManager.controlHostForTest(player, body);
         PossessionManager.controlHostForTest(player, body);
+        double catBaseSpeed = body.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED).getBaseValue();
         helper.assertTrue(Math.abs(player.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)
-                - body.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED)) < 1.0E-6D,
-                "Sprinting must not be multiplied again when host parameters are synchronized");
+                - catBaseSpeed * catBaseSpeed * 1.3D) < 1.0E-6D,
+                "Sprinting must apply the squared ground-host speed with a single player sprint multiplier");
+        PossessionManager.release(player, body);
+        body.discard();
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "possession_movement")
+    public static void possessedGroundSpeedMatchesUnpossessedMobBaseline(GameTestHelper helper) {
+        for (EntityType<? extends Mob> type : List.of(EntityType.SPIDER, EntityType.ENDERMAN, EntityType.CAT)) {
+            Mob baseline = placeOnCorridor(helper, type, 1);
+            Mob body = placeOnCorridor(helper, type, 3);
+            double baselineStart = baseline.getZ();
+            ServerPlayer player = possess(helper, body);
+            double playerStart = player.getZ();
+            for (int tick = 0; tick < 30; tick++) {
+                // Непосіяний моб: MoveControl подає setSpeed(1.0 × атрибут), після чого aiStep перед
+                // travel зменшує осі на 0.98. Той самий шлях travel, що й у фізичного гравця.
+                baseline.setSpeed((float) baseline.getAttributeValue(
+                        net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED));
+                baseline.xxa *= 0.98F;
+                baseline.zza *= 0.98F;
+                baseline.travel(new Vec3(baseline.xxa, baseline.yya, baseline.zza));
+                input(player, 1.0F, false);
+                step(player, body);
+            }
+            double baselineDistance = baseline.getZ() - baselineStart;
+            double bodyDistance = player.getZ() - playerStart;
+            helper.assertTrue(baselineDistance > 0.3D,
+                    "Baseline unpossessed mob must walk forward: " + type + " moved " + baselineDistance);
+            // Паритет швидкості: тіло несе квадрат атрибута хоста (MoveControl подаєzza = attr,
+            // travel множить ввід ще на attr), тому збіг фінальної траєкторії — точна вимога до
+            // атрибута, а сама дистанція має невеликий допуск на числовий шум vanilla-фрикції.
+            double hostAttr = body.getAttributeValue(
+                    net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+            double bodyAttr = player.getAttributeValue(
+                    net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
+            helper.assertTrue(Math.abs(bodyAttr - hostAttr * hostAttr) < 1.0E-9D,
+                    "Possessed ground body must carry the squared host attribute: " + type
+                            + " player=" + bodyAttr + " host^2=" + hostAttr * hostAttr);
+            helper.assertTrue(Math.abs(bodyDistance - baselineDistance) <= 0.02D * baselineDistance,
+                    "Possessed ground body must match the unpossessed mob speed: " + type
+                            + " body=" + bodyDistance + " baseline=" + baselineDistance);
+            PossessionManager.release(player, body);
+            baseline.discard();
+            body.discard();
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "possession_movement")
+    public static void possessedSwimmerBodyKeepsHostWaterVelocity(GameTestHelper helper) {
+        Mob body = EntityType.DOLPHIN.create(helper.getLevel());
+        place(helper, body, true);
+        ServerPlayer player = possess(helper, body);
+        double waterScale = ua.meekeyn.requiemunofficial.common.possession.EntityMobilityManager.get(body)
+                .waterSpeedModifier();
+        double expected = 0.98D * Math.max(0.02D, body.getAttributeValue(
+                net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED))
+                * Math.max(0.05D, 1.0D + waterScale);
+        input(player, 1.0F, false);
+        step(player, body);
+        helper.assertTrue(Math.abs(player.getDeltaMovement().horizontalDistance() - expected) < 1.0E-6D,
+                "Water hosts must carry the host velocity scale exactly once: delta="
+                        + player.getDeltaMovement() + " expected=" + expected);
+        step(player, body);
+        helper.assertTrue(Math.abs(player.getDeltaMovement().horizontalDistance() - expected) < 1.0E-6D,
+                "Repeated synchronization must not grow the possessed swim velocity");
         PossessionManager.release(player, body);
         body.discard();
         helper.succeed();
@@ -510,6 +577,26 @@ public final class PossessionMovementGameTests {
         body.tick();
         body.setDeltaMovement(Vec3.ZERO);
         body.setOnGround(!water);
+    }
+
+    /** Довга пряма кам'яна коридорна підлога для порівняння швидкості з непосіяним мобом. */
+    private static Mob placeOnCorridor(GameTestHelper helper, EntityType<? extends Mob> type, int laneX) {
+        for (int z = 0; z < 15; z++) {
+            for (int x = 0; x < 5; x++) {
+                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+                for (int y = 2; y < 12; y++) {
+                    helper.setBlock(new BlockPos(x, y, z), Blocks.AIR);
+                }
+            }
+        }
+        Mob body = type.create(helper.getLevel());
+        BlockPos pos = helper.absolutePos(new BlockPos(laneX, 2, 2));
+        body.moveTo(pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(body);
+        body.tick();
+        body.setDeltaMovement(Vec3.ZERO);
+        body.setOnGround(true);
+        return body;
     }
 
     private static ServerPlayer possess(GameTestHelper helper, Mob body) {

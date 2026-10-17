@@ -1,9 +1,7 @@
 package ua.meekeyn.requiemunofficial.mixin;
 
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attribute;
-import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -21,8 +19,8 @@ public abstract class AbstractClientPlayerMixin {
 
     @Redirect(method = "getFieldOfViewModifier", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/client/player/AbstractClientPlayer;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D"))
-    private double requiemunofficial$possessionBodyFovSpeed(Player entity, Attribute attribute) {
-        double bodySpeed = ((LivingEntity) entity).getAttributeValue(attribute);
+    private double requiemunofficial$possessionBodyFovSpeed(AbstractClientPlayer entity, Attribute attribute) {
+        double bodySpeed = entity.getAttributeValue(attribute);
         return PossessionManager.beta16BodyFovMovementSpeed(entity, bodySpeed);
     }
 }
