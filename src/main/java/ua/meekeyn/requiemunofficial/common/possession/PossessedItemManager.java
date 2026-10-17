@@ -405,6 +405,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         }
 
         ItemStack result;
+        Item healedItem = stack.getItem();
         if (rule.usage() == HealingUsage.REPLACE_BONE) {
             if (!replaceBone(player, host, stack)) {
                 return Optional.of(stack);
@@ -419,7 +420,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             result = stack.getItem().finishUsingItem(stack, player.level(), player);
         }
 
-        addCooldown(player, stack.getItem(), rule.cooldown());
+        addCooldown(player, healedItem, rule.cooldown());
         host.swing(hand, true);
         return Optional.of(result);
     }

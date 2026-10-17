@@ -1049,6 +1049,39 @@ public final class PossessionManager {
         return findHost(player, hostId);
     }
 
+    /**
+     * Голод не використовується, коли гравець у тілі, що не їсть, або коли він безтілесна
+     * блукаюча душа. У beta.16 це робить HungerManagerMixin (incorporeal / non regular eater);
+     * тут рішення ухвалюється за тегом behavior/regular_eaters, а не за MobType.UNDEAD.
+     */
+    public static boolean shouldSkipHungerTick(Player player) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return false;
+        }
+
+        UUID hostId = SoulManager.getPossessedEntityId(serverPlayer);
+        if (hostId == null) {
+            return VagrantRules.isRestricted(serverPlayer);
+        }
+
+        return possessesNonEaterBody(serverPlayer, hostId);
+    }
+
+    /** Чи має гравець у тілі, що не є regular eater, примусово повний голод (як у beta.16). */
+    public static boolean shouldForceFullHunger(Player player) {
+        return player instanceof ServerPlayer serverPlayer
+                && possessesNonEaterBody(serverPlayer, SoulManager.getPossessedEntityId(serverPlayer));
+    }
+
+    private static boolean possessesNonEaterBody(ServerPlayer player, UUID hostId) {
+        if (hostId == null) {
+            return false;
+        }
+
+        LivingEntity host = findHost(player, hostId);
+        return host != null && !host.getType().is(ModTags.REGULAR_EATERS);
+    }
+
     public static boolean suspendForDisconnect(ServerPlayer player, LivingEntity host) {
         if (!host.getUUID().equals(SoulManager.getPossessedEntityId(player))
                 || !player.getUUID().equals(getPossessor(host))) {

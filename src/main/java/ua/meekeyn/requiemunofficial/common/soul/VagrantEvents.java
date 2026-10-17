@@ -467,11 +467,9 @@ public final class VagrantEvents {
     }
 
     private static void refreshSoulHunger(ServerPlayer player) {
-        CompoundTag food = new CompoundTag();
-        player.getFoodData().addAdditionalSaveData(food);
-        food.putInt("foodLevel", 20);
-        food.putFloat("foodExhaustionLevel", 0.0F);
-        player.getFoodData().readAdditionalSaveData(food);
+        // Безтілесна душа не витрачає голод (див. FoodDataMixin), але збережене значення
+        // не перезаписується: після виходу з тіла-їдця відновлюється попередній голод гравця.
+        player.getFoodData().setExhaustion(0.0F);
     }
 
     private static void limitPhaseSpeed(ServerPlayer player) {

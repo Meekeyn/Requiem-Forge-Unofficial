@@ -21,6 +21,7 @@ import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
+import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 @Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class HudOverlay {
@@ -47,9 +48,22 @@ public final class HudOverlay {
         }
 
         if (isFreeVagrant(minecraft) && isBodyStatusOverlay(event)
-                || isPossessing(minecraft) && event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
+                || isPossessing(minecraft) && isHiddenPossessedOverlay(minecraft, event)) {
             event.setCanceled(true);
         }
+    }
+
+    private static boolean isHiddenPossessedOverlay(Minecraft minecraft, RenderGuiOverlayEvent.Pre event) {
+        // Здоров'я тіла малюється окремо в renderBodyHealth, тож ванільний рядок сердець зайвий.
+        if (event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
+            return true;
+        }
+        // Смуга голоду лишається тільки для regular eater: лише їхній голод справжній.
+        if (event.getOverlay() != VanillaGuiOverlay.FOOD_LEVEL.type()) {
+            return false;
+        }
+        LivingEntity host = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
+        return host == null || !host.getType().is(ModTags.REGULAR_EATERS);
     }
 
     @SubscribeEvent

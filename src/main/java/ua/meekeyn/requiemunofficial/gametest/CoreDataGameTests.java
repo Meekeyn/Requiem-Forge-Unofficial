@@ -3197,6 +3197,7 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-item-test")
         );
+        GameTestSupport.attachConnection(helper, player);
         net.minecraft.world.entity.animal.Fox fox =
                 new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
         fox.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3210,10 +3211,14 @@ public final class CoreDataGameTests {
         fox.setHealth(Math.max(1.0F, fox.getMaxHealth() - 4.0F));
         float before = fox.getHealth();
         ItemStack berries = new ItemStack(Items.SWEET_BERRIES);
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, berries);
         helper.assertTrue(
                 PossessedItemManager.tryUsePossessedItemForTest(player, fox, berries),
-                "Possessed item use should find and heal the camera-controlled fox"
+                "Possessed item use should find the camera-controlled fox and start eating"
         );
+        helper.assertTrue(player.isUsingItem(), "Fox berries must be held for their configured use time");
+        PossessedItemManager.finishPossessedItemUse(
+                helper.getLevel(), player, berries, net.minecraft.world.InteractionHand.MAIN_HAND);
         helper.assertTrue(fox.getHealth() > before, "The possessed fox should be healed by its configured food");
         helper.assertTrue(berries.isEmpty(), "Survival possessed food use should consume the item");
         helper.succeed();
@@ -3226,6 +3231,7 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-offhand-item-test")
         );
+        GameTestSupport.attachConnection(helper, player);
         net.minecraft.world.entity.animal.Fox fox =
                 new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
         fox.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3238,6 +3244,7 @@ public final class CoreDataGameTests {
         fox.setHealth(Math.max(1.0F, fox.getMaxHealth() - 4.0F));
         float before = fox.getHealth();
         ItemStack berries = new ItemStack(Items.SWEET_BERRIES);
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, berries);
         helper.assertTrue(
                 PossessedItemManager.tryUsePossessedItemForTest(
                         player,
@@ -3245,8 +3252,11 @@ public final class CoreDataGameTests {
                         berries,
                         net.minecraft.world.InteractionHand.OFF_HAND
                 ),
-                "Possessed offhand item use should apply the host item override"
+                "Possessed offhand item use should start eating for the host"
         );
+        helper.assertTrue(player.isUsingItem(), "Offhand fox berries must be held for their configured use time");
+        PossessedItemManager.finishPossessedItemUse(
+                helper.getLevel(), player, berries, net.minecraft.world.InteractionHand.OFF_HAND);
         helper.assertTrue(fox.getHealth() > before, "The possessed fox should be healed by offhand food");
         helper.assertTrue(berries.isEmpty(), "Survival possessed offhand food use should consume the item");
         helper.succeed();
@@ -4894,7 +4904,8 @@ public final class CoreDataGameTests {
                   "override": {
                     "type": "requiemunofficial:healing",
                     "item": {"tag": "requiemunofficial:raw_meats"},
-                    "cooldown": 150
+                    "cooldown": 150,
+                    "usage": "eat_to_heal"
                   }
                 }
                 """).getAsJsonObject());
