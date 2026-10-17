@@ -2337,8 +2337,8 @@ public final class CoreDataGameTests {
         helper.assertTrue(PossessionManager.tryPossess(player, zombie),
                 "A vagrant should possess a soulless zombie");
 
-        helper.assertTrue(!zombie.noPhysics, "Possessed walking hosts should keep block collision");
-        helper.assertTrue(!zombie.isNoGravity(), "Possessed walking hosts should keep gravity");
+        helper.assertTrue(!player.noPhysics, "Zombie Player Body must keep block collision");
+        helper.assertTrue(!player.isNoGravity(), "Zombie Player Body must keep gravity");
         helper.succeed();
     }
 
@@ -2921,16 +2921,16 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-zero-input-test")
         );
-        net.minecraft.world.entity.monster.Zombie zombie =
-                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
-        zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
-        zombie.setOnGround(true);
-        helper.getLevel().addFreshEntity(zombie);
+        net.minecraft.world.entity.monster.Husk husk =
+                new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
+        husk.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        husk.setOnGround(true);
+        helper.getLevel().addFreshEntity(husk);
 
         SoulManager.setState(player, SoulState.VAGRANT);
-        EntitySoulManager.removeSoul(zombie);
-        helper.assertTrue(PossessionManager.tryPossess(player, zombie),
-                "A vagrant should possess a soulless zombie");
+        EntitySoulManager.removeSoul(husk);
+        helper.assertTrue(PossessionManager.tryPossess(player, husk),
+                "A vagrant should possess a soulless husk");
 
         PossessionManager.updatePossessionInput(
                 player,
@@ -2943,8 +2943,8 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        zombie.aiStep();
-        helper.assertTrue(zombie.zza > 0.0F && zombie.xxa < 0.0F,
+        husk.aiStep();
+        helper.assertTrue(husk.zza > 0.0F && husk.xxa < 0.0F,
                 "Non-zero packet input should reach the host before travel");
 
         PossessionManager.updatePossessionInput(
@@ -2958,8 +2958,8 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        zombie.aiStep();
-        helper.assertTrue(zombie.zza == 0.0F && zombie.xxa == 0.0F,
+        husk.aiStep();
+        helper.assertTrue(husk.zza == 0.0F && husk.xxa == 0.0F,
                 "Zero packet input should clear host movement fields before travel");
         helper.succeed();
     }
@@ -3034,6 +3034,7 @@ public final class CoreDataGameTests {
                 )
         );
         zombie.getLookControl().setLookAt(target, 30.0F, 30.0F);
+        PossessionManager.syncBeta16HostToPlayer(player, zombie);
         zombie.aiStep();
 
         helper.assertTrue(Math.abs(zombie.getYRot() - 75.0F) < 0.001F,
@@ -3077,12 +3078,14 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        zombie.aiStep();
+        player.setJumping(true);
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, zombie);
 
-        helper.assertTrue(!zombie.isNoGravity(), "Possessed zombies should keep normal gravity");
-        helper.assertTrue(zombie.getDeltaMovement().y < 0.2D,
+        helper.assertTrue(!player.isNoGravity(), "Possessed zombies should keep normal gravity");
+        helper.assertTrue(player.getDeltaMovement().y < 0.2D,
                 "Holding jump while airborne should not keep boosting a walking host upward; deltaY="
-                        + zombie.getDeltaMovement().y + ", onGround=" + zombie.onGround());
+                        + player.getDeltaMovement().y + ", onGround=" + zombie.onGround());
         helper.succeed();
     }
 
@@ -3116,12 +3119,15 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        zombie.aiStep();
+        player.zza = 1.0F;
+        player.setJumping(false);
+        player.aiStep();
+        PossessionManager.syncBeta16HostToPlayer(player, zombie);
 
-        helper.assertTrue(!zombie.isNoGravity(), "Possessed walking hosts should keep gravity near ledges");
-        helper.assertTrue(zombie.getDeltaMovement().y < 0.0D,
+        helper.assertTrue(!player.isNoGravity(), "Possessed walking hosts should keep gravity near ledges");
+        helper.assertTrue(player.getDeltaMovement().y < 0.0D,
                 "A possessed walking host should fall when moving without ground support; deltaY="
-                        + zombie.getDeltaMovement().y + ", onGround=" + zombie.onGround()
+                        + player.getDeltaMovement().y + ", onGround=" + zombie.onGround()
                         + ", pos=" + zombie.position());
         helper.succeed();
     }
@@ -3415,28 +3421,28 @@ public final class CoreDataGameTests {
     }
 
     @GameTest(template = "empty")
-    public static void possessedZombieJumpUsesVanillaVerticalImpulse(GameTestHelper helper) {
+    public static void possessedHuskJumpUsesVanillaVerticalImpulse(GameTestHelper helper) {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-jump-test")
         );
         SoulManager.setState(player, SoulState.VAGRANT);
-        net.minecraft.world.entity.monster.Zombie zombie =
-                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
-        zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
-        zombie.setOnGround(true);
-        helper.getLevel().addFreshEntity(zombie);
-        EntitySoulManager.removeSoul(zombie);
+        net.minecraft.world.entity.monster.Husk husk =
+                new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
+        husk.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        husk.setOnGround(true);
+        helper.getLevel().addFreshEntity(husk);
+        EntitySoulManager.removeSoul(husk);
 
-        helper.assertTrue(PossessionManager.tryPossess(player, zombie), "Possession should start");
+        helper.assertTrue(PossessionManager.tryPossess(player, husk), "Possession should start");
         PossessionManager.handleAction(
                 player,
                 ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.JUMP
         );
 
-        helper.assertTrue(Math.abs(zombie.getDeltaMovement().y - 0.42D) < 0.0001D,
-                "Possessed Zombie jump should use vanilla LivingEntity.jumpFromGround vertical impulse");
+        helper.assertTrue(Math.abs(husk.getDeltaMovement().y - 0.42D) < 0.0001D,
+                "Possessed Husk jump should use vanilla LivingEntity.jumpFromGround vertical impulse");
         helper.succeed();
     }
 
@@ -3448,14 +3454,14 @@ public final class CoreDataGameTests {
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-input-jump-test")
         );
         SoulManager.setState(player, SoulState.VAGRANT);
-        net.minecraft.world.entity.monster.Zombie zombie =
-                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
-        zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
-        zombie.setOnGround(true);
-        helper.getLevel().addFreshEntity(zombie);
-        EntitySoulManager.removeSoul(zombie);
+        net.minecraft.world.entity.monster.Husk husk =
+                new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
+        husk.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        husk.setOnGround(true);
+        helper.getLevel().addFreshEntity(husk);
+        EntitySoulManager.removeSoul(husk);
 
-        helper.assertTrue(PossessionManager.tryPossess(player, zombie), "Possession should start");
+        helper.assertTrue(PossessionManager.tryPossess(player, husk), "Possession should start");
         PossessionManager.updatePossessionInput(
                 player,
                 new ua.meekeyn.requiemunofficial.common.network.PossessionInputPacket(
@@ -3467,9 +3473,9 @@ public final class CoreDataGameTests {
                         0.0F
                 )
         );
-        PossessionManager.controlHostForTest(player, zombie);
+        PossessionManager.controlHostForTest(player, husk);
 
-        helper.assertTrue(Math.abs(zombie.getDeltaMovement().y - 0.42D) < 0.0001D,
+        helper.assertTrue(Math.abs(husk.getDeltaMovement().y - 0.42D) < 0.0001D,
                 "Possessed walking host input jump should apply exactly one vanilla jump impulse");
         helper.succeed();
     }

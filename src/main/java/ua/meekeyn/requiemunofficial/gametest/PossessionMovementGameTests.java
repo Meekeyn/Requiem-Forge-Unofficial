@@ -32,7 +32,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void possessedGroundBodiesUseNativeTravel(GameTestHelper helper) {
-        for (EntityType<? extends Mob> type : List.<EntityType<? extends Mob>>of(EntityType.ZOMBIE, EntityType.CREEPER,
+        for (EntityType<? extends Mob> type : List.<EntityType<? extends Mob>>of(EntityType.HUSK, EntityType.CREEPER,
                 EntityType.VILLAGER, EntityType.COW, EntityType.IRON_GOLEM, EntityType.PILLAGER,
                 EntityType.SPIDER, EntityType.SLIME, EntityType.MAGMA_CUBE, EntityType.RABBIT,
                 EntityType.FROG, EntityType.HORSE, EntityType.ENDERMAN, EntityType.STRIDER)) {
@@ -90,7 +90,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void possessedTravelRunsOnceAndNeutralInputKeepsFriction(GameTestHelper helper) {
-        CountingZombie body = new CountingZombie(helper);
+        CountingGroundMob body = new CountingGroundMob(helper);
         place(helper, body, false);
         body.travels = 0;
         ServerPlayer player = possess(helper, body);
@@ -112,7 +112,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement", timeoutTicks = 40)
     public static void possessionInputExpiresWithoutFurtherPackets(GameTestHelper helper) {
-        Mob body = EntityType.ZOMBIE.create(helper.getLevel());
+        Mob body = EntityType.HUSK.create(helper.getLevel());
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         input(player, 1.0F, false);
@@ -127,8 +127,8 @@ public final class PossessionMovementGameTests {
     }
 
     @GameTest(template = "empty", batch = "possession_movement")
-    public static void possessedZombieJumpsFallsAndCollides(GameTestHelper helper) {
-        Mob body = EntityType.ZOMBIE.create(helper.getLevel());
+    public static void possessedHuskJumpsFallsAndCollides(GameTestHelper helper) {
+        Mob body = EntityType.HUSK.create(helper.getLevel());
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         double floor = body.getY();
@@ -208,7 +208,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void reconnectDoesNotReplayMovement(GameTestHelper helper) {
-        Mob body = EntityType.ZOMBIE.create(helper.getLevel());
+        Mob body = EntityType.HUSK.create(helper.getLevel());
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         input(player, 1.0F, true);
@@ -256,7 +256,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void staleAiJumpDoesNotDuplicateControlledJump(GameTestHelper helper) {
-        CountingZombie body = new CountingZombie(helper);
+        CountingGroundMob body = new CountingGroundMob(helper);
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         body.jumps = 0;
@@ -271,7 +271,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void dimensionEventClearsHeldInput(GameTestHelper helper) {
-        Mob body = EntityType.ZOMBIE.create(helper.getLevel());
+        Mob body = EntityType.HUSK.create(helper.getLevel());
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         input(player, 1.0F, true);
@@ -385,7 +385,7 @@ public final class PossessionMovementGameTests {
                 new PossessionInputPacket(forward, 0.0F, jump, false, 0.0F, 0.0F));
     }
 
-    private static final class CountingZombie extends Zombie {
+    private static final class CountingGroundMob extends Zombie {
         private int travels;
         private int jumps;
 
@@ -395,8 +395,8 @@ public final class PossessionMovementGameTests {
             super.jumpFromGround();
         }
 
-        private CountingZombie(GameTestHelper helper) {
-            super(EntityType.ZOMBIE, helper.getLevel());
+        private CountingGroundMob(GameTestHelper helper) {
+            super(EntityType.HUSK, helper.getLevel());
         }
 
         @Override

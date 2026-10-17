@@ -1285,7 +1285,8 @@ public final class PossessionManager {
         // travel/ai pipeline (classic control) instead of the beta16 teleport-the-body mode.
         return host != null
                 && !host.isPassenger()
-                && (host.getType().is(ModTags.HUMANOID_SKELETONS) || host instanceof Blaze);
+                && (host.getType().is(ModTags.HUMANOID_SKELETONS) || host instanceof Blaze
+                    || host.getType() == EntityType.ZOMBIE);
     }
 
     public static void syncBeta16HostToPlayer(Player player, LivingEntity host) {

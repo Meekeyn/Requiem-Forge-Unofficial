@@ -22,6 +22,6 @@
   "baseline_failures_not_reproduced": [
     "leafonlycollisiondoesnotsuppressadjacentslaborstairs"
   ],
-  "total": 248,
-  "passed": 241
+  "total": 251,
+  "passed": 244
 }
