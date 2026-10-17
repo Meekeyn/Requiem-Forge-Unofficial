@@ -12,6 +12,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.monster.Spider;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.gametest.GameTestHolder;
@@ -89,6 +90,32 @@ public final class PossessionRidingGameTests {
         helper.succeed();
     }
 
+    @GameTest(template = "empty")
+    public static void drivenHorseMovesForwardOverNativeAiStep(GameTestHelper helper) {
+        floor(helper);
+        ServerPlayer player = vagrantPlayer(helper, "ride-horse-move");
+        Mob skeleton = spawn(helper, EntityType.SKELETON, TEST_POS);
+        AbstractHorse horse = spawn(helper, EntityType.SKELETON_HORSE, new BlockPos(2, 2, 2));
+        horse.goalSelector.removeAllGoals(goal -> true);
+        possess(player, skeleton);
+        UndeadHorseRidingEvents.onEntityInteract(interact(player, horse));
+        helper.assertTrue(skeleton.getVehicle() == horse, "Setup: the skeleton should ride the horse");
+
+        PossessionManager.updatePossessionInput(player,
+                new PossessionInputPacket(1.0F, 0.0F, false, false, 0.0F, 0.0F));
+        double startX = horse.getX();
+        double startZ = horse.getZ();
+        for (int tick = 0; tick < 5; tick++) {
+            horse.aiStep();
+        }
+
+        double travelled = horse.getZ() - startZ;
+        helper.assertTrue(travelled > 0.2D && Math.abs(horse.getX() - startX) < 0.05D,
+                "A driven horse must actually move forward over a full aiStep, not just report zza>0 "
+                        + "(moved " + travelled + " blocks horizontally)");
+        helper.succeed();
+    }
+
     // --- Spider: player drives at normal speed when AI is idle. ---
 
     @GameTest(template = "empty")
@@ -105,6 +132,34 @@ public final class PossessionRidingGameTests {
         double normalSpeed = spider.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED);
         helper.assertTrue(Math.abs(spider.getSpeed() - normalSpeed) < 1.0E-4,
                 "The spider should move at its normal speed with no artificial slowdown");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void drivenIdleSpiderMovesForwardOverNativeAiStep(GameTestHelper helper) {
+        floor(helper);
+        ServerPlayer player = vagrantPlayer(helper, "ride-spider-move");
+        Mob skeleton = spawn(helper, EntityType.SKELETON, TEST_POS);
+        Spider spider = spawn(helper, EntityType.SPIDER, new BlockPos(2, 2, 2));
+        spider.goalSelector.removeAllGoals(goal -> true);
+        possess(player, skeleton);
+        SkeletonSpiderRidingEvents.onEntityInteract(interact(player, spider));
+        helper.assertTrue(skeleton.getVehicle() == spider, "Setup: the skeleton should ride the spider");
+        helper.assertTrue(spider.getTarget() == null && !spider.getNavigation().isInProgress(),
+                "Setup: the spider AI should be idle so the player is driving");
+
+        PossessionManager.updatePossessionInput(player,
+                new PossessionInputPacket(1.0F, 0.0F, false, false, 0.0F, 0.0F));
+        double startX = spider.getX();
+        double startZ = spider.getZ();
+        for (int tick = 0; tick < 5; tick++) {
+            spider.aiStep();
+        }
+
+        double travelled = spider.getZ() - startZ;
+        helper.assertTrue(travelled > 0.2D && Math.abs(spider.getX() - startX) < 0.05D,
+                "A manually driven idle spider must actually move forward over a full aiStep "
+                        + "(moved " + travelled + " blocks horizontally)");
         helper.succeed();
     }
 
@@ -244,6 +299,14 @@ public final class PossessionRidingGameTests {
         entity.setOnGround(true);
         helper.getLevel().addFreshEntity(entity);
         return entity;
+    }
+
+    private static void floor(GameTestHelper helper) {
+        for (int x = 0; x < 5; x++) {
+            for (int z = 0; z < 5; z++) {
+                helper.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+            }
+        }
     }
 
     private static void possess(ServerPlayer player, LivingEntity host) {

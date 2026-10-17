@@ -191,6 +191,8 @@ public final class PossessionManager {
     private static final Map<UUID, Boolean> POSSESSED_RIDING_STATE = new HashMap<>();
     private static final Map<UUID, Integer> SPIDER_AI_HOLD = new HashMap<>();
     private static final int SPIDER_CONTROL_RETURN_TICKS = 6;
+    // MoveControl транспорту може стерти ввід між підготовкою та travel.
+    private static final Map<UUID, RiddenDrive> RIDDEN_VEHICLE_DRIVE = new HashMap<>();
     private static final Set<String> ALEX_NIGHT_EYED = Set.of(
             "cave_centipede",
             "cockroach",
@@ -451,13 +453,14 @@ public final class PossessionManager {
             mob.setPersistenceRequired();
         }
         target.getPersistentData().putBoolean(ORIGINAL_NO_GRAVITY, target.isNoGravity());
-        if (EntityMobilityManager.get(target.getType()).forcesFlight()) {
-            target.setNoGravity(true);
-        } else {
-            target.setNoGravity(false);
+        EntityMobilityManager.MobilityProfile initialMobility = EntityMobilityManager.get(target);
+        if (initialMobility != EntityMobilityManager.MobilityProfile.DEFAULT) {
+            target.setNoGravity(initialMobility.forcesFlight());
         }
         target.getPersistentData().putBoolean(ORIGINAL_NO_PHYSICS, target.noPhysics);
-        target.noPhysics = EntityMobilityManager.get(target.getType()).phasesThroughWalls();
+        if (initialMobility != EntityMobilityManager.MobilityProfile.DEFAULT) {
+            target.noPhysics = initialMobility.phasesThroughWalls();
+        }
         applyPossessedStepHeight(target);
 
         target.getPersistentData().putBoolean(POSSESSED, true);
@@ -892,7 +895,7 @@ public final class PossessionManager {
             return;
         }
 
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         if (!mobility.canFly() && mobility.fallSpeedModifier() <= 0.0D) {
             return;
         }
@@ -1004,6 +1007,17 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
+    public static void onPossessorChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            POSSESSION_INPUTS.remove(player.getUUID());
+            LivingEntity host = findPossessedHost(player);
+            if (host != null && host.level() != player.level()) {
+                release(player, host, false);
+            }
+        }
+    }
+
+    @SubscribeEvent
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             clearVagrantSenseTargets(player);
@@ -1042,6 +1056,9 @@ public final class PossessionManager {
         if (host instanceof Mob mob) {
             mob.setPersistenceRequired();
         }
+        POSSESSION_INPUTS.remove(player.getUUID());
+        host.xxa = host.yya = host.zza = 0.0F;
+        host.setDeltaMovement(Vec3.ZERO);
         ACTIVE_POSSESSORS.remove(player.getUUID());
         return storeDisconnectedHost(player, host);
     }
@@ -1114,6 +1131,7 @@ public final class PossessionManager {
     }
 
     public static boolean resumeAfterDisconnect(ServerPlayer player, LivingEntity host) {
+        POSSESSION_INPUTS.remove(player.getUUID());
         UUID hostId = SoulManager.getPossessedEntityId(player);
         if (hostId == null
                 || !hostId.equals(host.getUUID())
@@ -1235,7 +1253,9 @@ public final class PossessionManager {
                 packet.jumping(),
                 packet.shifting(),
                 yRot,
-                xRot
+                xRot,
+                packet.sprinting(),
+                player.level().getGameTime(), host.getUUID(), player.level().dimension()
         ));
     }
 
@@ -1337,7 +1357,7 @@ public final class PossessionManager {
     }
 
     private static boolean isBeta16FlyingHost(LivingEntity host) {
-        return EntityMobilityManager.get(host.getType()).canFly();
+        return EntityMobilityManager.get(host).canFly();
     }
 
     private static ServerPlayer beta16Possessor(LivingEntity host) {
@@ -1610,7 +1630,7 @@ public final class PossessionManager {
     }
 
     private static void jump(LivingEntity host) {
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         jump(host, mobility);
     }
 
@@ -2486,7 +2506,7 @@ public final class PossessionManager {
     }
 
     private static boolean shouldDryOutWhenPossessed(LivingEntity host) {
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         return mobility.flopsOnLand()
                 || (mobility.swimMode() == EntityMobilityManager.MobilityMode.FORCED
                 && isAlexBody(host.getType(), ALEX_AQUATIC));
@@ -3067,6 +3087,9 @@ public final class PossessionManager {
         }
         restorePlayerFoodData(player);
         SoulLifecycleManager.clearReclamation(player);
+        if (host != null && host.getVehicle() != null) {
+            RIDDEN_VEHICLE_DRIVE.remove(host.getVehicle().getUUID());
+        }
         player.stopRiding();
         if (player.connection != null && player.getCamera() != player) {
             player.setCamera(player);
@@ -3171,6 +3194,11 @@ public final class PossessionManager {
     }
 
     private static void restoreHost(LivingEntity host) {
+        PossessionMovementController.restoreFlightState(host);
+        host.xxa = host.yya = host.zza = 0.0F;
+        host.setShiftKeyDown(false);
+        host.setJumping(false);
+        host.setSprinting(false);
         UUID possessor = getPossessor(host);
         if (possessor != null) {
             host.getPersistentData().putUUID(LAST_POSSESSOR, possessor);
@@ -3395,11 +3423,12 @@ public final class PossessionManager {
                 suppressControlledMobAi(control.host());
                 return;
             }
-            controlHost(control.player(), control.host(), true, false);
+            controlHost(control.player(), control.host(), true);
         }
     }
 
     public static void finishPossessedHostAiStep(LivingEntity entity) {
+        RIDDEN_VEHICLE_DRIVE.remove(entity.getUUID());
         PossessionControl control = findPossessionControl(entity);
         if (control == null) {
             return;
@@ -3415,23 +3444,12 @@ public final class PossessionManager {
             suppressControlledMobAi(control.host());
             return;
         }
-        PossessionInput input = POSSESSION_INPUTS.getOrDefault(
-                control.player().getUUID(),
-                new PossessionInput(
-                        control.player().zza,
-                        control.player().xxa,
-                        false,
-                        control.player().isShiftKeyDown(),
-                        control.player().getYRot(),
-                        control.player().getXRot()
-                )
-        );
+        PossessionInput input = inputForPlayer(control.player());
         LivingEntity movementHost = controlledMovementEntity(control.host());
         applyControlledRotation(control.host(), input.yRot(), input.xRot(), false);
         if (movementHost != control.host()) {
             applyControlledRotation(movementHost, input.yRot(), input.xRot(), false);
         }
-        stopResidualControlledMovement(movementHost, input);
         suppressControlledMobAi(control.host());
         if (movementHost != control.host()) {
             suppressControlledMobAi(movementHost);
@@ -3444,8 +3462,16 @@ public final class PossessionManager {
             return originalTravelVector;
         }
         if (isRiddenVehicleControl(control, entity)) {
-            // The vehicle's input was already written during prepare; keep whatever the vehicle
-            // currently travels with so player input and spider AI never fight over the same tick.
+            RiddenDrive drive = RIDDEN_VEHICLE_DRIVE.remove(entity.getUUID());
+            // Нова ціль або навігація, запущена в цьому aiStep, також має пріоритет.
+            if (entity instanceof Spider spider && isSpiderAiActive(spider)) {
+                SPIDER_AI_HOLD.put(spider.getUUID(), SPIDER_CONTROL_RETURN_TICKS);
+                return originalTravelVector;
+            }
+            if (drive != null) {
+                applyRiddenDrive(entity, drive);
+                return new Vec3(drive.strafe(), entity.yya, drive.forward());
+            }
             return new Vec3(entity.xxa, entity.yya, entity.zza);
         }
         if (control.host() == entity && entity.isPassenger()) {
@@ -3455,8 +3481,10 @@ public final class PossessionManager {
             return Vec3.ZERO;
         }
         LivingEntity movementHost = controlledMovementEntity(control.host());
-        controlHost(control.player(), control.host(), false, false);
-        return entity == movementHost ? new Vec3(entity.xxa, entity.yya, entity.zza) : originalTravelVector;
+        return entity == movementHost
+                ? PossessionMovementController.prepareTravel(entity,
+                        new Vec3(entity.xxa, entity.yya, entity.zza), EntityMobilityManager.get(entity))
+                : originalTravelVector;
     }
 
     private static boolean isRiddenVehicleControl(PossessionControl control, LivingEntity entity) {
@@ -3468,6 +3496,7 @@ public final class PossessionManager {
         PossessionInput input = inputForPlayer(player);
         if (input.shifting()) {
             // Shift always dismounts the rider from its vehicle (spider or horse).
+            RIDDEN_VEHICLE_DRIVE.remove(vehicle.getUUID());
             host.stopRiding();
             if (vehicle instanceof Spider) {
                 host.setDeltaMovement(host.getDeltaMovement().add(0.0D, 0.08D, 0.0D));
@@ -3478,10 +3507,17 @@ public final class PossessionManager {
         // The rider (camera body) always faces the player's look so bow/aim stay independent
         // of whether the player or the vehicle's AI is currently driving movement.
         applyControlledRotation(host, input.yRot(), input.xRot(), true);
+        RiddenDrive drive = null;
         if (vehicle instanceof Spider spider) {
-            driveRiddenSpider(player, spider, input);
+            drive = driveRiddenSpider(player, spider, input);
         } else if (vehicle instanceof AbstractHorse horse) {
-            driveRiddenHorse(player, horse, input);
+            drive = driveRiddenHorse(player, horse, input);
+        }
+        if (drive == null) {
+            // Під час керування AI не підміняємо ввід транспорту.
+            RIDDEN_VEHICLE_DRIVE.remove(vehicle.getUUID());
+        } else {
+            RIDDEN_VEHICLE_DRIVE.put(vehicle.getUUID(), drive);
         }
     }
 
@@ -3490,48 +3526,61 @@ public final class PossessionManager {
         applyControlledRotation(host, input.yRot(), input.xRot(), true);
     }
 
-    private static void driveRiddenSpider(ServerPlayer player, Spider spider, PossessionInput input) {
+    private static RiddenDrive driveRiddenSpider(ServerPlayer player, Spider spider, PossessionInput input) {
         UUID spiderId = spider.getUUID();
         if (isSpiderAiActive(spider)) {
             // Spider AI (chase/flee) has full priority: leave the spider's navigation and rotation
             // untouched and never suppress its AI.
             SPIDER_AI_HOLD.put(spiderId, SPIDER_CONTROL_RETURN_TICKS);
-            return;
+            return null;
         }
         int hold = SPIDER_AI_HOLD.getOrDefault(spiderId, 0);
         if (hold > 0) {
             // Small delay after AI stops before handing control back, to avoid jitter.
             SPIDER_AI_HOLD.put(spiderId, hold - 1);
-            return;
+            return null;
         }
 
         // Player drives the spider at its normal speed; no artificial slowdown, no jump input,
         // and sprint is ignored so it cannot accelerate. Wall climbing happens naturally through
         // the spider's own travel because the entity_mobility profile marks it climbsWalls.
-        applyControlledYaw(spider, input.yRot(), true);
-        float forward = input.forward();
-        float strafe = input.strafe();
-        spider.setSpeed((float) spider.getAttributeValue(Attributes.MOVEMENT_SPEED));
-        spider.xxa = strafe;
-        spider.zza = forward;
-        spider.hasImpulse = Math.abs(strafe) > 1.0E-4F || Math.abs(forward) > 1.0E-4F;
+        RiddenDrive drive = new RiddenDrive(
+                input.strafe(),
+                input.forward(),
+                (float) spider.getAttributeValue(Attributes.MOVEMENT_SPEED),
+                input.yRot()
+        );
+        applyRiddenDrive(spider, drive);
+        return drive;
     }
 
-    private static void driveRiddenHorse(ServerPlayer player, AbstractHorse horse, PossessionInput input) {
+    private static RiddenDrive driveRiddenHorse(ServerPlayer player, AbstractHorse horse, PossessionInput input) {
         // Mirror vanilla ridden-horse input shaping: strafe halved, backward scaled to a quarter.
         float forward = input.forward();
         float strafe = input.strafe() * 0.5F;
         if (forward <= 0.0F) {
             forward *= 0.25F;
         }
-        horse.setSpeed((float) horse.getAttributeValue(Attributes.MOVEMENT_SPEED));
-        horse.xxa = strafe;
-        horse.zza = forward;
-        horse.hasImpulse = Math.abs(strafe) > 1.0E-4F || Math.abs(forward) > 1.0E-4F;
-        applyControlledYaw(horse, input.yRot(), true);
+        RiddenDrive drive = new RiddenDrive(
+                strafe,
+                forward,
+                (float) horse.getAttributeValue(Attributes.MOVEMENT_SPEED),
+                input.yRot()
+        );
+        applyRiddenDrive(horse, drive);
         if (input.jumping() && horse.onGround()) {
-            jump(horse, EntityMobilityManager.get(horse.getType()));
+            jump(horse, EntityMobilityManager.get(horse));
         }
+        return drive;
+    }
+
+    // Відновлюємо лише ввід, не повторюючи фізику або стрибок.
+    private static void applyRiddenDrive(LivingEntity vehicle, RiddenDrive drive) {
+        vehicle.setSpeed(drive.speed());
+        vehicle.xxa = drive.strafe();
+        vehicle.zza = drive.forward();
+        vehicle.hasImpulse = Math.abs(drive.strafe()) > 1.0E-4F || Math.abs(drive.forward()) > 1.0E-4F;
+        applyControlledYaw(vehicle, drive.yRot(), true);
     }
 
     private static boolean isSpiderAiActive(Spider spider) {
@@ -3539,17 +3588,18 @@ public final class PossessionManager {
     }
 
     private static PossessionInput inputForPlayer(ServerPlayer player) {
-        return POSSESSION_INPUTS.getOrDefault(
-                player.getUUID(),
-                new PossessionInput(
-                        player.zza,
-                        player.xxa,
-                        false,
-                        player.isShiftKeyDown(),
-                        player.getYRot(),
-                        player.getXRot()
-                )
-        );
+        PossessionInput input = POSSESSION_INPUTS.get(player.getUUID());
+        long age = input == null ? -1L : player.level().getGameTime() - input.receivedAt();
+        if (input != null && age >= 0L && age <= 10L
+                && input.hostId().equals(SoulManager.getPossessedEntityId(player))
+                && input.dimension().equals(player.level().dimension())) {
+            return input;
+        }
+        if (input != null) {
+            POSSESSION_INPUTS.remove(player.getUUID());
+            player.setShiftKeyDown(false);
+        }
+        return new PossessionInput(0.0F, 0.0F, false, false, player.getYRot(), player.getXRot());
     }
 
     // Called from the vehicle mixin so a ridden spider keeps its MOVE/JUMP/LOOK goals enabled even
@@ -3557,6 +3607,11 @@ public final class PossessionManager {
     // NOT be preserved here so their panic/wander AI stays off while a rider steers them.
     public static boolean shouldPreserveVehicleAi(Mob vehicle) {
         return vehicle instanceof Spider && possessedRiderPassenger(vehicle) != null;
+    }
+
+    // Керованому коню вимикаємо блукання, щоб MoveControl не затирав ввід вершника.
+    public static boolean shouldSuppressRiddenVehicleAi(Mob vehicle) {
+        return vehicle instanceof AbstractHorse && possessedRiderPassenger(vehicle) != null;
     }
 
     private static void handlePossessedRiderTransition(ServerPlayer player, LivingEntity host) {
@@ -3637,24 +3692,7 @@ public final class PossessionManager {
     }
 
     private static void controlHost(ServerPlayer player, LivingEntity host, boolean allowJump) {
-        controlHost(player, host, allowJump, true);
-    }
-
-    private static void controlHost(ServerPlayer player,
-                                    LivingEntity host,
-                                    boolean allowJump,
-                                    boolean allowDirectMovement) {
-        PossessionInput input = POSSESSION_INPUTS.getOrDefault(
-                player.getUUID(),
-                new PossessionInput(
-                        player.zza,
-                        player.xxa,
-                        false,
-                        player.isShiftKeyDown(),
-                        player.getYRot(),
-                        player.getXRot()
-                )
-        );
+        PossessionInput input = inputForPlayer(player);
         if (tryDismountControlledSpider(host, input)) {
             return;
         }
@@ -3668,20 +3706,30 @@ public final class PossessionManager {
             suppressControlledMobAi(movementHost);
         }
         host.setShiftKeyDown(input.shifting());
+        movementHost.setJumping(false);
 
         float forwardInput = input.forward();
         float strafeInput = input.strafe();
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(movementHost.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(movementHost);
         boolean creativeFlying = player.isCreative() && player.getAbilities().flying;
         boolean verticalMovement = creativeFlying || canMoveVertically(movementHost, mobility, input);
-        movementHost.noPhysics = mobility.phasesThroughWalls();
-        movementHost.setNoGravity(creativeFlying || mobility.forcesFlight());
+        if (mobility != EntityMobilityManager.MobilityProfile.DEFAULT) {
+            movementHost.noPhysics = mobility.phasesThroughWalls();
+        }
+        movementHost.setNoGravity(creativeFlying || mobility.forcesFlight()
+                || mobility == EntityMobilityManager.MobilityProfile.DEFAULT
+                && movementHost.getPersistentData().getBoolean(ORIGINAL_NO_GRAVITY));
 
         if (allowJump && !verticalMovement && input.jumping()) {
             jump(movementHost, mobility);
         }
 
+        movementHost.setSprinting(input.sprinting() && forwardInput > 0.0F && !input.shifting()
+                && !mobility.canFly() && !movementHost.getType().is(ModTags.IMMOVABLE));
         double controlledSpeed = Math.max(0.02D, movementHost.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        double environmentModifier = movementHost.isInWater() || isInPossessedLavaFluid(movementHost)
+                ? mobility.waterSpeedModifier() : movementHost.onGround() ? mobility.landedSpeedModifier() : 0.0D;
+        controlledSpeed *= Math.max(0.05D, 1.0D + environmentModifier);
         boolean vanillaTravel = usesVanillaTravel(movementHost, mobility, verticalMovement);
         movementHost.setSpeed((float) controlledTravelSpeed(movementHost, controlledSpeed, vanillaTravel));
         syncAlexMovementSpeed(movementHost, controlledSpeed);
@@ -3690,7 +3738,7 @@ public final class PossessionManager {
             Vec3 current = movementHost.getDeltaMovement();
             movementHost.setDeltaMovement(current.x, Math.max(current.y, 0.22D), current.z);
             movementHost.hasImpulse = true;
-        } else if (allowJump
+        } else if (allowJump && !input.jumping()
                 && mobility.walkMode() == EntityMobilityManager.WalkMode.JUMPY
                 && (Math.abs(forwardInput) > 1.0E-4F || Math.abs(strafeInput) > 1.0E-4F)
                 && movementHost.onGround()) {
@@ -3702,14 +3750,7 @@ public final class PossessionManager {
         movementHost.xxa = strafeInput;
         movementHost.yya = verticalInput;
         movementHost.zza = forwardInput;
-        if (vanillaTravel) {
-            movementHost.hasImpulse = movingHorizontally || verticalInput != 0.0F;
-        } else if (allowDirectMovement) {
-            moveSpecialMobilityHost(movementHost, input, mobility, verticalMovement, movingHorizontally);
-            movementHost.hasImpulse = true;
-        } else {
-            movementHost.hasImpulse = movingHorizontally || verticalInput != 0.0F;
-        }
+        movementHost.hasImpulse = movingHorizontally || verticalInput != 0.0F;
         applyPassiveMobility(movementHost, mobility, movingHorizontally);
     }
 
@@ -3723,25 +3764,6 @@ public final class PossessionManager {
     private static boolean isHumanoidWalkingHost(LivingEntity host) {
         return host.getType().is(ModTags.HUMANOID_SKELETONS)
                 || host.getType().is(ModTags.HUMANOID_ZOMBIES);
-    }
-
-    private static void stopResidualControlledMovement(LivingEntity host, PossessionInput input) {
-        if (!host.onGround()
-                || Math.abs(input.forward()) > 1.0E-4F
-                || Math.abs(input.strafe()) > 1.0E-4F) {
-            return;
-        }
-
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
-        if (!usesVanillaTravel(host, mobility, false)) {
-            return;
-        }
-
-        Vec3 movement = host.getDeltaMovement();
-        if (Math.abs(movement.x) > 1.0E-4D || Math.abs(movement.z) > 1.0E-4D) {
-            host.setDeltaMovement(0.0D, movement.y, 0.0D);
-            host.hasImpulse = true;
-        }
     }
 
     private static void suppressControlledMobAi(LivingEntity entity) {
@@ -3780,7 +3802,7 @@ public final class PossessionManager {
             syncBeta16HostToPlayer(player, host);
             return;
         }
-        controlHost(player, host, true, false);
+        controlHost(player, host, true);
     }
 
     public static void processHostAbilitiesForTest(LivingEntity host) {
@@ -3792,29 +3814,6 @@ public final class PossessionManager {
             return 0.0F;
         }
         return input.jumping() ? 1.0F : -1.0F;
-    }
-
-    private static void moveSpecialMobilityHost(LivingEntity host,
-                                                PossessionInput input,
-                                                EntityMobilityManager.MobilityProfile mobility,
-                                                boolean verticalMovement,
-                                                boolean movingHorizontally) {
-        Vec3 forward = Vec3.directionFromRotation(0.0F, input.yRot());
-        Vec3 right = Vec3.directionFromRotation(0.0F, input.yRot() + 90.0F);
-        Vec3 requested = forward.scale(input.forward()).add(right.scale(input.strafe()));
-        Vec3 current = host.getDeltaMovement();
-
-        Vec3 horizontal = movingHorizontally
-                ? requested.normalize().scale(specialMobilitySpeed(host, mobility))
-                : new Vec3(
-                        current.x * Math.max(0.0D, Math.min(1.0D, mobility.inertia())),
-                        0.0D,
-                        current.z * Math.max(0.0D, Math.min(1.0D, mobility.inertia()))
-                );
-        double y = controlledVerticalSpeed(host, mobility, verticalMovement, current.y, input);
-        Vec3 movement = new Vec3(horizontal.x, y, horizontal.z);
-        host.setDeltaMovement(movement);
-        host.move(net.minecraft.world.entity.MoverType.SELF, movement);
     }
 
     private static double specialMobilitySpeed(LivingEntity host, EntityMobilityManager.MobilityProfile mobility) {
@@ -3841,29 +3840,6 @@ public final class PossessionManager {
                 && !mobility.flopsOnLand()
                 && !host.isInWater()
                 && !isInPossessedLavaFluid(host);
-    }
-
-    private static double controlledVerticalSpeed(LivingEntity host,
-                                                  EntityMobilityManager.MobilityProfile mobility,
-                                                  boolean verticalMovement,
-                                                  double currentY,
-                                                  PossessionInput input) {
-        if (verticalMovement) {
-            if (input.jumping()) {
-                return specialMobilitySpeed(host, mobility);
-            }
-            if (input.shifting()) {
-                return -specialMobilitySpeed(host, mobility);
-            }
-            return currentY * Math.max(0.0D, Math.min(1.0D, mobility.inertia()));
-        }
-        if (host.isNoGravity()) {
-            return currentY;
-        }
-        if (hasGroundSupport(host)) {
-            return currentY < 0.0D ? 0.0D : currentY;
-        }
-        return currentY - mobility.gravity();
     }
 
     private static void applyControlledRotation(LivingEntity entity, float yRot, float xRot, boolean preservePrevious) {
@@ -3942,7 +3918,7 @@ public final class PossessionManager {
                                              PossessionInput input) {
         return mobility.forcesFlight()
                 || mobility.canSwim() && (host.isInWater() || isInPossessedLavaFluid(host))
-                || mobility.canFly() && (input.jumping() || input.shifting());
+                || mobility.canFly() && (!host.onGround() || input.jumping() || input.shifting());
     }
 
     private static boolean isInPossessedLavaFluid(LivingEntity host) {
@@ -4085,16 +4061,16 @@ public final class PossessionManager {
     }
 
     private static void applyBeta16MobilityToPlayer(ServerPlayer player, LivingEntity host) {
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         applyBeta16FlightAbilities(player, host);
+        PossessionInput input = inputForPlayer(player);
         if (!isBeta16FlyingHost(host)) {
             return;
         }
 
-        PossessionInput input = POSSESSION_INPUTS.get(player.getUUID());
         Vec3 current = player.getDeltaMovement();
-        double y = controlledVerticalSpeed(host, mobility, input != null, current.y,
-                input == null ? new PossessionInput(0.0F, 0.0F, false, false, player.getYRot(), player.getXRot()) : input);
+        double y = PossessionMovementController.verticalSpeed(current.y, specialMobilitySpeed(host, mobility),
+                mobility.inertia(), input.jumping(), input.shifting());
         if (Math.abs(y - current.y) > 1.0E-5D) {
             player.setDeltaMovement(current.x, y, current.z);
             player.hasImpulse = true;
@@ -4204,9 +4180,18 @@ public final class PossessionManager {
                                    boolean jumping,
                                    boolean shifting,
                                    float yRot,
-                                   float xRot) {
+                                   float xRot,
+                                   boolean sprinting,
+                                   long receivedAt, UUID hostId, ResourceKey<Level> dimension) {
+        private PossessionInput(float forward, float strafe, boolean jumping, boolean shifting,
+                                float yRot, float xRot) {
+            this(forward, strafe, jumping, shifting, yRot, xRot, false, Long.MIN_VALUE, null, null);
+        }
     }
 
     private record PossessionControl(ServerPlayer player, LivingEntity host) {
+    }
+
+    private record RiddenDrive(float strafe, float forward, float speed, float yRot) {
     }
 }

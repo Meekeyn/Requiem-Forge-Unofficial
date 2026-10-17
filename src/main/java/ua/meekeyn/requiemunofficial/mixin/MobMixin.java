@@ -14,7 +14,8 @@ public abstract class MobMixin {
     @Inject(method = "serverAiStep", at = @At("HEAD"), cancellable = true)
     private void requiemunofficial$skipAutonomousAiWhilePossessed(CallbackInfo ci) {
         Mob self = (Mob) (Object) this;
-        if (PossessionManager.getPossessorId(self) != null) {
+        if (PossessionManager.getPossessorId(self) != null
+                || PossessionManager.shouldSuppressRiddenVehicleAi(self)) {
             ci.cancel();
         }
     }

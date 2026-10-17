@@ -12,7 +12,13 @@ public record PossessionInputPacket(float forward,
                                     boolean jumping,
                                     boolean shifting,
                                     float yRot,
-                                    float xRot) {
+                                    float xRot,
+                                    boolean sprinting) {
+
+    public PossessionInputPacket(float forward, float strafe, boolean jumping, boolean shifting,
+                                 float yRot, float xRot) {
+        this(forward, strafe, jumping, shifting, yRot, xRot, false);
+    }
 
     public static void encode(PossessionInputPacket packet, FriendlyByteBuf buffer) {
         buffer.writeFloat(packet.forward);
@@ -21,6 +27,7 @@ public record PossessionInputPacket(float forward,
         buffer.writeBoolean(packet.shifting);
         buffer.writeFloat(packet.yRot);
         buffer.writeFloat(packet.xRot);
+        buffer.writeBoolean(packet.sprinting);
     }
 
     public static PossessionInputPacket decode(FriendlyByteBuf buffer) {
@@ -30,7 +37,8 @@ public record PossessionInputPacket(float forward,
                 buffer.readBoolean(),
                 buffer.readBoolean(),
                 buffer.readFloat(),
-                buffer.readFloat()
+                buffer.readFloat(),
+                buffer.readBoolean()
         );
     }
 

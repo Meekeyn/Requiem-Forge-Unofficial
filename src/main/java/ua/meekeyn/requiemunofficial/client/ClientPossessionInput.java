@@ -52,6 +52,15 @@ public final class ClientPossessionInput {
         if (minecraft.screen != null) {
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
+            LivingEntity menuHost = PossessionManager.getBeta16PlayerBodyHost(minecraft.player);
+            if (menuHost != null) {
+                applyLocalBeta16VerticalPrediction(minecraft, menuHost);
+            }
+            if (SoulManager.getPossessedEntityId(minecraft.player) != null) {
+                ModNetwork.CHANNEL.sendToServer(new PossessionInputPacket(
+                        0.0F, 0.0F, false, false,
+                        minecraft.player.getYRot(), minecraft.player.getXRot()));
+            }
             return;
         }
         if (minecraft.player.isSpectator()) {
@@ -140,7 +149,8 @@ public final class ClientPossessionInput {
                 jumping,
                 shifting,
                 yRot,
-                xRot
+                xRot,
+                minecraft.options.keySprint.isDown() || minecraft.player.isSprinting()
         ));
     }
 
@@ -154,25 +164,18 @@ public final class ClientPossessionInput {
             return;
         }
 
-        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host.getType());
+        EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         player.setNoGravity(mobility.canFly());
         if (!mobility.canFly()) {
             return;
         }
 
-        boolean jumping = minecraft.options.keyJump.isDown();
-        boolean shifting = minecraft.options.keyShift.isDown();
+        boolean jumping = minecraft.screen == null && minecraft.options.keyJump.isDown();
+        boolean shifting = minecraft.screen == null && minecraft.options.keyShift.isDown();
         Vec3 current = player.getDeltaMovement();
-        double y;
-        if (jumping != shifting) {
-            double speed = Math.max(0.02D, player.getAttributeValue(Attributes.MOVEMENT_SPEED));
-            y = jumping ? speed : -speed;
-        } else {
-            y = current.y * Math.max(0.0D, Math.min(1.0D, mobility.inertia()));
-            if (!player.isNoGravity()) {
-                y -= mobility.gravity();
-            }
-        }
+        double y = ua.meekeyn.requiemunofficial.common.possession.PossessionMovementController.verticalSpeed(
+                current.y, Math.max(0.02D, player.getAttributeValue(Attributes.MOVEMENT_SPEED)),
+                mobility.inertia(), jumping, shifting);
 
         if (Math.abs(y - current.y) > 1.0E-5D) {
             player.setDeltaMovement(current.x, y, current.z);

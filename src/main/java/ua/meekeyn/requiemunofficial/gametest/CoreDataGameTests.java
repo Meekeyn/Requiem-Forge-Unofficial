@@ -5731,9 +5731,15 @@ public final class CoreDataGameTests {
                 "Possessed Blaze should accept a target fireball attack");
         helper.runAfterDelay(61, () -> {
             // Сталий розкид перевіряє зіткнення, а не випадкову влучність одного пострілу.
+            helper.assertTrue(target.getHealth() == initialHealth && target.getRemainingFireTicks() <= 0,
+                    "Target must be unharmed and unlit before the shot");
             host.getRandom().setSeed(0L);
             helper.assertTrue(host.hasLineOfSight(target), "The fireball test corridor must remain clear");
             PossessionManager.processHostAbilitiesForTest(host);
+            helper.assertTrue(!helper.getLevel().getEntitiesOfClass(
+                    net.minecraft.world.entity.projectile.SmallFireball.class, host.getBoundingBox().inflate(4.0D),
+                    projectile -> projectile.getOwner() == host).isEmpty(),
+                    "Attack must spawn a real fireball owned by the possessed Blaze");
         });
         helper.runAfterDelay(90, () -> {
             helper.assertTrue(target.getHealth() < initialHealth,

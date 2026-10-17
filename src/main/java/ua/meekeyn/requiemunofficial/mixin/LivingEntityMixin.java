@@ -6,7 +6,7 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -68,12 +68,9 @@ public abstract class LivingEntityMixin {
         }
     }
 
-    @ModifyVariable(method = "travel", at = @At("HEAD"), argsOnly = true)
-    private Vec3 requiemunofficial$usePossessedTravelInput(Vec3 travelVector) {
-        LivingEntity self = (LivingEntity) (Object) this;
-        if (self.level().isClientSide()) {
-            return travelVector;
-        }
-        return PossessionManager.redirectPossessedTravelVector(self, travelVector);
+    @Redirect(method = "aiStep", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/entity/LivingEntity;travel(Lnet/minecraft/world/phys/Vec3;)V"))
+    private void requiemunofficial$usePossessedTravelInput(LivingEntity self, Vec3 travelVector) {
+        ua.meekeyn.requiemunofficial.common.possession.PossessionMovementController.travel(self, travelVector);
     }
 }

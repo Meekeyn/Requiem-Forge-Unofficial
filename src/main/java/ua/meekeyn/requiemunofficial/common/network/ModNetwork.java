@@ -10,7 +10,7 @@ import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
 public final class ModNetwork {
 
-    private static final String PROTOCOL_VERSION = "15";
+    private static final String PROTOCOL_VERSION = "16";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ModIds.id("main"),

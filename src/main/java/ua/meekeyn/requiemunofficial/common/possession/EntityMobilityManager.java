@@ -16,12 +16,20 @@ import ua.meekeyn.requiemunofficial.common.util.ModIds;
 import java.io.BufferedReader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Function;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.FlyingMob;
+import net.minecraft.world.entity.animal.FlyingAnimal;
+import net.minecraft.world.entity.animal.WaterAnimal;
 
 @Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class EntityMobilityManager implements ResourceManagerReloadListener {
 
     private static final ResourceLocation RESOURCE = ModIds.id("entity_mobility.json");
     private static volatile Map<ResourceLocation, MobilityProfile> profiles = Map.of();
+    private static final List<Function<LivingEntity, MobilityProfile>> resolvers = new CopyOnWriteArrayList<>();
 
     private EntityMobilityManager() {
     }
@@ -47,6 +55,38 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
 
     public static MobilityProfile get(net.minecraft.world.entity.EntityType<?> type) {
         return profiles.getOrDefault(BuiltInRegistries.ENTITY_TYPE.getKey(type), MobilityProfile.DEFAULT);
+    }
+
+    /** Адаптер повертає null, якщо не підтримує цей вид; datapack має найвищий пріоритет. */
+    public static void registerResolver(Function<LivingEntity, MobilityProfile> resolver) {
+        resolvers.add(java.util.Objects.requireNonNull(resolver));
+    }
+
+    public static MobilityProfile get(LivingEntity entity) {
+        MobilityProfile configured = profiles.get(BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType()));
+        if (configured != null) {
+            return configured;
+        }
+        for (Function<LivingEntity, MobilityProfile> resolver : resolvers) {
+            MobilityProfile resolved = resolver.apply(entity);
+            if (resolved != null) {
+                return resolved;
+            }
+        }
+        boolean flyingNavigation = entity instanceof net.minecraft.world.entity.Mob mob
+                && mob.getNavigation() instanceof net.minecraft.world.entity.ai.navigation.FlyingPathNavigation;
+        if (entity instanceof FlyingMob || entity instanceof FlyingAnimal || flyingNavigation) {
+            return new MobilityProfile(entity instanceof FlyingMob ? MobilityMode.FORCED : MobilityMode.ENABLED,
+                    MobilityMode.DISABLED, WalkMode.NORMAL, 0.08D, 0.35D,
+                    0.0D, 0.0D, 0.0D, false, false, false);
+        }
+        if (entity instanceof WaterAnimal || entity instanceof net.minecraft.world.entity.Mob mob
+                && mob.getNavigation() instanceof net.minecraft.world.entity.ai.navigation.WaterBoundPathNavigation) {
+            return new MobilityProfile(MobilityMode.DISABLED, MobilityMode.FORCED, WalkMode.NORMAL,
+                    0.08D, 0.35D, 0.0D, 0.0D, 0.0D, false, false, false);
+        }
+        // Невідомі реалізації зберігають власний travel та стандартні атрибути фізики.
+        return MobilityProfile.DEFAULT;
     }
 
     public static Map<ResourceLocation, MobilityProfile> parse(JsonObject root) {
