@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.fml.ModList;
+import ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 import ua.meekeyn.requiemunofficial.common.advancement.ModCriteria;
 
@@ -112,7 +113,7 @@ public final class InitialSoulChoiceManager {
 
     static SoulState forcedChoice(ServerPlayer player) {
         return ModGameRules.getStartingRemnantType(player.level().getGameRules())
-                == ModGameRules.STARTING_REMNANT_FORCE_REMNANT
+                == StartingRemnantType.FORCE_REMNANT
                 ? SoulState.REMNANT
                 : SoulState.MORTAL;
     }

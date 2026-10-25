@@ -68,11 +68,6 @@ public class FilledSoulVesselItem extends SoulVesselItem {
         if (recordId != null) {
             BodyRecordData.get(player.level()).invalidate(recordId);
         }
-        sendSystemMessage(player, Component.translatable(
-                "message.requiemunofficial.soul_vessel.restored",
-                targetSoulType
-        ));
-
         ItemStack empty = new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get());
         if (stack.getCount() == 1) {
             player.setItemInHand(hand, empty);

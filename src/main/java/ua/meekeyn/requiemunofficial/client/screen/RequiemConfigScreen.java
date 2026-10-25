@@ -4,6 +4,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.common.ForgeConfigSpec;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 
 public class RequiemConfigScreen extends Screen {
@@ -17,28 +18,59 @@ public class RequiemConfigScreen extends Screen {
     @Override
     protected void init() {
         int centerX = this.width / 2;
-        int y = this.height / 6 + 12;
+        int y = this.height / 6 + 4;
 
         addNumericButtons(centerX, y, "screen.requiemunofficial.config.soul_capture_chance",
                 () -> Math.round(RequiemConfig.SOUL_CAPTURE_CHANCE.get() * 100.0D) + "%",
-                () -> setSoulCaptureChance(RequiemConfig.SOUL_CAPTURE_CHANCE.get() - 0.05D),
-                () -> setSoulCaptureChance(RequiemConfig.SOUL_CAPTURE_CHANCE.get() + 0.05D));
-        y += 28;
+                () -> setDouble(RequiemConfig.SOUL_CAPTURE_CHANCE, 0.0D, 1.0D,
+                        RequiemConfig.SOUL_CAPTURE_CHANCE.get() - 0.05D),
+                () -> setDouble(RequiemConfig.SOUL_CAPTURE_CHANCE, 0.0D, 1.0D,
+                        RequiemConfig.SOUL_CAPTURE_CHANCE.get() + 0.05D));
+        y += 24;
 
         addNumericButtons(centerX, y, "screen.requiemunofficial.config.rift_cost",
                 () -> Integer.toString(RequiemConfig.RIFT_TELEPORT_ENERGY_COST.get()),
-                () -> setInt(RequiemConfig.RIFT_TELEPORT_ENERGY_COST,
+                () -> setInt(RequiemConfig.RIFT_TELEPORT_ENERGY_COST, 0, 1000,
                         RequiemConfig.RIFT_TELEPORT_ENERGY_COST.get() - 1),
-                () -> setInt(RequiemConfig.RIFT_TELEPORT_ENERGY_COST,
+                () -> setInt(RequiemConfig.RIFT_TELEPORT_ENERGY_COST, 0, 1000,
                         RequiemConfig.RIFT_TELEPORT_ENERGY_COST.get() + 1));
-        y += 28;
+        y += 24;
 
         addNumericButtons(centerX, y, "screen.requiemunofficial.config.rune_duration",
                 () -> Integer.toString(RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS.get()),
-                () -> setInt(RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS,
+                () -> setInt(RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS, 20, 20 * 60 * 60,
                         RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS.get() - 20),
-                () -> setInt(RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS,
+                () -> setInt(RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS, 20, 20 * 60 * 60,
                         RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS.get() + 20));
+        y += 24;
+
+        addNumericButtons(centerX, y, "screen.requiemunofficial.config.rune_width_bonus",
+                () -> Integer.toString(RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS.get()),
+                () -> setInt(RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS, 0, 20 * 60 * 60,
+                        RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS.get() - 20),
+                () -> setInt(RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS, 0, 20 * 60 * 60,
+                        RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS.get() + 20));
+        y += 24;
+
+        addNumericButtons(centerX, y, "screen.requiemunofficial.config.rune_level_bonus",
+                () -> Integer.toString(RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS.get()),
+                () -> setInt(RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS, 0, 20 * 60 * 60,
+                        RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS.get() - 20),
+                () -> setInt(RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS, 0, 20 * 60 * 60,
+                        RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS.get() + 20));
+        y += 24;
+
+        addRenderableWidget(Button.builder(
+                Component.translatable("screen.requiemunofficial.config.unconditional_exit",
+                        Component.translatable(RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()
+                                ? "options.on" : "options.off")),
+                button -> {
+                    RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(
+                            !RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get());
+                    RequiemConfig.SPEC.save();
+                    rebuildWidgets();
+                }
+        ).bounds(centerX - 100, y, 200, 20).build());
 
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.done"),
@@ -63,14 +95,13 @@ public class RequiemConfigScreen extends Screen {
         }).bounds(centerX + 78, y, 22, 20).build());
     }
 
-    private static void setSoulCaptureChance(double value) {
-        RequiemConfig.SOUL_CAPTURE_CHANCE.set(Math.max(0.0D, Math.min(1.0D, value)));
+    private static void setDouble(ForgeConfigSpec.DoubleValue configValue, double min, double max, double value) {
+        configValue.set(Math.max(min, Math.min(max, value)));
         RequiemConfig.SPEC.save();
     }
 
-    private static void setInt(net.minecraftforge.common.ForgeConfigSpec.IntValue configValue, int value) {
-        int min = configValue == RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS ? 20 : 0;
-        configValue.set(Math.max(min, value));
+    private static void setInt(ForgeConfigSpec.IntValue configValue, int min, int max, int value) {
+        configValue.set(Math.max(min, Math.min(max, value)));
         RequiemConfig.SPEC.save();
     }
 

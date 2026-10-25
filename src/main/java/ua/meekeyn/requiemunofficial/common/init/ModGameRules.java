@@ -1,91 +1,106 @@
 package ua.meekeyn.requiemunofficial.common.init;
 
+import net.minecraft.commands.synchronization.ArgumentTypeInfo;
+import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.world.level.GameRules;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraftforge.registries.RegistryObject;
+import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.gamerule.EnumArgumentInfo;
+import ua.meekeyn.requiemunofficial.common.gamerule.EnumGameRule;
+import ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection;
+import ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory;
+import ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType;
 
 public final class ModGameRules {
 
-    public static final int STARTING_REMNANT_CHOOSE = 0;
-    public static final int STARTING_REMNANT_FORCE_REMNANT = 1;
-    public static final int STARTING_REMNANT_FORCE_VANILLA = 2;
+    /**
+     * Реєстрація типу аргумента {@code EnumArgumentType} для мережі: коли сервер відправляє
+     * дерево команд (ClientboundCommandsPacket), Minecraft шукає тип у ArgumentTypeInfos та
+     * BuiltInRegistries.COMMAND_ARGUMENT_TYPE. Без цієї реєстрації вхід у світ падає з
+     * "Unrecognized argument type". Див. Forge-документацію до ArgumentTypeInfos.registerByClass.
+     */
+    public static final DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES =
+            DeferredRegister.create(ForgeRegistries.COMMAND_ARGUMENT_TYPES, RequiemUnofficial.MODID);
 
-    public static final int POSSESSION_KEEP_INVENTORY_NEVER = 0;
-    public static final int POSSESSION_KEEP_INVENTORY_LIVING = 1;
-    public static final int POSSESSION_KEEP_INVENTORY_ALWAYS = 2;
+    public static final RegistryObject<EnumArgumentInfo> ENUM_ARGUMENT_TYPE_INFO =
+            ARGUMENT_TYPES.register("enum", () -> ArgumentTypeInfos.registerByClass(
+                    EnumArgumentInfo.enumArgumentClass(),
+                    EnumArgumentInfo.INSTANCE
+            ));
 
-    public static final int POSSESSION_DETECTION_DISABLED = 0;
-    public static final int POSSESSION_DETECTION_NORMAL = 1;
-    public static final int POSSESSION_DETECTION_HARD = 2;
-
+    // Оригінальні правила beta.16 зберігають простір імен requiem: і текстові перелічувані значення.
     public static final GameRules.Key<GameRules.BooleanValue> SHOW_POSSESSOR_NAME_TAG =
             GameRules.register(
-                    "requiemunofficial:showPossessorNameTag",
+                    "requiem:showPossessorNameTag",
                     GameRules.Category.PLAYER,
                     GameRules.BooleanValue.create(false)
             );
 
     public static final GameRules.Key<GameRules.BooleanValue> DISABLE_CURE =
             GameRules.register(
-                    "requiemunofficial:disableCure",
+                    "requiem:disableCure",
                     GameRules.Category.PLAYER,
                     GameRules.BooleanValue.create(false)
             );
 
     public static final GameRules.Key<GameRules.BooleanValue> DROP_VESSEL_ON_DISCONNECT =
             GameRules.register(
-                    "requiemunofficial:dropVesselOnDisconnect",
+                    "requiem:dropVesselOnDisconnect",
                     GameRules.Category.PLAYER,
                     GameRules.BooleanValue.create(false)
             );
 
-    public static final GameRules.Key<GameRules.IntegerValue> STARTING_REMNANT_TYPE =
+    public static final GameRules.Key<EnumGameRule<StartingRemnantType>> STARTING_REMNANT_TYPE =
             GameRules.register(
-                    "requiemunofficial:startingRemnantType",
+                    "requiem:startingRemnantType",
                     GameRules.Category.PLAYER,
-                    GameRules.IntegerValue.create(STARTING_REMNANT_CHOOSE)
+                    EnumGameRule.create(StartingRemnantType.class, StartingRemnantType.CHOOSE, (server, rule) -> {
+                    })
             );
 
-    public static final GameRules.Key<GameRules.IntegerValue> POSSESSION_KEEP_INVENTORY =
+    public static final GameRules.Key<EnumGameRule<PossessionKeepInventory>> POSSESSION_KEEP_INVENTORY =
             GameRules.register(
-                    "requiemunofficial:possessionKeepInventory",
+                    "requiem:possessionKeepInventory",
                     GameRules.Category.PLAYER,
-                    GameRules.IntegerValue.create(POSSESSION_KEEP_INVENTORY_NEVER)
+                    EnumGameRule.create(PossessionKeepInventory.class, PossessionKeepInventory.NEVER, (server, rule) -> {
+                    })
             );
 
-    public static final GameRules.Key<GameRules.IntegerValue> POSSESSION_DETECTION =
+    public static final GameRules.Key<EnumGameRule<PossessionDetection>> POSSESSION_DETECTION =
             GameRules.register(
-                    "requiemunofficial:possessionDetection",
+                    "requiem:possessionDetection",
                     GameRules.Category.MOBS,
-                    GameRules.IntegerValue.create(POSSESSION_DETECTION_NORMAL)
+                    EnumGameRule.create(PossessionDetection.class, PossessionDetection.NORMAL, (server, rule) -> {
+                    })
             );
 
     private ModGameRules() {
     }
 
-    public static int getStartingRemnantType(GameRules rules) {
-        return clampMode(rules.getInt(STARTING_REMNANT_TYPE));
+    public static StartingRemnantType getStartingRemnantType(GameRules rules) {
+        return rules.getRule(STARTING_REMNANT_TYPE).get();
     }
 
-    public static int getPossessionKeepInventory(GameRules rules) {
-        return clampMode(rules.getInt(POSSESSION_KEEP_INVENTORY));
+    public static PossessionKeepInventory getPossessionKeepInventory(GameRules rules) {
+        return rules.getRule(POSSESSION_KEEP_INVENTORY).get();
     }
 
-    public static int getPossessionDetection(GameRules rules) {
-        return clampMode(rules.getInt(POSSESSION_DETECTION));
-    }
-
-    private static int clampMode(int value) {
-        return Math.max(0, Math.min(2, value));
+    public static PossessionDetection getPossessionDetection(GameRules rules) {
+        return rules.getRule(POSSESSION_DETECTION).get();
     }
 
     public static boolean shouldTransferPossessionInventory(GameRules rules, boolean hostAlive) {
-        return switch (getPossessionKeepInventory(rules)) {
-            case POSSESSION_KEEP_INVENTORY_LIVING -> !hostAlive;
-            case POSSESSION_KEEP_INVENTORY_ALWAYS -> false;
-            default -> true;
-        };
+        return getPossessionKeepInventory(rules).shouldTransfer(hostAlive);
     }
 
     public static void init() {
         // Loads the class early enough for the keys to be registered before worlds are created.
+    }
+
+    public static void register(IEventBus eventBus) {
+        ARGUMENT_TYPES.register(eventBus);
     }
 }

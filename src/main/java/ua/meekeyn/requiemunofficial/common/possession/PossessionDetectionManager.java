@@ -9,6 +9,7 @@ import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 
 import java.util.List;
@@ -74,12 +75,12 @@ public final class PossessionDetectionManager {
         }
     }
 
-    public static DetectionResult resultFor(int mode, DetectionReason reason) {
-        if (mode == ModGameRules.POSSESSION_DETECTION_DISABLED) {
+    public static DetectionResult resultFor(PossessionDetection mode, DetectionReason reason) {
+        if (mode == PossessionDetection.DISABLED) {
             return DetectionResult.UNDETECTED;
         }
         if (reason == DetectionReason.ATTACKED
-                || mode == ModGameRules.POSSESSION_DETECTION_HARD) {
+                || mode == PossessionDetection.HARD) {
             return DetectionResult.CROWD_DETECTED;
         }
         return DetectionResult.UNDETECTED;

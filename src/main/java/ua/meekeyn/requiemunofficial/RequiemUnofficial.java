@@ -10,6 +10,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import ua.meekeyn.requiemunofficial.client.ClientSetup;
+import ua.meekeyn.requiemunofficial.common.config.RequiemClientConfig;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.init.*;
 import ua.meekeyn.requiemunofficial.common.network.ModNetwork;
@@ -28,6 +29,7 @@ public class RequiemUnofficial {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RequiemConfig.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, RequiemClientConfig.SPEC);
 
         ModItems.register(modEventBus);
         ModEnchantments.register(modEventBus);
@@ -42,6 +44,7 @@ public class RequiemUnofficial {
         ModStructures.register(modEventBus);
         ModMenuTypes.register(modEventBus);
         ModGameRules.init();
+        ModGameRules.register(modEventBus);
         ModCriteria.init();
         modEventBus.addListener(ModCapabilities::register);
 

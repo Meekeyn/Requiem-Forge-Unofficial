@@ -31,4 +31,22 @@ public final class ClientVagrantFog {
         event.setFarPlaneDistance(INSIDE_BLOCK_FOG_END);
         event.setCanceled(true);
     }
+
+    @SubscribeEvent
+    public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
+        LocalPlayer player = Minecraft.getInstance().player;
+        if (player == null || !VagrantRules.isRestricted(player)) {
+            return;
+        }
+
+        // Official Requiem parity (BackgroundRendererMixin#neutralizeBackgroundTint):
+        // an incorporeal soul must never see a background tint darker than its own
+        // luminance, otherwise dark fluid fog (e.g. water fog ~#0A0A65) renders the
+        // whole underwater screen black. This only lifts the tint for the vagrant;
+        // the fog distance and every other fog behavior stay untouched.
+        float luminance = event.getRed() * 0.3F + event.getGreen() * 0.59F + event.getBlue() * 0.11F;
+        event.setRed(Math.max(event.getRed(), luminance));
+        event.setGreen(Math.max(event.getGreen(), luminance));
+        event.setBlue(Math.max(event.getBlue(), luminance));
+    }
 }

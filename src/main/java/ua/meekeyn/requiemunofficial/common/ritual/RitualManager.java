@@ -83,10 +83,6 @@ public final class RitualManager {
                 player.getUUID(),
                 target == null ? null : target.getUUID()
         );
-        player.sendSystemMessage(Component.translatable(
-                "message.requiemunofficial.ritual.started",
-                type.durationTicks() / 20
-        ));
         return true;
     }
 
@@ -152,29 +148,13 @@ public final class RitualManager {
 
     private static void applyResult(ServerPlayer player, BlockPos headPos, RitualType type, LivingEntity target) {
         switch (type) {
-            case RESURRECTION -> {
-                SoulManager.setResurrectionPoint(
-                        player,
-                        player.serverLevel().dimension().location().toString(),
-                        headPos
-                );
-                player.sendSystemMessage(Component.translatable(
-                        "message.requiemunofficial.ritual.resurrection_prepared",
-                        type.energyCost()
-                ));
-            }
-            case DECAY_ZOMBIE -> {
-                TransformationManager.decayToZombie(target);
-                player.sendSystemMessage(Component.translatable(
-                        "message.requiemunofficial.ritual.decay_zombie_complete"
-                ));
-            }
-            case DECAY_SKELETON -> {
-                TransformationManager.decayToSkeleton(target);
-                player.sendSystemMessage(Component.translatable(
-                        "message.requiemunofficial.ritual.decay_skeleton_complete"
-                ));
-            }
+            case RESURRECTION -> SoulManager.setResurrectionPoint(
+                    player,
+                    player.serverLevel().dimension().location().toString(),
+                    headPos
+            );
+            case DECAY_ZOMBIE -> TransformationManager.decayToZombie(target);
+            case DECAY_SKELETON -> TransformationManager.decayToSkeleton(target);
         }
     }
 

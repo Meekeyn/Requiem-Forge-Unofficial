@@ -42,9 +42,6 @@ public class TotemOfSkeletonizationItem extends Item {
         if (!player.getAbilities().instabuild) {
             stack.shrink(1);
         }
-        player.sendSystemMessage(Component.translatable(
-                "message.requiemunofficial.transformation.skeletonized"
-        ));
         return InteractionResult.CONSUME;
     }
 

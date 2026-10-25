@@ -52,7 +52,7 @@
       ]
     },
     {
-      "name": "blit",
+      "name": "requiemunofficial:shadow_blit",
       "intarget": "swap",
       "outtarget": "minecraft:main"
     }

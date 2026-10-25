@@ -6,22 +6,23 @@ public final class RequiemConfig {
     public static final ForgeConfigSpec SPEC;
 
     public static final ForgeConfigSpec.DoubleValue SOUL_CAPTURE_CHANCE;
-    public static final ForgeConfigSpec.IntValue OPUS_DAEMONIUM_XP_LEVEL_COST;
     public static final ForgeConfigSpec.IntValue RIFT_TELEPORT_ENERGY_COST;
     public static final ForgeConfigSpec.IntValue RUNE_EFFECT_BASE_DURATION_TICKS;
     public static final ForgeConfigSpec.IntValue RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS;
     public static final ForgeConfigSpec.IntValue RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS;
+    public static final ForgeConfigSpec.BooleanValue ALLOW_UNCONDITIONAL_POSSESSION_EXIT;
 
     static {
         ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+
+        // Усі налаштування тут — port-only (в оригиналі beta.16 їх немає), тому тримаємо їх
+        // під єдиною секцією requiemunofficial.
+        builder.push("requiemunofficial");
 
         builder.push("soul");
         SOUL_CAPTURE_CHANCE = builder
                 .comment("Chance from 0.0 to 1.0 to capture a killed mob soul into an empty soul vessel.")
                 .defineInRange("soulCaptureChance", 1.0D, 0.0D, 1.0D);
-        OPUS_DAEMONIUM_XP_LEVEL_COST = builder
-                .comment("Legacy setting retained for old configs. Stage 20 beta.16-style Opus and remnant vessels do not spend XP.")
-                .defineInRange("opusDaemoniumXpLevelCost", 5, 0, 100);
         builder.pop();
 
         builder.push("rift");
@@ -40,6 +41,15 @@ public final class RequiemConfig {
         RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS = builder
                 .comment("Extra duration per rune level above 1, in ticks.")
                 .defineInRange("runeEffectLevelDurationBonusTicks", 60, 0, 20 * 60 * 60);
+        builder.pop();
+
+        builder.push("possession");
+        ALLOW_UNCONDITIONAL_POSSESSION_EXIT = builder
+                .comment("Allow port-only unconditional possession exit (bound to its own key).",
+                        "When false, dissociation follows the original beta.16 conditions.")
+                .define("allowUnconditionalPossessionExit", false);
+        builder.pop();
+
         builder.pop();
 
         SPEC = builder.build();

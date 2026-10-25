@@ -2,9 +2,20 @@
 # Всё остальное игнорируется. Git не заходит в игнорируемые каталоги,
 # поэтому каждый уровень нужно заново включать.
 
+# В репозитории хранятся только Java-исходники, ресурсы и стандартные
+# файлы сборки. Всё остальное игнорируется.
+
 /*
 !/.gitignore
 !/src/
+!/build.gradle
+!/settings.gradle
+!/gradle.properties
+!/gradlew
+!/gradlew.bat
+!/gradle/
+!/README.md
+!/LICENSE
 /src/*
 !/src/main/
 /src/main/*

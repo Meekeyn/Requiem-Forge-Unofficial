@@ -66,7 +66,7 @@ public final class ResurrectionManager {
                 player.getYRot(),
                 player.getXRot()
         );
-        SoulLifecycleManager.removeShell(player, false);
+        SoulLifecycleManager.removeShell(player);
         SoulManager.clearResurrectionPoint(player);
         SoulManager.setState(player, SoulState.MORTAL);
         player.sendSystemMessage(Component.translatable(

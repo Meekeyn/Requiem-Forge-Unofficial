@@ -15,6 +15,7 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 import ua.meekeyn.requiemunofficial.common.init.ModSounds;
 import ua.meekeyn.requiemunofficial.common.network.DeathSuspensionFxPacket;
@@ -71,9 +72,9 @@ public final class DeathSuspensionManager {
             return DeathInterception.PASS;
         }
 
-        int mode = ModGameRules.getStartingRemnantType(player.level().getGameRules());
-        if (mode == ModGameRules.STARTING_REMNANT_FORCE_REMNANT
-                || mode == ModGameRules.STARTING_REMNANT_FORCE_VANILLA) {
+        StartingRemnantType mode = ModGameRules.getStartingRemnantType(player.level().getGameRules());
+        if (mode == StartingRemnantType.FORCE_REMNANT
+                || mode == StartingRemnantType.FORCE_VANILLA) {
             InitialSoulChoiceManager.applyChoice(player, InitialSoulChoiceManager.forcedChoice(player));
             return DeathInterception.ALLOW_VANILLA_DEATH;
         }

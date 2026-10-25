@@ -250,9 +250,6 @@ public class SoulVesselItem extends Item {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
                 || serverPlayer.connection != null) {
             player.getCooldowns().addCooldown(ModItems.FILLED_SOUL_VESSEL.get(), POST_CAPTURE_COOLDOWN_TICKS);
-            player.sendSystemMessage(Component.translatable(
-                    "message.requiemunofficial.soul_vessel.captured", soulType
-            ));
         }
         return exchangeStack(player, stack, filled);
     }
@@ -542,14 +539,8 @@ public class SoulVesselItem extends Item {
 
         if (!level.isClientSide) {
             int soulAmount = getSoulAmount(stack);
-            String soulType = getSoulType(stack);
 
             SoulManager.addSoul(player, soulAmount);
-            player.sendSystemMessage(Component.translatable(
-                    "message.requiemunofficial.soul_vessel.absorbed",
-                    soulType,
-                    soulAmount
-            ));
 
             ItemStack resultStack = new ItemStack(ModItems.SHATTERED_SOUL_VESSEL.get());
 

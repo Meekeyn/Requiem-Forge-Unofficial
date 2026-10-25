@@ -88,6 +88,7 @@ import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulLifecycleManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
@@ -447,7 +448,6 @@ public final class PossessionManager {
             return false;
         }
 
-        Component targetName = target.getDisplayName();
         if (target instanceof Mob mob) {
             target.getPersistentData().putBoolean(ORIGINAL_NO_AI, mob.isNoAi());
             mob.setNoAi(false);
@@ -486,10 +486,6 @@ public final class PossessionManager {
                 new PossessionFxPacket(PossessionFxPacket.Phase.ACK, target.getId())
         );
         ModCriteria.PLAYER_POSSESSED_ENTITY.trigger(player, target);
-        sendSystemMessage(player, Component.translatable(
-                "message.requiemunofficial.possession.started",
-                targetName
-        ));
         return true;
     }
 
@@ -1242,10 +1238,35 @@ public final class PossessionManager {
             }
             LivingEntity host = getControlledHost(player);
             if (host != null) {
-                release(player, host);
+                // Оригінальна beta.16 умова виходу з тіла за клавішею дисоціації.
+                if (canDissociateFrom(player, host)) {
+                    release(player, host);
+                }
                 return;
             }
-            SoulLifecycleManager.splitPlayer(player, true);
+            // Оригінальний beta.16 раскол («Ethereal Fracture») вимагає стану remnant та
+            // ефекту Емансипації; команди нижче використовують примусовий раскол окремо.
+            if (canSplitFromKey(player)) {
+                SoulLifecycleManager.splitPlayer(player);
+            }
+            return;
+        }
+        if (action == PossessionActionPacket.Action.EMERGENCY_RELEASE) {
+            LivingEntity host = getControlledHost(player);
+            if (host != null && host.getType().is(ModTags.IMMOVABLE)) {
+                release(player, host);
+            }
+            return;
+        }
+        if (action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE) {
+            // Port-only: серверно-авторитетна перевірка конфігу.
+            if (!RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()) {
+                return;
+            }
+            LivingEntity host = getControlledHost(player);
+            if (host != null) {
+                release(player, host);
+            }
             return;
         }
 
@@ -1258,9 +1279,27 @@ public final class PossessionManager {
             case JUMP -> jump(host);
             case ATTACK -> attack(player, host);
             case INTERACT -> interact(player, host);
-            case RELEASE -> {
+            case RELEASE, EMERGENCY_RELEASE, UNCONDITIONAL_RELEASE -> {
             }
         }
+    }
+
+    /**
+     * Оригінальна beta.16 логіка {@code canDissociateFrom}: вихід із тіла за клавішею дисоціації
+     * дозволений для «frictionless» тіл (шалкер) або за наявності Емансипації.
+     */
+    private static boolean canDissociateFrom(ServerPlayer player, LivingEntity host) {
+        return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
+                || player.hasEffect(ModEffects.EMANCIPATION.get());
+    }
+
+    /**
+     * Оригінальний beta.16 {@code DemonRemnantState.canSplit(false)}: раскол із клавіші можливий
+     * лише для remnant-стану за наявності Емансипації.
+     */
+    private static boolean canSplitFromKey(ServerPlayer player) {
+        return SoulManager.getState(player) == SoulState.REMNANT
+                && player.hasEffect(ModEffects.EMANCIPATION.get());
     }
 
     public static void updatePossessionInput(ServerPlayer player, PossessionInputPacket packet) {
@@ -3198,9 +3237,6 @@ public final class PossessionManager {
         restoreBeta16PlayerBodyParameters(player);
         restorePossessorBody(player);
         VagrantEvents.refreshAfterSoulStateChange(player);
-        if (notify) {
-            sendSystemMessage(player, Component.translatable("message.requiemunofficial.possession.released"));
-        }
     }
 
     private static void releaseFromHostDeath(ServerPlayer player, LivingEntity host) {

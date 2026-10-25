@@ -13,7 +13,11 @@ public record PossessionActionPacket(Action action) {
         JUMP,
         ATTACK,
         INTERACT,
-        RELEASE
+        RELEASE,
+        // Аварійний вихід із недвижних (immovable) тіл (оригінальна Shift-поведінка beta.16).
+        EMERGENCY_RELEASE,
+        // Port-only безумовний вихід; сервер застосовує його лише за увімкненого конфігу.
+        UNCONDITIONAL_RELEASE
     }
 
     public static void encode(PossessionActionPacket packet, FriendlyByteBuf buffer) {

@@ -48,6 +48,13 @@ public final class ClientShadowPlayerFx {
     /** Цвет очистки цели {@code players}: чистый ноль, чтобы альфа-маска была пустой. */
     private static final float[] PLAYERS_CLEAR_COLOR = {0.0F, 0.0F, 0.0F, 0.0F};
 
+    // TODO(REMOVE-DEBUG): temporary isolation switch for sky-artifact triage.
+    // While run/no_shadow_chain.txt exists, the whole shadow-player chain is
+    // bypassed (players render normally, no post chain runs). Diagnostic only.
+    private static boolean debugChainDisabled() {
+        return new java.io.File("no_shadow_chain.txt").exists();
+    }
+
     /** Обёртки над базовыми типами: по одному экземпляру на базовый тип. */
     private static final Map<RenderType, RenderType> SHADOW_RENDER_TYPES = new HashMap<>();
 
@@ -78,6 +85,9 @@ public final class ClientShadowPlayerFx {
         if (player == null || player.isSpectator()) {
             return false;
         }
+        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
+            return false;
+        }
         if (player == Minecraft.getInstance().player && ClientDeathSuspensionFx.isSuspended()) {
             return true;
         }
@@ -94,6 +104,9 @@ public final class ClientShadowPlayerFx {
         if (base == null) {
             return null;
         }
+        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
+            return base;
+        }
         if (getOrCreateChain(Minecraft.getInstance()) == null) {
             return base;
         }
@@ -107,6 +120,9 @@ public final class ClientShadowPlayerFx {
      * сброшены в цель {@code players}.
      */
     public static void renderShaderEffects(float partialTick) {
+        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
+            return;
+        }
         if (!renderedSoulPlayers) {
             return;
         }
@@ -164,6 +180,13 @@ public final class ClientShadowPlayerFx {
     /**
      * Бета-16: {@code ShadowPlayerFx#beginPlayersFbWrite} — привязывает цель
      * {@code players}, запрещает запись глубины и очищает цвет один раз за кадр.
+     * <p>
+     * Как и в бета-16 (там — {@code FramebufferAccessor#getClearColor}), текущий
+     * clearColor сохраняется и восстанавливается после очистки, чтобы мод не
+     * оставлял «чужой» GL-цвет очистки для последующих ванильных проходов. На
+     * композит теней это не влияет: {@code PostPass} каждый раз задаёт clearColor
+     * из stored-каналей цели ({@code RenderTarget#clear}); цвет фона после
+     * композитинга определяет финальный проход {@code shadow_blit} без блендинга.
      */
     private static void beginPlayersFbWrite() {
         Minecraft minecraft = Minecraft.getInstance();
@@ -177,11 +200,17 @@ public final class ClientShadowPlayerFx {
         players.bindWrite(false);
         RenderSystem.depthMask(false);
         if (!renderedSoulPlayers) {
+            float[] previousClearColor = new float[4];
+            GL11.glGetFloatv(GL11.GL_COLOR_CLEAR_VALUE, previousClearColor);
             RenderSystem.clearColor(
                     PLAYERS_CLEAR_COLOR[0], PLAYERS_CLEAR_COLOR[1],
                     PLAYERS_CLEAR_COLOR[2], PLAYERS_CLEAR_COLOR[3]
             );
             RenderSystem.clear(GL11.GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
+            RenderSystem.clearColor(
+                    previousClearColor[0], previousClearColor[1],
+                    previousClearColor[2], previousClearColor[3]
+            );
             renderedSoulPlayers = true;
         }
     }

@@ -278,12 +278,6 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
                 soulAmount
         );
 
-        player.sendSystemMessage(Component.translatable(
-                "message.requiemunofficial.obelisk.soul_absorbed",
-                soulType,
-                soulEnergy
-        ));
-
         if (!player.getAbilities().instabuild) {
             ItemStack resultStack = new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get());
 

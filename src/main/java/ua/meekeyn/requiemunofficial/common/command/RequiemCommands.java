@@ -111,12 +111,15 @@ public final class RequiemCommands {
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("requiem")
                 .requires(source -> source.hasPermission(2))
-                .then(mortalSubcommand())
                 .then(vagrantSubcommand())
                 .then(possessionSubcommand())
                 .then(remnantSubcommand())
                 .then(shellSubcommand())
                 .then(soulSubcommand()));
+        // Port-only розширення тримаємо в окремому корені, щоб /requiem лишався ідентичним beta.16.
+        event.getDispatcher().register(Commands.literal("requiemunofficial")
+                .requires(source -> source.hasPermission(2))
+                .then(mortalSubcommand()));
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> mortalSubcommand() {
@@ -171,8 +174,7 @@ public final class RequiemCommands {
                 .then(Commands.literal("set")
                         .then(Commands.argument("remnant_type", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
-                                        List.of("true", "false", "mortal", "remnant",
-                                                "requiemunofficial:mortal", "requiemunofficial:remnant"),
+                                        List.of("true", "false", "requiem:mortal", "requiem:remnant"),
                                         builder
                                 ))
                                 .executes(context -> setRemnant(
@@ -382,7 +384,7 @@ public final class RequiemCommands {
                 if (SoulManager.getState(player) != SoulState.REMNANT) {
                     throw VAGRANT_MORTAL.create(player.getDisplayName());
                 }
-                if (!SoulLifecycleManager.splitPlayer(player, false)) {
+                if (!SoulLifecycleManager.splitPlayer(player)) {
                     throw VAGRANT_FAILED.create(player.getDisplayName());
                 }
             } else {
@@ -472,7 +474,7 @@ public final class RequiemCommands {
         if (state == SoulState.VAGRANT) {
             throw SHELL_SPLIT_VAGRANT.create(player.getDisplayName());
         }
-        if (!SoulLifecycleManager.splitPlayer(player, true)) {
+        if (!SoulLifecycleManager.splitPlayer(player)) {
             throw SHELL_SPLIT_MORTAL.create(player.getDisplayName());
         }
     }
@@ -515,7 +517,7 @@ public final class RequiemCommands {
         } else {
             SoulManager.clearPossession(player);
         }
-        SoulLifecycleManager.removeShell(player, false);
+        SoulLifecycleManager.removeShell(player);
         player.stopUsingItem();
         SoulManager.clearResurrectionPoint(player);
         SoulManager.setState(player, SoulState.MORTAL);
@@ -585,8 +587,8 @@ public final class RequiemCommands {
                                                String name) throws CommandSyntaxException {
         String value = StringArgumentType.getString(context, name).toLowerCase(Locale.ROOT);
         return switch (value) {
-            case "true", "remnant", "requiemunofficial:remnant", "requiem:remnant" -> SoulState.REMNANT;
-            case "false", "mortal", "requiemunofficial:mortal", "requiem:mortal" -> SoulState.MORTAL;
+            case "true", "remnant", "requiem:remnant" -> SoulState.REMNANT;
+            case "false", "mortal", "requiem:mortal" -> SoulState.MORTAL;
             default -> throw REMNANT_TYPE_NOT_FOUND.create(value);
         };
     }

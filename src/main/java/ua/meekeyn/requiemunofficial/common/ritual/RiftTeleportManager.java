@@ -83,7 +83,6 @@ public final class RiftTeleportManager {
             );
         }
         AttritionMobEffect.apply(player, 1, getAttritionLength(sourcePos, target.pos));
-        player.sendSystemMessage(Component.translatable("message.requiemunofficial.rift.teleported"));
         return true;
     }
 

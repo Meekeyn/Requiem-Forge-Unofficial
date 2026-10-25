@@ -678,7 +678,7 @@ public final class CoreDataGameTests {
         ua.meekeyn.requiemunofficial.common.soul.SoulManager.setState(player, SoulState.MORTAL);
         ItemStack opus = new ItemStack(ModItems.OPUS_DAEMONIUM.get());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, opus);
-        int cost = ua.meekeyn.requiemunofficial.common.config.RequiemConfig.OPUS_DAEMONIUM_XP_LEVEL_COST.get();
+        int cost = 5;
         player.experienceLevel = cost;
 
         var result = opus.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
@@ -765,8 +765,7 @@ public final class CoreDataGameTests {
 
         ItemStack pure = new ItemStack(ModItems.PURE_SOUL_VESSEL.get());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, pure);
-        player.experienceLevel = ua.meekeyn.requiemunofficial.common.config.RequiemConfig
-                .OPUS_DAEMONIUM_XP_LEVEL_COST.get();
+        player.experienceLevel = 5;
 
         var result = pure.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
         helper.assertTrue(result.getObject().is(ModItems.PURE_SOUL_VESSEL.get()),
@@ -2551,13 +2550,26 @@ public final class CoreDataGameTests {
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
 
+        // Оригінальна beta.16 умова: раскол із клавіші без Емансипації заборонений.
+        PossessionManager.handleAction(
+                player,
+                ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE
+        );
+        helper.assertTrue(SoulManager.getState(player) == SoulState.REMNANT,
+                "Release action without Emancipation must not fracture a remnant");
+        helper.assertTrue(SoulManager.getPlayerShellId(player) == null,
+                "Release action without Emancipation must not leave an abandoned shell");
+
+        addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
+                ModEffects.EMANCIPATION.get(), 200, 0));
+
         PossessionManager.handleAction(
                 player,
                 ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE
         );
 
         helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
-                "Release action should split an embodied remnant into vagrant state");
+                "Emancipated release action should split an embodied remnant into vagrant state");
         helper.assertTrue(SoulManager.getPlayerShellId(player) != null,
                 "Release action should leave an abandoned player shell");
         helper.succeed();
@@ -2766,12 +2778,13 @@ public final class CoreDataGameTests {
 
     @GameTest(template = "empty")
     public static void forcedRemnantFirstDeathUsesVanillaDeathPath(GameTestHelper helper) {
-        int oldMode = helper.getLevel().getGameRules().getInt(
-                ua.meekeyn.requiemunofficial.common.init.ModGameRules.STARTING_REMNANT_TYPE
-        );
+        ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType oldMode =
+                helper.getLevel().getGameRules().getRule(
+                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.STARTING_REMNANT_TYPE
+                ).get();
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.STARTING_REMNANT_TYPE)
-                .set(ua.meekeyn.requiemunofficial.common.init.ModGameRules.STARTING_REMNANT_FORCE_REMNANT,
+                .set(ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType.FORCE_REMNANT,
                         helper.getLevel().getServer());
         try {
             TestServerPlayer player = new TestServerPlayer(helper, "choice-forced-remnant-test");
@@ -3288,10 +3301,16 @@ public final class CoreDataGameTests {
         helper.assertTrue(root != null, "The /requiem command root must be registered on the server dispatcher");
         helper.assertTrue(root.getChild("soul") != null, "/requiem soul must be registered");
         helper.assertTrue(root.getChild("remnant") != null, "/requiem remnant must be registered");
-        helper.assertTrue(root.getChild("mortal") != null, "/requiem mortal must be registered");
         helper.assertTrue(root.getChild("vagrant") != null, "/requiem vagrant must be registered");
         helper.assertTrue(root.getChild("possession") != null, "/requiem possession must be registered");
         helper.assertTrue(root.getChild("shell") != null, "/requiem shell must be registered");
+        helper.assertTrue(root.getChild("mortal") == null,
+                "Port-only /requiem mortal must not be registered under the original root");
+        com.mojang.brigadier.tree.CommandNode<net.minecraft.commands.CommandSourceStack> portRoot =
+                helper.getLevel().getServer().getCommands().getDispatcher().getRoot().getChild("requiemunofficial");
+        helper.assertTrue(portRoot != null, "The /requiemunofficial command root must be registered");
+        helper.assertTrue(portRoot.getChild("mortal") != null,
+                "/requiemunofficial mortal must be registered");
         helper.succeed();
     }
 
@@ -3527,7 +3546,7 @@ public final class CoreDataGameTests {
         SoulManager.setState(player, SoulState.REMNANT);
         player.getInventory().items.set(4, new ItemStack(Items.DIAMOND, 3));
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should create a shell");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should create a shell");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Shell should exist");
         shell.hurt(shell.damageSources().generic(), 1000.0F);
@@ -4131,7 +4150,7 @@ public final class CoreDataGameTests {
         player.getInventory().items.set(5, soulbound.copy());
         player.getInventory().items.set(6, new ItemStack(Items.DIRT, 12));
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should succeed");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         helper.assertTrue(player.getInventory().items.get(5).is(Items.AMETHYST_SHARD),
@@ -4169,7 +4188,7 @@ public final class CoreDataGameTests {
         offhand.getOrCreateTag().putBoolean("RequiemSoulbound", true);
         player.getInventory().offhand.set(0, offhand.copy());
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should succeed");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         helper.assertTrue(player.getInventory().armor.get(3).isEmpty(),
@@ -4195,7 +4214,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_ALWAYS,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.ALWAYS,
                         helper.getLevel().getServer()
                 );
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
@@ -4207,7 +4226,7 @@ public final class CoreDataGameTests {
         SoulManager.setState(player, SoulState.REMNANT);
         player.getInventory().items.set(4, new ItemStack(Items.DIAMOND, 3));
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should succeed");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         helper.assertTrue(player.getInventory().items.get(4).is(Items.DIAMOND)
@@ -4224,7 +4243,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                         helper.getLevel().getServer()
                 );
         helper.succeed();
@@ -4250,7 +4269,7 @@ public final class CoreDataGameTests {
                 0
         ));
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should succeed");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         helper.assertTrue(player.hasEffect(ModEffects.ATTRITION.get()),
@@ -4324,7 +4343,7 @@ public final class CoreDataGameTests {
                 0
         ));
 
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should succeed");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
 
         helper.assertTrue(!player.hasEffect(ModEffects.RECLAMATION.get()),
                 "Reclamation should be cleared during dissociation/split cleanup");
@@ -4339,7 +4358,7 @@ public final class CoreDataGameTests {
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-penance-merge")
         );
         SoulManager.setState(player, SoulState.REMNANT);
-        helper.assertTrue(SoulLifecycleManager.splitPlayer(player, false), "Split should create a reclaimable shell");
+        helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should create a reclaimable shell");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
@@ -4510,7 +4529,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                         helper.getLevel().getServer()
                 );
 
@@ -4559,7 +4578,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                         helper.getLevel().getServer()
                 );
 
@@ -4599,7 +4618,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                         helper.getLevel().getServer()
                 );
 
@@ -5348,7 +5367,7 @@ public final class CoreDataGameTests {
         rules.getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.SHOW_POSSESSOR_NAME_TAG)
                 .set(false, server);
         rules.getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
-                .set(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER, server);
+                .set(ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER, server);
         helper.assertTrue(
                 !rules.getBoolean(ua.meekeyn.requiemunofficial.common.init.ModGameRules.SHOW_POSSESSOR_NAME_TAG),
                 "Possessor name tag gamerule should be writable"
@@ -5359,17 +5378,17 @@ public final class CoreDataGameTests {
         );
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.init.ModGameRules.getStartingRemnantType(rules)
-                        == ua.meekeyn.requiemunofficial.common.init.ModGameRules.STARTING_REMNANT_CHOOSE,
+                        == ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType.CHOOSE,
                 "Starting remnant type should default to choose"
         );
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.init.ModGameRules.getPossessionKeepInventory(rules)
-                        == ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        == ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                 "Possession inventory gamerule should be writable"
         );
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.init.ModGameRules.getPossessionDetection(rules)
-                        == ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION_NORMAL,
+                        == ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection.NORMAL,
                 "Possession detection should default to normal"
         );
         helper.succeed();
@@ -5409,9 +5428,9 @@ public final class CoreDataGameTests {
 
     @GameTest(template = "empty")
     public static void possessionGameRuleSemanticsMatchOriginal(GameTestHelper helper) {
-        var disabled = ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION_DISABLED;
-        var normal = ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION_NORMAL;
-        var hard = ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION_HARD;
+        var disabled = ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection.DISABLED;
+        var normal = ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection.NORMAL;
+        var hard = ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection.HARD;
 
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.resultFor(
@@ -5442,7 +5461,7 @@ public final class CoreDataGameTests {
         helper.getLevel().getGameRules()
                 .getRule(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY)
                 .set(
-                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_KEEP_INVENTORY_NEVER,
+                        ua.meekeyn.requiemunofficial.common.gamerule.PossessionKeepInventory.NEVER,
                         helper.getLevel().getServer()
                 );
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
@@ -6204,11 +6223,12 @@ public final class CoreDataGameTests {
         helper.getLevel().addFreshEntity(zombie);
         net.minecraft.world.entity.projectile.Arrow arrow =
                 new net.minecraft.world.entity.projectile.Arrow(helper.getLevel(), host);
-        int oldDetection = helper.getLevel().getGameRules().getInt(
-                ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION);
+        ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection oldDetection =
+                helper.getLevel().getGameRules().getRule(
+                        ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION).get();
         helper.getLevel().getGameRules().getRule(
                 ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION)
-                .set(ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION_DISABLED,
+                .set(ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection.DISABLED,
                         helper.getLevel().getServer());
         try {
             var source = helper.getLevel().damageSources().arrow(arrow, host);

@@ -77,7 +77,7 @@ public class PenanceMobEffect extends MobEffect implements StickyMobEffect {
         }
 
         if (SoulManager.getState(player) == SoulState.REMNANT) {
-            return SoulLifecycleManager.splitPlayer(player, false);
+            return SoulLifecycleManager.splitPlayer(player);
         }
         return false;
     }

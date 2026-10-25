@@ -66,11 +66,6 @@ public class IchorVesselItem extends Item {
             }
             if (user instanceof Player player) {
                 SoulManager.addIchor(player, 1);
-                player.sendSystemMessage(Component.translatable(
-                        "message.requiemunofficial.ichor_vessel.absorbed",
-                        SoulManager.getIchorLevel(player),
-                        Component.translatable("ichor_type.requiemunofficial." + ichorType)
-                ));
             }
         }
 

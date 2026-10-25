@@ -164,26 +164,26 @@
   "death.attack.requiem.attrition.hardcore.player": "%2$s put %1$s to rest, forever.",
   "death.attack.requiem.mortal_dysmorphia": "The soul of %1$s did not belong in the body of %2$s.",
 
-  "gamerule.requiemunofficial:showPossessorNameTag": "(Requiem) Show Possessor Nameplates",
-  "gamerule.requiemunofficial:showPossessorNameTag.description": "Show the nameplates of players possessing entities",
-  "gamerule.requiemunofficial:disableCure": "(Requiem) Disable Cure",
-  "gamerule.requiemunofficial:disableCure.description": "Remove the ability to cure players possessing undeads",
-  "gamerule.requiemunofficial:dropVesselOnDisconnect": "(Requiem) Drop Vessel On Disconnect",
-  "gamerule.requiemunofficial:dropVesselOnDisconnect.description": "Leave a remnant vessel or possessed host behind and reconnect to it on login",
-  "gamerule.requiemunofficial:startingRemnantType": "(Requiem) Remnant Type",
-  "gamerule.requiemunofficial:startingRemnantType.description": "Replaces the choice at first death between demon and mortal",
-  "gamerule.requiemunofficial:startingRemnantType.choose": "choose",
-  "gamerule.requiemunofficial:startingRemnantType.force_remnant": "force remnant",
-  "gamerule.requiemunofficial:startingRemnantType.force_vanilla": "force vanilla",
-  "gamerule.requiemunofficial:possessionKeepInventory": "(Requiem) Keep inventory         after possession ends",
-  "gamerule.requiemunofficial:possessionKeepInventory.never": "never",
-  "gamerule.requiemunofficial:possessionKeepInventory.living": "living",
-  "gamerule.requiemunofficial:possessionKeepInventory.always": "always",
-  "gamerule.requiemunofficial:possessionDetection": "(Requiem) Detect possessed mobs",
-  "gamerule.requiemunofficial:possessionDetection.description": "Mobs detect possessed comrades under some circumstances",
-  "gamerule.requiemunofficial:possessionDetection.disabled": "disabled",
-  "gamerule.requiemunofficial:possessionDetection.normal": "normal",
-  "gamerule.requiemunofficial:possessionDetection.hard": "hard",
+  "gamerule.requiem:showPossessorNameTag": "(Requiem) Show Possessor Nameplates",
+  "gamerule.requiem:showPossessorNameTag.description": "Show the nameplates of players possessing entities",
+  "gamerule.requiem:disableCure": "(Requiem) Disable Cure",
+  "gamerule.requiem:disableCure.description": "Remove the ability to cure players possessing undeads",
+  "gamerule.requiem:dropVesselOnDisconnect": "(Requiem) Drop Vessel On Disconnect",
+  "gamerule.requiem:dropVesselOnDisconnect.description": "Leave a remnant vessel or possessed host behind and reconnect to it on login",
+  "gamerule.requiem:startingRemnantType": "(Requiem) Remnant Type",
+  "gamerule.requiem:startingRemnantType.description": "Replaces the choice at first death between demon and mortal",
+  "gamerule.requiem:startingRemnantType.choose": "choose",
+  "gamerule.requiem:startingRemnantType.force_remnant": "force remnant",
+  "gamerule.requiem:startingRemnantType.force_vanilla": "force vanilla",
+  "gamerule.requiem:possessionKeepInventory": "(Requiem) Keep inventory         after possession ends",
+  "gamerule.requiem:possessionKeepInventory.never": "never",
+  "gamerule.requiem:possessionKeepInventory.living": "living",
+  "gamerule.requiem:possessionKeepInventory.always": "always",
+  "gamerule.requiem:possessionDetection": "(Requiem) Detect possessed mobs",
+  "gamerule.requiem:possessionDetection.description": "Mobs detect possessed comrades under some circumstances",
+  "gamerule.requiem:possessionDetection.disabled": "disabled",
+  "gamerule.requiem:possessionDetection.normal": "normal",
+  "gamerule.requiem:possessionDetection.hard": "hard",
 
   "effect.requiem.attrition": "Attrition",
   "effect.requiem.emancipation": "Emancipation",
@@ -193,10 +193,10 @@
   "enchantment.requiem.humanity": "Humanity",
   "enchantment.requiemunofficial.humanity": "Humanity",
 
+  "key.categories.requiemunofficial": "Requiem",
   "key.requiem.dissociation": "[Requiem] Dissociation",
   "key.requiemunofficial.dissociation": "Dissociation",
-  "key.requiemunofficial.possession_interact": "Possessed body ability",
-  "key.categories.requiemunofficial": "Requiem Unofficial",
+  "key.requiemunofficial.unconditional_exit": "Unconditional body exit",
   "requiemunofficial:shulker.onboard": "Press %s or %s to dissociate",
   "requiemunofficial:dissociate_hint": "Press %s to dissociate",
   "requiemunofficial:possess.incompatible_body": "This body is incompatible with your soul",
@@ -273,12 +273,10 @@
   ,"message.requiemunofficial.ritual.no_permission": "You cannot use this rift."
   ,"message.requiemunofficial.ritual.too_far": "You are too far away from the rift."
   ,"message.requiemunofficial.ritual.already_active": "A ritual is already active."
-  ,"message.requiemunofficial.ritual.started": "The ritual has started and will complete in %s seconds."
   ,"message.requiemunofficial.ritual.interrupted": "The ritual was interrupted because the rift became unstable."
   ,"message.requiemunofficial.ritual.target_lost": "The ritual target was lost before completion."
   ,"message.requiemunofficial.ritual.missing_rune": "The required rift rune is missing."
   ,"message.requiemunofficial.ritual.insufficient_energy": "The ritual requires %s soul energy."
-  ,"message.requiemunofficial.ritual.resurrection_prepared": "Resurrection entry point prepared. %s soul energy consumed."
   ,"block.requiemunofficial.tachylite_runestone": "Tachylite Runestone"
   ,"block.requiemunofficial.runic_tachylite_attrition": "Runestone of Attrition"
   ,"block.requiemunofficial.runic_tachylite_emancipation": "Runestone of Emancipation"
@@ -296,27 +294,17 @@
   ,"message.requiemunofficial.possession.occupied": "This body is occupied."
   ,"message.requiemunofficial.possession.has_soul": "This body still has a soul."
   ,"message.requiemunofficial.possession.failed": "Possession failed."
-  ,"message.requiemunofficial.possession.started": "Possessing %s. Press the Dissociation key to leave the body."
-  ,"message.requiemunofficial.possession.released": "You left the possessed body."
   ,"message.requiemunofficial.transformation.not_skeletonizable": "This creature cannot be skeletonized."
-  ,"message.requiemunofficial.transformation.skeletonized": "The body was reduced to bone."
   ,"tooltip.requiemunofficial.totem_of_skeletonization": "Transforms a compatible creature into its skeletal form."
   ,"gui.requiemunofficial.rift.decay_zombie": "Decay: Zombie (3)"
   ,"gui.requiemunofficial.rift.decay_skeleton": "Decay: Skeleton (3)"
   ,"message.requiemunofficial.ritual.no_target": "No compatible ritual target was found near the rift."
-  ,"message.requiemunofficial.ritual.decay_zombie_complete": "The nearest skeletal body decayed into a zombie."
-  ,"message.requiemunofficial.ritual.decay_skeleton_complete": "The nearest zombie body decayed into a skeleton."
   ,"message.requiemunofficial.ritual.resurrection_complete": "The rift restored your body at the obelisk."
   ,"message.requiemunofficial.ritual.resurrection_lost": "The bound rift no longer exists. Resurrection binding was lost."
-  ,"message.requiemunofficial.soul_vessel.absorbed": "Absorbed %s soul energy: +%s."
-  ,"message.requiemunofficial.soul_vessel.captured": "Captured the soul of %s."
   ,"message.requiemunofficial.soul_vessel.capture_failed": "The soul resisted the vessel."
   ,"message.requiemunofficial.soul_vessel.target_no_soul": "This body has no soul to capture."
-  ,"message.requiemunofficial.soul_vessel.restored": "Returned the %s soul to its body."
   ,"message.requiemunofficial.soul_vessel.restore_has_soul": "This body is not an empty soulless body."
   ,"message.requiemunofficial.soul_vessel.restore_wrong_body": "This vessel holds %s, but this body is %s."
-  ,"message.requiemunofficial.ichor_vessel.absorbed": "Ichor increased to %s (%s)."
-  ,"message.requiemunofficial.obelisk.soul_absorbed": "The obelisk absorbed %s soul energy: +%s."
   ,"item.requiemunofficial.soul_vessel.named": "%s [%s: %s]"
   ,"tooltip.requiemunofficial.soul_vessel.type": "Soul type: %s"
   ,"tooltip.requiemunofficial.soul_vessel.kind": "Soul category: %s"
@@ -326,10 +314,6 @@
   ,"soul_kind.requiemunofficial.undead": "Undead"
   ,"soul_kind.requiemunofficial.beast": "Beast"
   ,"soul_kind.requiemunofficial.aggregate": "Soul aggregate"
-  ,"message.requiemunofficial.soul.shell_reclaimed": "You returned to your abandoned body."
-  ,"message.requiemunofficial.soul.shell_destroyed": "Your abandoned body was destroyed."
-  ,"message.requiemunofficial.soul.shell_removed": "Your previous abandoned body was removed."
-  ,"message.requiemunofficial.soul.shell_split": "Your soul left your body."
   ,"tooltip.requiemunofficial.ichor_vessel.type": "Ichor type: %s"
   ,"tooltip.requiemunofficial.ichor_vessel.use": "Right-click to absorb 1 ichor."
   ,"soul_type.requiemunofficial.empty": "empty"
@@ -348,19 +332,19 @@
   ,"tooltip.requiemunofficial.humanity_enchanted_book": "A remnant cure catalyst reserved for Mortician and ritual mechanics."
   ,"message.requiemunofficial.opus_daemonium.already_chosen": "Your soul has already made this choice."
   ,"message.requiemunofficial.opus_daemonium.not_enough_xp": "Opus Daemonium requires %s experience levels."
-  ,"message.requiemunofficial.opus_daemonium.became_remnant": "The demon is bound to your soul."
-  ,"message.requiemunofficial.opus_daemonium.became_mortal": "The demon releases your soul."
   ,"screen.requiemunofficial.config.title": "Requiem Unofficial Settings"
   ,"screen.requiemunofficial.config.restart_hint": "Common settings are saved to requiemunofficial-common.toml."
   ,"screen.requiemunofficial.config.soul_capture_chance": "Soul capture chance: %s"
-  ,"screen.requiemunofficial.config.opus_cost": "Legacy Opus XP cost: %s"
   ,"screen.requiemunofficial.config.rift_cost": "Rift teleport energy: %s"
   ,"screen.requiemunofficial.config.rune_duration": "Rune effect duration: %s"
+  ,"screen.requiemunofficial.config.rune_width_bonus": "Rune width duration bonus: %s ticks"
+  ,"screen.requiemunofficial.config.rune_level_bonus": "Rune level duration bonus: %s ticks"
+  ,"screen.requiemunofficial.config.unconditional_exit": "Allow unconditional possession exit: %s"
+  ,"argument.requiemunofficial.enum.invalid": "Invalid enum value '%s'"
   ,"gui.requiemunofficial.rift.teleport": "Teleport"
   ,"gui.requiemunofficial.rift.destination.none": "No known destination"
   ,"message.requiemunofficial.rift.no_destination": "No other active rift is available."
   ,"message.requiemunofficial.rift.teleport_unavailable": "This rift cannot teleport right now."
-  ,"message.requiemunofficial.rift.teleported": "The rift pulls you through."
   ,"message.requiemunofficial.rift.witnessed": "You feel the rift at %s."
   ,"jei.requiemunofficial.info.opus_daemonium": "Opus Daemonium is the readable book form. Use the sealed or pure vessel versions to change soul state."
   ,"jei.requiemunofficial.info.humanity": "Humanity is a treasure enchantment used by possessed item users. Level I allows humanity-style kills but suppresses experience; level II allows experience."

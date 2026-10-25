@@ -1,6 +1,5 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
@@ -83,11 +82,6 @@ public final class SoulLifecycleManager {
                     : shell.getServer().getPlayerList().getPlayer(shell.getOwnerId());
             if (owner != null && shell.getUUID().equals(SoulManager.getPlayerShellId(owner))) {
                 SoulManager.clearPlayerShell(owner);
-                if (hasLiveConnection(owner)) {
-                    owner.sendSystemMessage(Component.translatable(
-                            "message.requiemunofficial.soul.shell_destroyed"
-                    ));
-                }
             }
         }
     }
@@ -123,7 +117,7 @@ public final class SoulLifecycleManager {
         return shell;
     }
 
-    public static boolean splitPlayer(ServerPlayer player, boolean notify) {
+    public static boolean splitPlayer(ServerPlayer player) {
         if (SoulManager.getState(player) != SoulState.REMNANT
                 || SoulManager.getPossessedEntityId(player) != null) {
             return false;
@@ -136,11 +130,6 @@ public final class SoulLifecycleManager {
         player.setInvisible(true);
         VagrantEvents.refreshAfterSoulStateChange(player);
         SoulManager.sync(player);
-        if (notify && hasLiveConnection(player)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.requiemunofficial.soul.shell_split"
-            ));
-        }
         return true;
     }
 
@@ -188,15 +177,10 @@ public final class SoulLifecycleManager {
         }
         SoulManager.setState(player, SoulState.REMNANT);
         player.setInvisible(false);
-        if (hasLiveConnection(player)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.requiemunofficial.soul.shell_reclaimed"
-            ));
-        }
         return true;
     }
 
-    public static void removeShell(ServerPlayer player, boolean notify) {
+    public static void removeShell(ServerPlayer player) {
         PlayerShellEntity shell = findShell(player);
         if (shell == null) {
             return;
@@ -204,11 +188,6 @@ public final class SoulLifecycleManager {
 
         shell.discard();
         SoulManager.clearPlayerShell(player);
-        if (notify && hasLiveConnection(player)) {
-            player.sendSystemMessage(Component.translatable(
-                    "message.requiemunofficial.soul.shell_removed"
-            ));
-        }
     }
 
     public static PlayerShellEntity findShell(ServerPlayer player) {

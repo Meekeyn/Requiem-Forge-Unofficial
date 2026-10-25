@@ -32,6 +32,7 @@ public final class ClientPossessionInput {
     private static int jumpCooldown;
     private static int attackRepeatCooldown;
     private static int currentCameraHostId = -1;
+    private static boolean emergencyShiftPressed;
 
     private ClientPossessionInput() {
     }
@@ -47,11 +48,13 @@ public final class ClientPossessionInput {
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
+            emergencyShiftPressed = false;
             return;
         }
         if (minecraft.screen != null) {
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
+            emergencyShiftPressed = false;
             LivingEntity menuHost = PossessionManager.getBeta16PlayerBodyHost(minecraft.player);
             if (menuHost != null) {
                 applyLocalBeta16VerticalPrediction(minecraft, menuHost);
@@ -67,6 +70,7 @@ public final class ClientPossessionInput {
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
+            emergencyShiftPressed = false;
             return;
         }
 
@@ -82,11 +86,22 @@ public final class ClientPossessionInput {
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
+            emergencyShiftPressed = false;
             return;
         }
+
+        // Port-only безумовний вихід. Сервер вирішує, чи він дозволений конфігом.
+        while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
+            ModNetwork.CHANNEL.sendToServer(
+                    new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
+            );
+        }
+
         LivingEntity beta16Host = PossessionManager.getBeta16PlayerBodyHost(minecraft.player);
         if (beta16Host != null) {
             currentCameraHostId = -1;
+            // Недвижні тіла керуються через beta16-шлях, тому аварійний Shift-вихід перевіряємо тут.
+            sendEmergencyExitIfRequested(minecraft, beta16Host);
             sendBeta16PossessionActions(minecraft);
             applyLocalBeta16VerticalPrediction(minecraft, beta16Host);
             sendPossessionInput(minecraft);
@@ -94,6 +109,7 @@ public final class ClientPossessionInput {
         }
         Entity camera = minecraft.getCameraEntity();
         if (!(camera instanceof LivingEntity) || camera == minecraft.player) {
+            emergencyShiftPressed = false;
             return;
         }
 
@@ -102,10 +118,27 @@ public final class ClientPossessionInput {
         sendPossessionInput(minecraft);
 
         sendPossessionActions(minecraft);
+        sendEmergencyExitIfRequested(minecraft, (LivingEntity) camera);
 
         if (jumpCooldown > 0) {
             jumpCooldown--;
         }
+    }
+
+    // Оригінальний beta.16 аварійний вихід: Shift, утримуваний на недвижному (immovable) тілі.
+    // Надсилаємо рівно один пакет на натискання, а не щотик.
+    private static void sendEmergencyExitIfRequested(Minecraft minecraft, LivingEntity host) {
+        if (!minecraft.options.keyShift.isDown()) {
+            emergencyShiftPressed = false;
+            return;
+        }
+        if (emergencyShiftPressed || !host.getType().is(ModTags.IMMOVABLE)) {
+            return;
+        }
+        emergencyShiftPressed = true;
+        ModNetwork.CHANNEL.sendToServer(
+                new PossessionActionPacket(PossessionActionPacket.Action.EMERGENCY_RELEASE)
+        );
     }
 
     private static void sendPossessionActions(Minecraft minecraft) {
@@ -127,12 +160,6 @@ public final class ClientPossessionInput {
                     new PossessionActionPacket(PossessionActionPacket.Action.ATTACK)
             );
             attackRepeatCooldown = 4;
-        }
-
-        while (ModKeyMappings.POSSESSION_INTERACT.consumeClick()) {
-            ModNetwork.CHANNEL.sendToServer(
-                    new PossessionActionPacket(PossessionActionPacket.Action.INTERACT)
-            );
         }
     }
 
@@ -287,14 +314,30 @@ public final class ClientPossessionInput {
         if (shouldAllowPossessedMount(minecraft)) {
             return;
         }
-        if (!event.isAttack()
-                || minecraft.hitResult != null
-                && minecraft.hitResult.getType() == HitResult.Type.BLOCK) {
+        if (event.isAttack()) {
+            if (minecraft.hitResult != null
+                    && minecraft.hitResult.getType() == HitResult.Type.BLOCK) {
+                return;
+            }
+            event.setCanceled(true);
+            event.setSwingHand(false);
             return;
         }
-
-        event.setCanceled(true);
-        event.setSwingHand(false);
+        if (event.isUseItem()) {
+            // Оригінальна схема: непряма взаємодія (здібність INTERACT) — на ПКМ із порожньою
+            // рукою. Якщо в руці є предмет або ціль — блок, лишаємо ванильне використання,
+            // щоб не ламати застосування предметів та взаємодію з блоками.
+            if (!minecraft.player.getMainHandItem().isEmpty()
+                    || minecraft.hitResult != null
+                    && minecraft.hitResult.getType() == HitResult.Type.BLOCK) {
+                return;
+            }
+            ModNetwork.CHANNEL.sendToServer(
+                    new PossessionActionPacket(PossessionActionPacket.Action.INTERACT)
+            );
+            event.setCanceled(true);
+            event.setSwingHand(false);
+        }
     }
 
     // Left/right click is normally swallowed while possessing a host so the player's own body does

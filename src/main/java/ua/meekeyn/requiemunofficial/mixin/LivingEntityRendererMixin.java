@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionFx;
 import ua.meekeyn.requiemunofficial.client.ClientPossessionRenderHelper;
 import ua.meekeyn.requiemunofficial.client.ClientShadowPlayerFx;
+import ua.meekeyn.requiemunofficial.common.config.RequiemClientConfig;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -33,6 +34,11 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
                                                        boolean glowing,
                                                        CallbackInfoReturnable<RenderType> cir) {
         if (entity instanceof AbstractClientPlayer player && ClientShadowPlayerFx.isShadowPlayer(player)) {
+            // beta.16 graphics.fancyDemonRender: вимкнено -> простий end portal замість шейдерного ореолу.
+            if (!RequiemClientConfig.FANCY_DEMON_RENDER.get()) {
+                cir.setReturnValue(RenderType.endPortal());
+                return;
+            }
             cir.setReturnValue(ClientShadowPlayerFx.getShadowRenderType(cir.getReturnValue()));
         }
     }
