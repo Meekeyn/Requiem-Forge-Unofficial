@@ -22,5 +22,10 @@
 !/src/main/java/
 !/src/main/resources/
 
+# Markdown: только README.md, остальное — мусор
+*.md
+!README.md
+README.md
+
 # На случай, если классы попадут в исходники или ресурсы
 *.class
