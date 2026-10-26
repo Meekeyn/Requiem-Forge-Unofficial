@@ -48,13 +48,6 @@ public final class ClientShadowPlayerFx {
     /** Цвет очистки цели {@code players}: чистый ноль, чтобы альфа-маска была пустой. */
     private static final float[] PLAYERS_CLEAR_COLOR = {0.0F, 0.0F, 0.0F, 0.0F};
 
-    // TODO(REMOVE-DEBUG): temporary isolation switch for sky-artifact triage.
-    // While run/no_shadow_chain.txt exists, the whole shadow-player chain is
-    // bypassed (players render normally, no post chain runs). Diagnostic only.
-    private static boolean debugChainDisabled() {
-        return new java.io.File("no_shadow_chain.txt").exists();
-    }
-
     /** Обёртки над базовыми типами: по одному экземпляру на базовый тип. */
     private static final Map<RenderType, RenderType> SHADOW_RENDER_TYPES = new HashMap<>();
 
@@ -85,9 +78,6 @@ public final class ClientShadowPlayerFx {
         if (player == null || player.isSpectator()) {
             return false;
         }
-        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
-            return false;
-        }
         if (player == Minecraft.getInstance().player && ClientDeathSuspensionFx.isSuspended()) {
             return true;
         }
@@ -104,9 +94,6 @@ public final class ClientShadowPlayerFx {
         if (base == null) {
             return null;
         }
-        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
-            return base;
-        }
         if (getOrCreateChain(Minecraft.getInstance()) == null) {
             return base;
         }
@@ -120,9 +107,6 @@ public final class ClientShadowPlayerFx {
      * сброшены в цель {@code players}.
      */
     public static void renderShaderEffects(float partialTick) {
-        if (debugChainDisabled()) { // TODO(REMOVE-DEBUG)
-            return;
-        }
         if (!renderedSoulPlayers) {
             return;
         }
