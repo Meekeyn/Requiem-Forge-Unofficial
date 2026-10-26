@@ -7,7 +7,6 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
-import ua.meekeyn.requiemunofficial.common.item.DebugItem;
 import ua.meekeyn.requiemunofficial.common.item.IchorVesselItem;
 import ua.meekeyn.requiemunofficial.common.item.SoulVesselItem;
 import ua.meekeyn.requiemunofficial.common.item.TotemOfSkeletonizationItem;
