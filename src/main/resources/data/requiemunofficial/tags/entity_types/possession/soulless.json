@@ -1,11 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:golems",
-    "#requiemunofficial:skeletons",
-    "#requiemunofficial:zombies",
-    "minecraft:phantom",
-    "minecraft:zoglin"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:possession/soulless", "required": false}]}

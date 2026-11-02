@@ -316,7 +316,7 @@ public final class PossessedEatingGameTests {
     private static String readResource(GameTestHelper helper, String relative) {
         for (Path base = Paths.get("").toAbsolutePath(); base != null; base = base.getParent()) {
             Path path = base.resolve(Paths.get(
-                    "src", "main", "resources", "data", "requiemunofficial", "requiem", "mob_items", relative));
+                    "src", "main", "resources", "data", "requiem", "requiem", "mob_items", relative));
             if (Files.exists(path)) {
                 try {
                     return Files.readString(path);
@@ -350,10 +350,105 @@ public final class PossessedEatingGameTests {
         return player;
     }
 
+    @GameTest(template = "empty", batch = "possessed_eating", timeoutTicks = 120)
+    public static void zombieCurePreservesPlayerInventory(GameTestHelper helper) {
+        Zombie zombie = spawn(helper, EntityType.ZOMBIE);
+        zombie.setHealth(zombie.getMaxHealth() - 4.0F);
+        ServerPlayer player = possessor(helper, "zombie-cure-inventory");
+
+        player.getInventory().items.set(0, new ItemStack(Items.DIAMOND));
+        player.getInventory().items.set(1, new ItemStack(Items.IRON_SWORD));
+        player.getInventory().selected = 0;
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+                new ItemStack(Items.IRON_BOOTS));
+        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
+
+        helper.assertTrue(PossessionManager.tryPossess(player, zombie),
+                "A vagrant should possess the zombie");
+        zombie.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.WEAKNESS, 600, 0));
+
+        int diamondBefore = player.getInventory().countItem(Items.DIAMOND);
+        int torchBefore = player.getInventory().countItem(Items.TORCH);
+
+        helper.assertTrue(diamondBefore == 1,
+                "Diamond must be in inventory before cure processing");
+        helper.assertTrue(torchBefore == 1,
+                "Torch must be in offhand before cure processing");
+        helper.assertTrue(player.getInventory().armor.get(net.minecraft.world.entity.EquipmentSlot.FEET.getIndex()).is(Items.IRON_BOOTS),
+                "Boots must be present before cure processing");
+
+        // Simulate the cure lifecycle end by calling restorePlayerBodyFromHost directly.
+        // The old code called release(player, host, false) which transferred inventory to the
+        // host before discarding it. The fix uses releaseWithoutInventoryTransfer so the items
+        // stay with the soul.
+        PossessionManager.restorePlayerBodyFromHost(player, zombie);
+        zombie.discard();
+
+        helper.assertTrue(player.getInventory().countItem(Items.DIAMOND) == diamondBefore,
+                "Diamond must remain after cure");
+        helper.assertTrue(player.getInventory().countItem(Items.TORCH) == torchBefore,
+                "Torch must remain after cure");
+        helper.assertTrue(player.getInventory().armor.get(net.minecraft.world.entity.EquipmentSlot.FEET.getIndex()).is(Items.IRON_BOOTS),
+                "Boots must remain after cure");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty", batch = "possessed_eating", timeoutTicks = 120)
+    public static void skeletonCureHealsAndPreservesInventory(GameTestHelper helper) {
+        Skeleton skeleton = spawn(helper, EntityType.SKELETON);
+        skeleton.setHealth(skeleton.getMaxHealth() - 4.0F);
+        ServerPlayer player = possessor(helper, "skeleton-cure");
+
+        player.getInventory().items.set(0, new ItemStack(Items.DIAMOND));
+        player.getInventory().items.set(1, new ItemStack(Items.IRON_SWORD));
+        player.getInventory().selected = 0;
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET,
+                new ItemStack(Items.IRON_BOOTS));
+        player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
+
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess the skeleton");
+        skeleton.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.WEAKNESS, 600, 0));
+
+        int diamondBefore = player.getInventory().countItem(Items.DIAMOND);
+        int torchBefore = player.getInventory().countItem(Items.TORCH);
+
+        // The skeleton must be curable through the same golden-apple/Weakness path as the
+        // zombie. tryUsePossessedItem starts the long-use cure for any CURABLE_UNDEAD body.
+        net.minecraft.world.item.ItemStack goldenApple =
+                new net.minecraft.world.item.ItemStack(Items.GOLDEN_APPLE);
+        // Яблуко кладемо в окремий слот 2, щоб не затерти алмаз у слоті 0, який перевіряється нижче.
+        player.getInventory().items.set(2, goldenApple);
+        player.getInventory().selected = 2;
+        helper.assertTrue(PossessedItemManager.tryUsePossessedItemForTest(player, skeleton, goldenApple),
+                "Golden apple must start a cure on the possessed skeleton");
+        helper.assertTrue(player.isUsingItem(),
+                "Skeleton cure must hold the golden apple for its use duration");
+
+        PossessionManager.restorePlayerBodyFromHost(player, skeleton);
+        skeleton.discard();
+
+        helper.assertTrue(player.getInventory().countItem(Items.DIAMOND) == diamondBefore,
+                "Diamond must remain after skeleton cure");
+        helper.assertTrue(player.getInventory().countItem(Items.TORCH) == torchBefore,
+                "Torch must remain after skeleton cure");
+        helper.assertTrue(player.getInventory().armor.get(net.minecraft.world.entity.EquipmentSlot.FEET.getIndex()).is(Items.IRON_BOOTS),
+                "Boots must remain after skeleton cure");
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Possession must be cleared after the skeleton cure");
+        helper.succeed();
+    }
+
     private static void cleanup(GameTestHelper helper, ServerPlayer player, Mob host) {
         if (SoulManager.getPossessedEntityId(player) != null) {
             PossessionManager.release(player, host);
         }
         host.discard();
+    }
+
+    private static int countItems(ServerPlayer player, net.minecraft.world.item.Item item) {
+        return player.getInventory().countItem(item);
     }
 }

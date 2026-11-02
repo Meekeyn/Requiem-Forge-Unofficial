@@ -89,6 +89,9 @@ public class IchorVesselItem extends Item {
         if (effect == null) {
             return false;
         }
+        if (!ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ICHOR_VESSEL_USE_CONDITIONS.get()) {
+            return true;
+        }
         return switch (ichorType) {
             case "reclamation" -> user.getHealth() < user.getMaxHealth();
             case "attrition", "penance" -> !user.hasEffect(effect);

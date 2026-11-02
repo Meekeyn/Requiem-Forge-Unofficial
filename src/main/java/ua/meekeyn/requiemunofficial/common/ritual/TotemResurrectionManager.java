@@ -178,7 +178,11 @@ public final class TotemResurrectionManager implements ResourceManagerReloadList
 
         ItemMatcher itemMatcher = ItemMatcher.parse(consumable);
         ResourceLocation resultId = ResourceLocation.tryParse(string(entity, "type"));
-        EntityType<?> rawType = resultId == null ? null : BuiltInRegistries.ENTITY_TYPE.get(resultId);
+        EntityType<?> rawType = resultId == null ? null : BuiltInRegistries.ENTITY_TYPE.getOptional(resultId).orElse(null);
+        // DefaultedRegistry повертає свиню для невідомого id, тому невідомий тип пропускаємо явно.
+        if (resultId != null && rawType == null) {
+            RequiemUnofficial.LOGGER.warn("Skipping resurrection rule with unknown entity type {}", resultId);
+        }
         if (itemMatcher == null || !(rawType instanceof EntityType<?>)) {
             return null;
         }

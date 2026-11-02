@@ -19,8 +19,6 @@ public final class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.requiemunofficial"))
                     .icon(() -> new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get()))
                     .displayItems((parameters, output) -> {
-                        output.accept(ModItems.DEBUG_ITEM.get());
-                        output.accept(ModItems.OPUS_DAEMONIUM.get());
                         output.accept(ModItems.HUMANITY_ENCHANTED_BOOK.get());
                         output.accept(ModItems.EMPTY_SOUL_VESSEL.get());
                         output.accept(ModItems.FILLED_SOUL_VESSEL.get());
@@ -35,6 +33,8 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.ICHOR_VESSEL_RECLAMATION.get());
 
                         output.accept(ModBlocks.TACHYLITE.get());
+                        output.accept(ModBlocks.TACHYLITE_SLAB.get());
+                        output.accept(ModBlocks.TACHYLITE_STAIRS.get());
                         output.accept(ModBlocks.CHISELED_TACHYLITE.get());
                         output.accept(ModBlocks.CHISELED_TACHYLITE_PILLAR.get());
                         output.accept(ModBlocks.CHISELED_TACHYLITE_SLAB.get());

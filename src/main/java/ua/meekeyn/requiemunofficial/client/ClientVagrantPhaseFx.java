@@ -13,6 +13,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.init.ModParticles;
+import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
 
 @Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
@@ -54,7 +55,10 @@ public final class ClientVagrantPhaseFx {
             return;
         }
 
-        phasing = isPhasing(player);
+        // Phase FX belong to a free vagrant soul only. While possessing (e.g. a skeleton riding a
+        // spider) the suppressed player body stays behind at the mount spot and may overlap a
+        // phaseable block, which used to spawn ten GHOST particles there every tick.
+        phasing = SoulManager.getPossessedEntityId(player) == null && isPhasing(player);
         boolean leafOnly = phasing
                 && !VagrantRules.isInsideNonLeafPhaseableBlock(player)
                 && VagrantRules.isInsideLeaves(player);
@@ -74,10 +78,10 @@ public final class ClientVagrantPhaseFx {
                     player.getX(),
                     player.getY(),
                     player.getZ(),
-                    SoundEvents.SOUL_ESCAPE,
+                    ua.meekeyn.requiemunofficial.common.init.ModSounds.EFFECT_PHASE.get(),
                     SoundSource.PLAYERS,
-                    0.55F,
-                    0.75F + level.random.nextFloat() * 0.2F,
+                    3.0F,
+                    0.6F + level.random.nextFloat() * 0.4F,
                     false
             );
             soundCooldown = 14;

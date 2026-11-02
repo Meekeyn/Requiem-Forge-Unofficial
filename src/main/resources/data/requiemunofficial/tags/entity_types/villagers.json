@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#c:villagers",
-    "minecraft:wandering_trader"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:villagers", "required": false}]}

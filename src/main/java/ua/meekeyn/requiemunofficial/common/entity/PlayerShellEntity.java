@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.entity;
 
+import com.mojang.authlib.GameProfile;
+import com.mojang.authlib.properties.Property;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -8,7 +10,9 @@ import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageTypes;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -27,11 +31,25 @@ public class PlayerShellEntity extends PathfinderMob {
 
     private static final EntityDataAccessor<Optional<UUID>> OWNER_ID =
             SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.OPTIONAL_UUID);
+    // Профіль для скіна на клієнті: ім'я та значення властивості "textures" (base64) з GameProfile.
+    private static final EntityDataAccessor<String> PROFILE_NAME =
+            SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.STRING);
+    private static final EntityDataAccessor<String> PROFILE_TEXTURES =
+            SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.STRING);
+    private static final String PROFILE_TEXTURES_PROPERTY = "textures";
+    private static final String POSSESSED_DATA = "RequiemPossessed";
     private static final String BODY_INVENTORY = "RequiemBodyInventory";
     private static final String BODY_INVENTORY_CAPTURED = "RequiemBodyInventoryCaptured";
     private static final String BODY_SELECTED_SLOT = "RequiemBodySelectedSlot";
+    private static final String DISPLAY_ID = "DisplayId";
+    private static final String DISPLAY_NAME = "DisplayName";
+    private static final String PROFILE_NAME_TAG = "ProfileName";
+    private static final String PROFILE_TEXTURES_TAG = "ProfileTextures";
 
     private UUID ownerId;
+    // Профіль для відображення (скін/ім'я); власник лишається в ownerId, як у beta.16 setDisplayProfile.
+    private UUID displayId;
+    private String displayName;
     private ListTag bodyInventory = new ListTag();
     private boolean bodyInventoryCaptured;
     private int bodySelectedSlot;
@@ -48,20 +66,89 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     public UUID getOwnerId() {
-        return this.entityData.get(OWNER_ID).orElse(ownerId);
+        // На клієнті OWNER_ID несе UUID профілю для скіна; на сервері власник — лише поле ownerId.
+        if (this.level().isClientSide) {
+            return this.entityData.get(OWNER_ID).orElse(null);
+        }
+        return ownerId;
     }
 
     public void setOwner(UUID ownerId, Component ownerName) {
         this.ownerId = ownerId;
-        this.entityData.set(OWNER_ID, Optional.of(ownerId));
+        this.displayId = null;
+        this.displayName = null;
+        this.entityData.set(OWNER_ID, Optional.ofNullable(ownerId));
         this.setCustomName(ownerName.copy());
         this.setCustomNameVisible(true);
         this.setNoAi(true);
         this.setPersistenceRequired();
     }
 
+    public void setDisplayProfile(GameProfile profile) {
+        setDisplayProfile(profile.getId(), profile.getName());
+        String textures = getTexturesProperty(profile);
+        if (textures != null) {
+            this.entityData.set(PROFILE_TEXTURES, textures);
+        }
+    }
+
+    public void setDisplayProfile(UUID id, String name) {
+        // Змінюємо лише відображуваний профіль; власник (belongsTo/Owner NBT) не чіпаємо.
+        this.displayId = id;
+        this.displayName = name;
+        syncDisplayId();
+        // Текстури попереднього профілю більше не відповідають новому id.
+        this.entityData.set(PROFILE_NAME, name == null ? "" : name);
+        this.entityData.set(PROFILE_TEXTURES, "");
+        if (name != null) {
+            this.setCustomName(Component.literal(name));
+            this.setCustomNameVisible(true);
+        }
+    }
+
+    private void syncDisplayId() {
+        this.entityData.set(OWNER_ID, Optional.ofNullable(displayId != null ? displayId : ownerId));
+    }
+
+    /** Ім'я профілю для скіна (клієнт); порожній рядок, якщо невідоме. */
+    public String getProfileName() {
+        return this.entityData.get(PROFILE_NAME);
+    }
+
+    /** Значення властивості "textures" профілю (base64); порожній рядок, якщо невідоме. */
+    public String getProfileTextures() {
+        return this.entityData.get(PROFILE_TEXTURES);
+    }
+
+    /** Чи керує зараз оболонкою чиясь душа (вселення); лише сервер. */
+    public boolean isControlledBySoul() {
+        return getPersistentData().getBoolean(POSSESSED_DATA);
+    }
+
+    private static String getTexturesProperty(GameProfile profile) {
+        for (Property property : profile.getProperties().get(PROFILE_TEXTURES_PROPERTY)) {
+            if (property.getValue() != null && !property.getValue().isEmpty()) {
+                return property.getValue();
+            }
+        }
+        return null;
+    }
+
     public void captureBody(ServerPlayer player) {
         setOwner(player.getUUID(), player.getDisplayName());
+        GameProfile profile = player.getGameProfile();
+        this.entityData.set(PROFILE_NAME, profile.getName() == null ? "" : profile.getName());
+        String textures = getTexturesProperty(profile);
+        this.entityData.set(PROFILE_TEXTURES, textures == null ? "" : textures);
+        // Оболонка без AI ніколи не рухається, тож BodyRotationControl не повертає тіло: задаємо поворот явно.
+        float yaw = player.getYRot();
+        setYRot(yaw);
+        setXRot(player.getXRot());
+        this.yRotO = yaw;
+        this.yBodyRot = yaw;
+        this.yBodyRotO = yaw;
+        this.yHeadRot = yaw;
+        this.yHeadRotO = yaw;
         setHealth(Math.max(1.0F, getMaxHealth() * player.getHealth() / player.getMaxHealth()));
         bodyInventory = player.getInventory().save(new ListTag());
         bodyInventoryCaptured = true;
@@ -151,6 +238,36 @@ public class PlayerShellEntity extends PathfinderMob {
     protected void defineSynchedData() {
         super.defineSynchedData();
         this.entityData.define(OWNER_ID, Optional.empty());
+        this.entityData.define(PROFILE_NAME, "");
+        this.entityData.define(PROFILE_TEXTURES, "");
+    }
+
+    @Override
+    protected float tickHeadTurn(float yRot, float animStep) {
+        // NoAi-оболонка дивиться туди ж, куди дивився гравець; працює і на клієнті
+        // (yRot приходить у пакеті спавну, прапорець NoAi синхронізується).
+        if (isNoAi()) {
+            float yaw = getYRot();
+            this.yBodyRot = yaw;
+            this.yBodyRotO = yaw;
+            this.yHeadRot = yaw;
+            this.yHeadRotO = yaw;
+            return animStep;
+        }
+        return super.tickHeadTurn(yRot, animStep);
+    }
+
+    @Override
+    public boolean canBreatheUnderwater() {
+        return true;
+    }
+
+    @Override
+    public boolean isInvulnerableTo(DamageSource source) {
+        // Покинуте тіло не задихається у блоках і не тоне.
+        return source.is(DamageTypes.IN_WALL)
+                || source.is(DamageTypeTags.IS_DROWNING)
+                || super.isInvulnerableTo(source);
     }
 
     @Override
@@ -167,9 +284,20 @@ public class PlayerShellEntity extends PathfinderMob {
     @Override
     public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
-        UUID savedOwnerId = getOwnerId();
-        if (savedOwnerId != null) {
-            tag.putUUID("Owner", savedOwnerId);
+        if (ownerId != null) {
+            tag.putUUID("Owner", ownerId);
+        }
+        if (displayId != null) {
+            tag.putUUID(DISPLAY_ID, displayId);
+        }
+        if (displayName != null) {
+            tag.putString(DISPLAY_NAME, displayName);
+        }
+        if (!getProfileName().isEmpty()) {
+            tag.putString(PROFILE_NAME_TAG, getProfileName());
+        }
+        if (!getProfileTextures().isEmpty()) {
+            tag.putString(PROFILE_TEXTURES_TAG, getProfileTextures());
         }
         tag.put(BODY_INVENTORY, bodyInventory.copy());
         tag.putBoolean(BODY_INVENTORY_CAPTURED, bodyInventoryCaptured);
@@ -180,7 +308,11 @@ public class PlayerShellEntity extends PathfinderMob {
     public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         ownerId = tag.hasUUID("Owner") ? tag.getUUID("Owner") : null;
-        this.entityData.set(OWNER_ID, Optional.ofNullable(ownerId));
+        displayId = tag.hasUUID(DISPLAY_ID) ? tag.getUUID(DISPLAY_ID) : null;
+        displayName = tag.contains(DISPLAY_NAME, Tag.TAG_STRING) ? tag.getString(DISPLAY_NAME) : null;
+        syncDisplayId();
+        this.entityData.set(PROFILE_NAME, tag.getString(PROFILE_NAME_TAG));
+        this.entityData.set(PROFILE_TEXTURES, tag.getString(PROFILE_TEXTURES_TAG));
         bodyInventory = tag.getList(BODY_INVENTORY, net.minecraft.nbt.Tag.TAG_COMPOUND);
         bodyInventoryCaptured = tag.contains(BODY_INVENTORY_CAPTURED)
                 ? tag.getBoolean(BODY_INVENTORY_CAPTURED)
@@ -230,8 +362,22 @@ public class PlayerShellEntity extends PathfinderMob {
             return;
         }
         if (!player.getInventory().add(stack)) {
-            player.drop(stack, false);
+            dropRemainder(player, stack);
         }
+    }
+
+    /**
+     * Викидає залишок біля гравця напряму, повз ItemTossEvent: поки гравець ще VAGRANT,
+     * VagrantEvents скасовує викидання, і player.drop просто знищив би предмет.
+     */
+    private static void dropRemainder(ServerPlayer player, ItemStack remainder) {
+        if (remainder.isEmpty()) {
+            return;
+        }
+        net.minecraft.world.entity.item.ItemEntity item = new net.minecraft.world.entity.item.ItemEntity(
+                player.level(), player.getX(), player.getEyeY() - 0.3D, player.getZ(), remainder);
+        item.setPickUpDelay(40);
+        player.level().addFreshEntity(item);
     }
 
     private void restoreCapturedInventory(ServerPlayer player) {
@@ -251,8 +397,10 @@ public class PlayerShellEntity extends PathfinderMob {
             placeSavedStack(player, slot, stack);
             return;
         }
-        if (!player.getInventory().add(stack.copy())) {
-            player.drop(stack.copy(), false);
+        // Одна копія: add() зменшує її на покладену кількість, тож викидаємо лише справжній залишок.
+        ItemStack remainder = stack.copy();
+        if (!player.getInventory().add(remainder)) {
+            dropRemainder(player, remainder);
         }
     }
 

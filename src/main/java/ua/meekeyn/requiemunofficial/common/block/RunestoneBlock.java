@@ -5,7 +5,6 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import org.jetbrains.annotations.Nullable;
-import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 
 import java.util.function.Supplier;
 
@@ -54,9 +53,10 @@ public class RunestoneBlock extends InertRunestoneBlock {
     }
 
     protected int getEffectDurationTicks(int runeLevel, int obeliskWidth) {
-        int widthBonus = Math.max(0, obeliskWidth - 1) * RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS.get();
-        int levelBonus = Math.max(0, runeLevel - 1) * RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS.get();
-        return RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS.get() + widthBonus + levelBonus;
+        // Типові значення конфігу (220 / 40 / 0) дають рівно формулу beta.16: (9 + obeliskWidth * 2) * 20.
+        int widthBonus = Math.max(0, obeliskWidth - 1) * ua.meekeyn.requiemunofficial.common.config.RequiemConfig.RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS.get();
+        int levelBonus = Math.max(0, runeLevel - 1) * ua.meekeyn.requiemunofficial.common.config.RequiemConfig.RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS.get();
+        return ua.meekeyn.requiemunofficial.common.config.RequiemConfig.RUNE_EFFECT_BASE_DURATION_TICKS.get() + widthBonus + levelBonus;
     }
 
     protected int getEffectAmplifier(int runeLevel, int obeliskWidth) {

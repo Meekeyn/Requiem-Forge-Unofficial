@@ -1,0 +1,18 @@
+{
+  "replace": false,
+  "values": [
+    "requiemunofficial:tachylite_runestone",
+    "requiemunofficial:runic_tachylite_attrition",
+    "requiemunofficial:runic_tachylite_emancipation",
+    "requiemunofficial:runic_tachylite_penance",
+    "requiemunofficial:runic_tachylite_reclamation",
+    "requiemunofficial:rift_rune",
+    {"id": "requiemunofficial:tachylite/runestone", "required": false},
+    {"id": "requiemunofficial:tachylite/runic/attrition", "required": false},
+    {"id": "requiemunofficial:tachylite/runic/emancipation", "required": false},
+    {"id": "requiemunofficial:tachylite/runic/penance", "required": false},
+    {"id": "requiemunofficial:tachylite/runic/reclamation", "required": false},
+    {"id": "requiemunofficial:tachylite/runic/rift", "required": false}
+  ]
+}
+

@@ -1,0 +1,11 @@
+{
+  "replace": false,
+  "values": [
+    "#c:villagers",
+    "minecraft:piglin",
+    {
+      "id": "requiemunofficial:cured_piglin",
+      "required": false
+    }
+  ]
+}

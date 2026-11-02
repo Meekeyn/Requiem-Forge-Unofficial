@@ -43,7 +43,9 @@ public class RiftMenu extends AbstractContainerMenu {
     private static final int RECLAMATION_LEVEL = 7;
     private static final int RIFT_LEVEL = 8;
     private static final int RITUAL_STATUS = 9;
-    private static final int DATA_COUNT = 10;
+    /** Вартість телепорту з серверного COMMON-конфігу: клієнтський файл може відрізнятися. */
+    private static final int TELEPORT_ENERGY_COST = 10;
+    private static final int DATA_COUNT = 11;
 
     private final Level level;
     private final BlockPos riftPos;
@@ -126,6 +128,10 @@ public class RiftMenu extends AbstractContainerMenu {
 
     public int getStoredSoulEnergy() {
         return data.get(STORED_SOUL_ENERGY);
+    }
+
+    public int getTeleportEnergyCost() {
+        return data.get(TELEPORT_ENERGY_COST);
     }
 
     public float getPowerRate() {
@@ -235,6 +241,8 @@ public class RiftMenu extends AbstractContainerMenu {
                     case RECLAMATION_LEVEL -> runestone.getRuneLevel("reclamation");
                     case RIFT_LEVEL -> runestone.getRuneLevel("rift");
                     case RITUAL_STATUS -> runestone.hasPendingRitual() ? 1 : 0;
+                    case TELEPORT_ENERGY_COST ->
+                            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.RIFT_TELEPORT_ENERGY_COST.get();
                     default -> 0;
                 };
             }

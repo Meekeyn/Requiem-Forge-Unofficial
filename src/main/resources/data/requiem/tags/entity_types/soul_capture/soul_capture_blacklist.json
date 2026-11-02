@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:bosses",
+    "#requiemunofficial:ghosts",
+    "minecraft:player",
+    "requiemunofficial:mortician"
+  ]
+}
+

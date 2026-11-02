@@ -1,6 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "minecraft:wither_skeleton"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:transformation/replaceable_skeletons", "required": false}]}

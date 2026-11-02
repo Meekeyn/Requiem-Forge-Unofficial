@@ -285,11 +285,17 @@ public class ReleasedSoulEntity extends Entity {
     @Override
     public void handleEntityEvent(byte id) {
         if (id == TELEPORT_AWAY_STATUS) {
-            level().playLocalSound(getX(), getY(), getZ(), SoundEvents.ENDERMAN_TELEPORT, SoundSource.NEUTRAL, 1.0F, 1.0F, false);
+            level().playLocalSound(getX(), getY(), getZ(), ua.meekeyn.requiemunofficial.common.init.ModSounds.ENTITY_SOUL_TELEPORT.get(), SoundSource.NEUTRAL, 1.0F, 1.0F, false);
             for (double angle = 0.0D; angle < Math.PI * 2.0D; angle += Math.PI / 20.0D) {
                 level().addParticle(ParticleTypes.PORTAL, getX() + Math.cos(angle) * 5.0D, getY() - 0.4D, getZ() + Math.sin(angle) * 5.0D, Math.cos(angle) * -5.0D, 0.0D, Math.sin(angle) * -5.0D);
                 level().addParticle(ParticleTypes.PORTAL, getX() + Math.cos(angle) * 5.0D, getY() - 0.4D, getZ() + Math.sin(angle) * 5.0D, Math.cos(angle) * -7.0D, 0.0D, Math.sin(angle) * -7.0D);
             }
+            return;
+        }
+        if (id == SOUL_EXPIRED_STATUS) {
+            // beta.16 SoulEntity: душа, що не знайшла тіла, розсипається.
+            level().playLocalSound(getX(), getY(), getZ(), SoundEvents.SOUL_ESCAPE, SoundSource.AMBIENT, 1.0F, 1.5F, false);
+            level().playLocalSound(getX(), getY(), getZ(), ua.meekeyn.requiemunofficial.common.init.ModSounds.ENTITY_SOUL_DISINTEGRATE.get(), SoundSource.AMBIENT, 1.0F, 1.0F, false);
             return;
         }
         if (id == MERGE_WITH_BODY_STATUS) {

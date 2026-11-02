@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:humanoid_skeletons",
-    { "id": "biomemakeover:stone_golem", "required": false }
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:behavior/arrow_generators", "required": false}]}

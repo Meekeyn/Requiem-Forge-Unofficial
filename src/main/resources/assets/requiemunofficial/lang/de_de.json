@@ -184,7 +184,6 @@
   "entity.requiem.mortician": "Mortizist",
   "entity.requiem.player_shell": "Spielerhülle",
   "item.requiem.totem_of_skeletonization": "Talisman der Skeletten",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
   "item.requiem.empty_soul_vessel": "Leeres Seelengefäß",
   "item.requiem.creative_soul_vessel": "Kreatives Seelengefäß",
   "item.requiem.filled_soul_vessel": "Gefülltes Seelengefäß",
@@ -230,5 +229,13 @@
   "stat.requiem.interact_with_rift": "[Requiem] Interaktionen mit Obelisken-Riss",
   "requiem.message.peaceful_despawn": "Dieser Wirt gehört möglicherweise nicht zu einer solchen friedlichen Welt",
   "ritual.requiem.ritual.decay_zombie": "Verfall Zombie",
-  "ritual.requiem.ritual.decay_skeleton": "Verfall Skelett"
+  "ritual.requiem.ritual.decay_skeleton": "Verfall Skelett",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Schlackenstein-Platte",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Schlackenstein-Treppe",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }

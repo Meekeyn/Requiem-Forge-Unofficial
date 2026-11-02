@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#c:cooked_fishes",
-    { "id": "biomemakeover:cooked_glowfish", "required": false }
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:food/cooked_fishes", "required": false}]}

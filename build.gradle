@@ -206,7 +206,6 @@ tasks.named('processResources', ProcessResources).configure {
     exclude '**/*.disabled/**'
     exclude '**/*.disabled'
     exclude 'data/requiemunofficial/advancements/recipes/tachylite/**'
-    exclude 'data/requiemunofficial/advancements/recipes/opus_daemonium.json'
 
     filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]

@@ -30,6 +30,19 @@ public final class ModSounds {
             registerVariable("effect.become.mortal");
     public static final RegistryObject<SoundEvent> EFFECT_TIME_STOP =
             registerVariable("effect.time.stop");
+    public static final RegistryObject<SoundEvent> EFFECT_PHASE =
+            registerVariable("effect.phase");
+    public static final RegistryObject<SoundEvent> EFFECT_POSSESSION_ATTEMPT =
+            registerVariable("effect.possession.attempt");
+    public static final RegistryObject<SoundEvent> EFFECT_RECLAMATION_CLEAR =
+            registerVariable("effect.reclamation.clear");
+
+    public static final RegistryObject<SoundEvent> ENTITY_SOUL_DISINTEGRATE =
+            registerVariable("entity.soul.disintegrate");
+    public static final RegistryObject<SoundEvent> ENTITY_SOUL_TELEPORT =
+            registerVariable("entity.soul.teleport");
+    public static final RegistryObject<SoundEvent> ENTITY_OBELISK_SOUL_DISINTEGRATE =
+            registerVariable("entity.obelisk_soul.disintegrate");
 
     public static final RegistryObject<SoundEvent> OBELISK_ACTIVATE =
             registerVariable("block.obelisk.activate");

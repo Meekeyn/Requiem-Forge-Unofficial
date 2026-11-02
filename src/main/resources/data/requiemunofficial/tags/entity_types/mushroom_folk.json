@@ -1,6 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    {"id": "biomemakeover:mushroom_trader", "required": false}
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:mushroom_folk", "required": false}]}

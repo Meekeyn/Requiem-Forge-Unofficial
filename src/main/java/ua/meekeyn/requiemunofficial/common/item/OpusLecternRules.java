@@ -10,6 +10,6 @@ public final class OpusLecternRules {
 
     public static boolean isLecternReadable(ItemStack stack) {
         Item item = stack.getItem();
-        return item instanceof OpusDaemoniumItem || item instanceof RemnantVesselItem;
+        return item instanceof RemnantVesselItem;
     }
 }

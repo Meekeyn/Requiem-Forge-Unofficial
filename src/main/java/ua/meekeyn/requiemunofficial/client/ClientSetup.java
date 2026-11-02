@@ -10,6 +10,8 @@ import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.client.compat.JadeRequiemCompat;
+import ua.meekeyn.requiemunofficial.client.particle.EntityDustParticle;
 import ua.meekeyn.requiemunofficial.client.particle.ObeliskSoulParticle;
 import ua.meekeyn.requiemunofficial.client.particle.SimpleGhostParticle;
 import ua.meekeyn.requiemunofficial.client.particle.SoulTrailParticle;
@@ -51,6 +53,8 @@ public final class ClientSetup {
         event.enqueueWork(() -> {
             // Реєструє клієнтський екран для меню рифту
             MenuScreens.register(ModMenuTypes.RIFT.get(), RiftScreen::new);
+            // Jade не повинен показувати власне одержиме тіло гравця
+            JadeRequiemCompat.install();
         });
 
         RequiemUnofficial.LOGGER.info("Client setup initialized");
@@ -75,5 +79,10 @@ public final class ClientSetup {
         event.registerSpriteSet(ModParticles.OBELISK_SOUL.get(), ObeliskSoulParticle.Provider::new);
         event.registerSpriteSet(ModParticles.SOUL_TRAIL.get(), SoulTrailParticle.Provider::new);
         event.registerSpriteSet(ModParticles.GHOST.get(), SimpleGhostParticle.Provider::new);
+        event.registerSpecial(ModParticles.ENTITY_DUST.get(), new EntityDustParticle.Provider());
+        event.registerSpriteSet(ModParticles.ATTRITION.get(), net.minecraft.client.particle.PortalParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.ATTUNED.get(), ua.meekeyn.requiemunofficial.client.particle.CureParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.CURE.get(), ua.meekeyn.requiemunofficial.client.particle.CureParticle.Provider::new);
+        event.registerSpriteSet(ModParticles.PENANCE.get(), net.minecraft.client.particle.SpellParticle.MobProvider::new);
     }
 }

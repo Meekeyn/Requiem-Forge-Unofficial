@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "minecraft:mushroom_stew",
-    {"id": "biomemakeover:glowshroom_stew", "required": false},
-    {"id": "enhanced_mushrooms:roasted_mushrooms", "required": false}
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:food/mushroom_based", "required": false}]}

@@ -313,6 +313,15 @@ public class MorticianEntity extends WanderingTrader {
         super.aiStep();
         if (!level().isClientSide) {
             tickAnger();
+        } else if (isSpellcasting()) {
+            // beta.16 MorticianEntity#tick: частинки penance з рук під час заклинання.
+            float theta = this.yBodyRot * ((float) Math.PI / 180.0F) + net.minecraft.util.Mth.cos(this.tickCount * 0.6662F) * 0.25F;
+            float x = net.minecraft.util.Mth.cos(theta);
+            float z = net.minecraft.util.Mth.sin(theta);
+            level().addParticle(ua.meekeyn.requiemunofficial.common.init.ModParticles.PENANCE.get(),
+                    getX() + x * 0.6D, getY() + getBbHeight() * 0.92D, getZ() + z * 0.6D, 1.0D, 1.0D, 1.0D);
+            level().addParticle(ua.meekeyn.requiemunofficial.common.init.ModParticles.PENANCE.get(),
+                    getX() - x * 0.6D, getY() + getBbHeight() * 0.92D, getZ() - z * 0.6D, 1.0D, 1.0D, 1.0D);
         }
         if (!level().isClientSide && isObeliskProjection()) {
             tickProjectionLink();

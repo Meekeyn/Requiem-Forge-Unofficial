@@ -71,6 +71,33 @@ public abstract class LivingEntityMixin {
         }
     }
 
+    // Піглін/хоглін рахують час у верхньому світі в customServerAiStep, який одержиме тіло не виконує.
+    @Inject(method = "aiStep", at = @At("RETURN"))
+    private void requiemunofficial$tickPossessedHostConversion(CallbackInfo ci) {
+        LivingEntity self = (LivingEntity) (Object) this;
+        if (self instanceof ua.meekeyn.requiemunofficial.common.transformation.PossessedConversionHost host
+                && self.isAlive()
+                && ua.meekeyn.requiemunofficial.common.possession.PossessedEnvironment.isPossessedHost(self)) {
+            host.requiemunofficial$tickPossessedConversion();
+        }
+    }
+
+    // Гравець у тілі дихає тілом: повітря витрачає саме тіло (ванільні правила виду).
+    @Inject(method = "canBreatheUnderwater", at = @At("HEAD"), cancellable = true)
+    private void requiemunofficial$breatheThroughPossessedBody(CallbackInfoReturnable<Boolean> cir) {
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player
+                && ua.meekeyn.requiemunofficial.common.possession.PossessedEnvironment.breathesThroughBody(player)) {
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "baseTick", at = @At("RETURN"))
+    private void requiemunofficial$mirrorPossessedBodyAir(CallbackInfo ci) {
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player) {
+            ua.meekeyn.requiemunofficial.common.possession.PossessedEnvironment.mirrorBodyAir(player);
+        }
+    }
+
     @Redirect(method = "aiStep", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/world/entity/LivingEntity;travel(Lnet/minecraft/world/phys/Vec3;)V"))
     private void requiemunofficial$usePossessedTravelInput(LivingEntity self, Vec3 travelVector) {

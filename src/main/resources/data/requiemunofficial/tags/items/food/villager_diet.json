@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:food/vegetarian"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:food/villager_diet", "required": false}]}

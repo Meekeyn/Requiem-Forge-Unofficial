@@ -220,7 +220,11 @@ public final class DeathResurrectionManager implements ResourceManagerReloadList
         }
         JsonObject entity = root.getAsJsonObject("entity");
         ResourceLocation resultId = entity == null ? null : ResourceLocation.tryParse(string(entity, "type"));
-        EntityType<?> rawType = resultId == null ? null : BuiltInRegistries.ENTITY_TYPE.get(resultId);
+        EntityType<?> rawType = resultId == null ? null : BuiltInRegistries.ENTITY_TYPE.getOptional(resultId).orElse(null);
+        // DefaultedRegistry повертає свиню для невідомого id, тому невідомий тип пропускаємо явно.
+        if (resultId != null && rawType == null) {
+            RequiemUnofficial.LOGGER.warn("Skipping resurrection rule with unknown entity type {}", resultId);
+        }
         if (!(rawType instanceof EntityType<?>)) {
             return null;
         }

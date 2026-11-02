@@ -32,6 +32,15 @@ public final class ModBlocks {
                             .requiresCorrectToolForDrops()
             ));
 
+    public static final RegistryObject<Block> TACHYLITE_SLAB =
+            BLOCKS.register("tachylite/tachylite_slab", () -> new SlabBlock(tachyliteProperties()));
+
+    public static final RegistryObject<Block> TACHYLITE_STAIRS =
+            BLOCKS.register("tachylite/tachylite_stairs", () -> new StairBlock(
+                    () -> TACHYLITE.get().defaultBlockState(),
+                    tachyliteProperties()
+            ));
+
     public static final RegistryObject<Block> CHISELED_TACHYLITE =
             BLOCKS.register("tachylite/chiseled", () -> new Block(tachyliteProperties()));
 
@@ -140,6 +149,8 @@ public final class ModBlocks {
 
     public static void registerBlockItems() {
         ModItems.ITEMS.register("tachylite", () -> new BlockItem(TACHYLITE.get(), new Item.Properties()));
+        ModItems.ITEMS.register("tachylite/tachylite_slab", () -> new BlockItem(TACHYLITE_SLAB.get(), new Item.Properties()));
+        ModItems.ITEMS.register("tachylite/tachylite_stairs", () -> new BlockItem(TACHYLITE_STAIRS.get(), new Item.Properties()));
         ModItems.ITEMS.register("tachylite/chiseled", () -> new BlockItem(CHISELED_TACHYLITE.get(), new Item.Properties()));
         ModItems.ITEMS.register("tachylite/chiseled_pillar", () -> new BlockItem(CHISELED_TACHYLITE_PILLAR.get(), new Item.Properties()));
         ModItems.ITEMS.register("tachylite/chiseled_slab", () -> new BlockItem(CHISELED_TACHYLITE_SLAB.get(), new Item.Properties()));

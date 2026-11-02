@@ -1,6 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    { "id": "llamarama:llama_cheese", "required": false }
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:food/dairy_products", "required": false}]}

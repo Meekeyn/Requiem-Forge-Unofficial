@@ -3,30 +3,172 @@ package ua.meekeyn.requiemunofficial.common.possession;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.item.ItemEntity;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.entity.living.LivingDropsEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
+@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessionInventoryManager {
 
     private static final String STORED_INVENTORY = "RequiemPossessionInventory";
     private static final String LAST_SYNCED_EQUIPMENT = "RequiemLastSyncedEquipment";
     private static final String VISUAL_MIRROR_SLOTS = "RequiemVisualMirrorSlots";
-    private static final int MAIN_INVENTORY_SIZE = 36;
+    /** Слоти 9..35 основного інвентаря гравця (вузол MAIN_INVENTORY beta.16). */
+    private static final int MAIN_INVENTORY_SLOTS = 27;
+    private static final int DEATH_DROP_PICKUP_DELAY = 40;
     private static final Map<ItemStack, String> VISUAL_MIRRORS = new WeakHashMap<>();
 
     private PossessionInventoryManager() {
+    }
+
+    /**
+     * Ванільні перетворення (зомбі -> утопленик, скелет -> зимогор тощо) не копіюють ForgeData,
+     * тому збережений інвентар порожнього тіла переносимо на нову сутність. Аналог beta.16
+     * PossessedDataBase.onMobConverted.
+     */
+    @SubscribeEvent
+    public static void onMobConverted(net.minecraftforge.event.entity.living.LivingConversionEvent.Post event) {
+        if (!event.getEntity().level().isClientSide()) {
+            copyStoredInventory(event.getEntity(), event.getOutcome());
+        }
+    }
+
+    /**
+     * Без HOTBAR тіло тримає предмет лише в слоті 0 (MAINHAND_SLOT beta.16), тому вибраний
+     * слот хотбара примусово скидається на 0 з обох боків.
+     */
+    @SubscribeEvent
+    public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
+        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) {
+            return;
+        }
+        Player player = event.player;
+        LivingEntity host = getLimitingHost(player);
+        if (host == null) {
+            return;
+        }
+        if (player.getInventory().selected != 0 && !canCarryHotbar(host)) {
+            player.getInventory().selected = 0;
+            if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer && serverPlayer.connection != null) {
+                serverPlayer.connection.send(new net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket(0));
+            }
+        }
+        if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            relocateInaccessibleItems(serverPlayer, host);
+        }
+    }
+
+    /**
+     * Єдина перевірка для всіх тіл: предмет у руці (вибраний слот) або в другій руці, що лежить у слоті,
+     * якого тіло не має, переноситься в доступний слот, щоб рука й інвентар завжди показували одне й те саме.
+     * Решта заблокованих слотів лишається за душею, тож нічого не випадає й не губиться.
+     */
+    public static void relocateInaccessibleItems(net.minecraft.server.level.ServerPlayer player, LivingEntity host) {
+        Inventory inventory = player.getInventory();
+        boolean changed = false;
+        int selected = inventory.selected;
+        ItemStack held = inventory.items.get(selected);
+        if (!held.isEmpty() && !isSlotAccessible(host, selected)) {
+            changed |= moveToAccessibleSlot(inventory, host, held, () -> inventory.items.set(selected, ItemStack.EMPTY));
+        }
+        ItemStack offhand = inventory.offhand.get(0);
+        if (!offhand.isEmpty() && !isSlotAccessible(host, Inventory.SLOT_OFFHAND)) {
+            changed |= moveToAccessibleSlot(inventory, host, offhand, () -> inventory.offhand.set(0, ItemStack.EMPTY));
+        }
+        if (changed) {
+            player.containerMenu.broadcastChanges();
+            player.inventoryMenu.broadcastChanges();
+        }
+    }
+
+    private static boolean moveToAccessibleSlot(Inventory inventory, LivingEntity host, ItemStack stack, Runnable clearSource) {
+        for (int slot = 0; slot < inventory.items.size(); slot++) {
+            if (!isSlotAccessible(host, slot) || slot == inventory.selected && inventory.items.get(slot) == stack) {
+                continue;
+            }
+            ItemStack existing = inventory.items.get(slot);
+            if (existing.isEmpty()) {
+                clearSource.run();
+                inventory.items.set(slot, stack);
+                return true;
+            }
+            if (ItemStack.isSameItemSameTags(existing, stack)
+                    && existing.getCount() + stack.getCount() <= existing.getMaxStackSize()) {
+                clearSource.run();
+                existing.grow(stack.getCount());
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Переносить збережений інвентар тіла з {@code from} на {@code to} і прибирає його з {@code from}. */
+    public static void copyStoredInventory(LivingEntity from, LivingEntity to) {
+        CompoundTag source = from.getPersistentData();
+        if (to == null || to == from || !source.contains(STORED_INVENTORY, Tag.TAG_LIST)) {
+            return;
+        }
+        to.getPersistentData().put(STORED_INVENTORY, source.getList(STORED_INVENTORY, Tag.TAG_COMPOUND).copy());
+        source.remove(STORED_INVENTORY);
+    }
+
+    /**
+     * Drops stored possession inventory when a non-possessed host dies.
+     * This handles the case where the player left the body (items stored in host NBT)
+     * and then the host was killed — without this, the stored items would vanish.
+     * Uses LivingDropsEvent so drops appear in the event list for other mods to observe.
+     */
+    @SubscribeEvent
+    public static void onHostDeathDrop(LivingDropsEvent event) {
+        if (event.getEntity().level().isClientSide()) {
+            return;
+        }
+        LivingEntity host = event.getEntity();
+        // Skip if host is still possessed (releaseFromHostDeath handles inventory)
+        if (host.getPersistentData().getBoolean("RequiemPossessed")) {
+            return;
+        }
+        CompoundTag data = host.getPersistentData();
+        if (!data.contains(STORED_INVENTORY, Tag.TAG_LIST)) {
+            return;
+        }
+        // Add stored items to the event's drop list so they drop on death.
+        // Items are added directly (not subject to looting/drop chances).
+        ListTag stored = data.getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
+        for (int i = 0; i < stored.size(); i++) {
+            CompoundTag entry = stored.getCompound(i);
+            ItemStack stack = ItemStack.of(entry.getCompound("Stack"));
+            if (!stack.isEmpty()) {
+                net.minecraft.world.entity.item.ItemEntity itemEntity =
+                        new net.minecraft.world.entity.item.ItemEntity(
+                                host.level(), host.getX(), host.getY() + 0.0625D, host.getZ(), stack);
+                itemEntity.setPickUpDelay(40);
+                event.getDrops().add(itemEntity);
+            }
+        }
+        // Clear the stored data so nothing drops twice
+        data.remove(STORED_INVENTORY);
     }
 
     public static void onPossessionStarted(ServerPlayer player, LivingEntity host) {
@@ -104,8 +246,19 @@ public final class PossessionInventoryManager {
             return true;
         }
 
-        if (slot >= 0 && slot < 9) {
-            return canCarryHotbar(host) || canCarryInventory(host) || canUseItems(host);
+        return isSlotAccessible(host, slot);
+    }
+
+    /**
+     * Розкладка слотів як у InventoryLimiter beta.16: слот 0 — рука тіла (HANDS),
+     * 1..8 — HOTBAR, 9..35 — MAIN_INVENTORY, 36..39 — ARMOR, 40 — друга рука (HANDS).
+     */
+    public static boolean isSlotAccessible(LivingEntity host, int slot) {
+        if (slot == 0) {
+            return canUseItems(host) || canCarryHotbar(host);
+        }
+        if (slot > 0 && slot < 9) {
+            return canCarryHotbar(host);
         }
         if (slot >= 9 && slot < 36) {
             return canCarryInventory(host);
@@ -114,9 +267,19 @@ public final class PossessionInventoryManager {
             return canUseArmor(host);
         }
         if (slot == 40) {
-            return canUseItems(host);
+            return canUseEquipmentSlot(host, EquipmentSlot.OFFHAND);
         }
         return true;
+    }
+
+    /** Повертає тіло, якщо гравець зараз вселений і на нього діють обмеження інвентаря. */
+    @org.jetbrains.annotations.Nullable
+    public static LivingEntity getLimitingHost(Player player) {
+        UUID possessedId = SoulManager.getPossessedEntityId(player);
+        if (possessedId == null || player.isCreative() || player.isSpectator()) {
+            return null;
+        }
+        return findPossessedHost(player, possessedId);
     }
 
     public static InventoryShape getInventoryShape(Player player) {
@@ -187,19 +350,30 @@ public final class PossessionInventoryManager {
     }
 
     public static boolean canUseEquipmentSlot(LivingEntity entity, EquipmentSlot slot) {
-        return switch (slot.getType()) {
-            case HAND -> canUseItems(entity);
-            case ARMOR -> canUseArmor(entity);
+        Loadout loadout = getLoadout(entity);
+        return switch (slot) {
+            case MAINHAND -> loadout.mainHand();
+            case OFFHAND -> loadout.offHand();
+            default -> loadout.armor();
         };
     }
 
+    /** Чи має тіло хоча б одну руку (основну чи другу). */
     public static boolean canUseItems(LivingEntity entity) {
-        return entity.getType().is(ModTags.ITEM_USERS)
-                || entity instanceof Mob mob && mob.canPickUpLoot();
+        Loadout loadout = getLoadout(entity);
+        return loadout.mainHand() || loadout.offHand();
     }
 
     public static boolean canCarryInventory(LivingEntity entity) {
-        return entity.getType().is(ModTags.INVENTORY_CARRIERS);
+        return getInventoryCapacity(entity) > 0;
+    }
+
+    /**
+     * Кількість слотів основного інвентаря гравця (індекси {@code 0..capacity-1}), які тіло
+     * фізично носить. Слоти за межами місткості лишаються за душею і заблоковані.
+     */
+    public static int getInventoryCapacity(LivingEntity entity) {
+        return getLoadout(entity).inventorySlots();
     }
 
     public static boolean canCarryHotbar(LivingEntity entity) {
@@ -211,8 +385,97 @@ public final class PossessionInventoryManager {
     }
 
     public static boolean canUseArmor(LivingEntity entity) {
-        return !entity.getType().is(ModTags.ARMOR_BANNED)
-                && entity.getType().is(ModTags.ARMOR_USERS);
+        return getLoadout(entity).armor();
+    }
+
+    /**
+     * Слоти конкретного тіла: руки окремо, броня та місткість інвентаря. Для ванільних мобів
+     * береться вбудована таблиця (повторює те, що моб реально носить у ванілі), для решти
+     * (Alex's Mobs тощо) — стара логіка тегів {@code inventory/*}. Тег {@code armor_banned}
+     * завжди має пріоритет.
+     */
+    public static Loadout getLoadout(LivingEntity entity) {
+        EntityType<?> type = entity.getType();
+        // beta.16 VanillaRequiemPlugin#canUseItems / canWearArmor / refreshInventoryLocks.
+        boolean hands = type.is(ModTags.ITEM_USERS) || entity instanceof Mob mob && mob.canPickUpLoot();
+        boolean armor = !type.is(ModTags.ARMOR_BANNED)
+                && (type.is(ModTags.ARMOR_USERS)
+                || !entity.getItemBySlot(EquipmentSlot.HEAD).isEmpty()
+                || entity instanceof Mob mob && mob.canTakeItem(new ItemStack(net.minecraft.world.item.Items.LEATHER_HELMET)));
+        return new Loadout(hands, hands, armor, type.is(ModTags.INVENTORY_CARRIERS) ? MAIN_INVENTORY_SLOTS : 0);
+    }
+
+    /**
+     * Clears all visual equipment mirrors from a host entity.
+     * Used when the host dies with a player inside, so mirrored equipment
+     * (which has dropChance=2.0) doesn't drop as duplicate items.
+     */
+    public static void clearVisualMirrors(LivingEntity host) {
+        for (EquipmentSlot slot : EquipmentSlot.values()) {
+            // Спершу прибираємо сам предмет-дзеркало (dropChance 2.0), інакше він випаде поряд з оригіналом у гравця.
+            if (isCurrentMirror(host, slot, host.getItemBySlot(slot))) {
+                host.setItemSlot(slot, ItemStack.EMPTY);
+            }
+            clearMirror(host, slot);
+        }
+    }
+
+    /**
+     * Тіло загинуло з душею всередині: те, що тіло несло (слоти в межах його місткості,
+     * предмет у головній руці, броня й друга рука, якщо тіло їх має), випадає на місці смерті. Кожен слот спершу очищається, і лише потім
+     * спавниться предмет, тож дублювання неможливе. Затримка підбору не дає душі, яку
+     * телепортують на те саме місце, миттєво підібрати все назад. Ванільний keepInventory
+     * тут не діє — керує лише requiem:possessionKeepInventory (перевіряє викликач).
+     * Залишки {@code RequiemPossessionInventory} на тілі (якщо є) також випадають тут.
+     */
+    public static void dropSoulInventoryAtDeath(ServerPlayer player, LivingEntity host, Vec3 deathPos) {
+        if (!(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        ServerLevel dropLevel = host != null && host.level() instanceof ServerLevel hostLevel ? hostLevel : level;
+        Inventory inventory = player.getInventory();
+        // Випадає лише те, що тіло справді несло (за його loadout); решта лишається в душі.
+        for (int slot = 0; slot < inventory.items.size(); slot++) {
+            if (host != null && isSlotAccessible(host, slot)) {
+                dropDeathSlot(inventory.items, slot, dropLevel, deathPos);
+            }
+        }
+        if (host != null && canUseArmor(host)) {
+            for (int slot = 0; slot < inventory.armor.size(); slot++) {
+                dropDeathSlot(inventory.armor, slot, dropLevel, deathPos);
+            }
+        }
+        if (host != null && canUseEquipmentSlot(host, EquipmentSlot.OFFHAND)) {
+            for (int slot = 0; slot < inventory.offhand.size(); slot++) {
+                dropDeathSlot(inventory.offhand, slot, dropLevel, deathPos);
+            }
+        }
+        if (host != null && host.getPersistentData().contains(STORED_INVENTORY, Tag.TAG_LIST)) {
+            ListTag stored = host.getPersistentData().getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
+            host.getPersistentData().remove(STORED_INVENTORY);
+            for (int i = 0; i < stored.size(); i++) {
+                ItemStack stack = ItemStack.of(stored.getCompound(i).getCompound("Stack"));
+                if (!stack.isEmpty()) {
+                    spawnDeathDrop(dropLevel, deathPos, stack);
+                }
+            }
+        }
+        inventory.setChanged();
+    }
+
+    private static void dropDeathSlot(List<ItemStack> compartment, int slot, ServerLevel level, Vec3 pos) {
+        ItemStack stack = compartment.get(slot);
+        if (stack.isEmpty()) {
+            return;
+        }
+        compartment.set(slot, ItemStack.EMPTY);
+        spawnDeathDrop(level, pos, stack);
+    }
+
+    private static void spawnDeathDrop(ServerLevel level, Vec3 pos, ItemStack stack) {
+        ItemEntity itemEntity = new ItemEntity(level, pos.x, pos.y + 0.0625D, pos.z, stack);
+        itemEntity.setPickUpDelay(DEATH_DROP_PICKUP_DELAY);
+        level.addFreshEntity(itemEntity);
     }
 
     private static LivingEntity findPossessedHost(Player player, UUID hostId) {
@@ -338,8 +601,12 @@ public final class PossessionInventoryManager {
 
     private static void transferMainInventory(ServerPlayer player, LivingEntity host) {
         ListTag stored = new ListTag();
-        int size = Math.min(MAIN_INVENTORY_SIZE, player.getInventory().items.size());
-        for (int slot = 0; slot < size; slot++) {
+        // Лише основний інвентар (9..35), який тіло носить, переходить до нього; решта лишається за душею.
+        int size = player.getInventory().items.size();
+        for (int slot = 9; slot < size; slot++) {
+            if (!isSlotAccessible(host, slot)) {
+                continue;
+            }
             ItemStack stack = player.getInventory().items.get(slot);
             if (stack.isEmpty()) {
                 continue;
@@ -385,6 +652,13 @@ public final class PossessionInventoryManager {
             }
         }
         host.getPersistentData().remove(STORED_INVENTORY);
+    }
+
+    /**
+     * Слоти тіла: основна/друга рука, броня та кількість слотів основного інвентаря гравця.
+     */
+    public record Loadout(boolean mainHand, boolean offHand, boolean armor, int inventorySlots) {
+        public static final Loadout NONE = new Loadout(false, false, false, 0);
     }
 
     public enum InventoryShape {

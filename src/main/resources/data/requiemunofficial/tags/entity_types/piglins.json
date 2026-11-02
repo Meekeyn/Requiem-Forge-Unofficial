@@ -1,6 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#c:piglins"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:piglins", "required": false}]}

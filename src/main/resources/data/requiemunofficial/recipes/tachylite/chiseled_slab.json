@@ -1,8 +1,12 @@
 {
   "type": "minecraft:crafting_shaped",
-  "pattern": ["###"],
+  "pattern": [
+    "###"
+  ],
   "key": {
-    "#": { "item": "requiemunofficial:tachylite/chiseled" }
+    "#": {
+      "item": "requiemunofficial:tachylite/chiseled"
+    }
   },
   "result": {
     "item": "requiemunofficial:tachylite/chiseled_slab",

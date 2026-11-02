@@ -5,6 +5,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
@@ -86,6 +87,14 @@ public final class ClientShadowPlayerFx {
     }
 
     /**
+     * Проверяет, должен ли локальный игрок использовать тень-эффект.
+     * Это отдельный метод для удобства вызова из миксинов.
+     */
+    public static boolean shouldUseShadowEffect(AbstractClientPlayer player) {
+        return isShadowPlayer(player);
+    }
+
+    /**
      * Возвращает обёртку над {@code base}, рисующую в цель {@code players}.
      * Обёртка стабильная (по одному экземпляру на базовый тип): буферы
      * сортируются по идентичности RenderType.
@@ -126,12 +135,27 @@ public final class ClientShadowPlayerFx {
             chainWidth = main.width;
             chainHeight = main.height;
             current.resize(chainWidth, chainHeight);
-            // resize создаёт новые цели — буфер глубины нужно прикрепить заново
             assignMainDepth(minecraft);
         }
 
-        current.process(partialTick);
-        main.bindWrite(true);
+        // Disable depth test for post-processing to prevent sky/water artifacts
+        // when the final blit pass writes to the main framebuffer.
+        // The chain's passes are full-screen quads that should not be depth-tested.
+        boolean depthTestWasEnabled = GL11.glGetBoolean(GL11.GL_DEPTH_TEST);
+        RenderSystem.disableDepthTest();
+
+        try {
+            current.process(partialTick);
+        } finally {
+            // Restore depth test state
+            if (depthTestWasEnabled) {
+                RenderSystem.enableDepthTest();
+            } else {
+                RenderSystem.disableDepthTest();
+            }
+            // Ensure main framebuffer is bound for subsequent rendering
+            main.bindWrite(false);
+        }
     }
 
     /**

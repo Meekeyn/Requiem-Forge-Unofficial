@@ -14,7 +14,7 @@ public record PossessionActionPacket(Action action) {
         ATTACK,
         INTERACT,
         RELEASE,
-        // Аварійний вихід із недвижних (immovable) тіл (оригінальна Shift-поведінка beta.16).
+        // Аварійний Shift-вихід: immovable (оригінальна поведінка beta.16) і frictionless_hosts (розширення порту).
         EMERGENCY_RELEASE,
         // Port-only безумовний вихід; сервер застосовує його лише за увімкненого конфігу.
         UNCONDITIONAL_RELEASE
@@ -32,6 +32,7 @@ public record PossessionActionPacket(Action action) {
                               Supplier<NetworkEvent.Context> contextSupplier) {
         NetworkEvent.Context context = contextSupplier.get();
         ServerPlayer sender = context.getSender();
+        if (packet.action == Action.RELEASE || packet.action == Action.EMERGENCY_RELEASE || packet.action == Action.UNCONDITIONAL_RELEASE) ua.meekeyn.requiemunofficial.RequiemUnofficial.LOGGER.info("[REQ-EXIT] server: packet received action={} sender={}", packet.action, sender == null ? "null" : sender.getGameProfile().getName()); // ТИМЧАСОВО [REQ-EXIT]
         if (sender != null) {
             context.enqueueWork(() -> PossessionManager.handleAction(sender, packet.action));
         }

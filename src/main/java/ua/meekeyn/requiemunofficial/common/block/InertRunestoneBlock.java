@@ -41,6 +41,7 @@ import ua.meekeyn.requiemunofficial.common.init.ModBlocks;
 import ua.meekeyn.requiemunofficial.common.ritual.RitualManager;
 import ua.meekeyn.requiemunofficial.common.ritual.RiftTeleportManager;
 import ua.meekeyn.requiemunofficial.common.item.SoulVesselItem;
+import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.item.IchorVesselItem;
 
 import java.util.Map;
@@ -122,16 +123,6 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
         }
 
         ItemStack handStack = player.getItemInHand(hand);
-
-        if (handStack.is(ModItems.DEBUG_ITEM.get())) {
-            if (level.getBlockEntity(pos) instanceof RunestoneBlockEntity runestone) {
-                sendDebugInfo(serverPlayer, state, pos, runestone);
-                return InteractionResult.CONSUME;
-            }
-
-            serverPlayer.sendSystemMessage(Component.literal("No runestone block entity at " + pos.toShortString()));
-            return InteractionResult.CONSUME;
-        }
 
         if (tryChangeRune(level, pos, state, serverPlayer, hand, handStack)) {
             return InteractionResult.CONSUME;
@@ -468,13 +459,17 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
             }
         }
 
-        float ambientPower = successes / (float) POWER_ATTEMPTS;
-        float storedEnergyBonus = Math.min(0.5F, headRunestone.getStoredSoulEnergy() * 0.1F);
+        float ambientPower = RequiemConfig.OBELISK_REQUIRE_SOUL_BLOCKS.get()
+                ? successes / (float) POWER_ATTEMPTS
+                : 1.0F;
+        float storedEnergyBonus = RequiemConfig.OBELISK_STORED_ENERGY_BONUS.get()
+                ? Math.min(0.5F, headRunestone.getStoredSoulEnergy() * 0.1F)
+                : 0.0F;
         float targetPowerRate = Math.min(1.0F, ambientPower + storedEnergyBonus);
         float powerRate = headRunestone.getPowerRate()
                 + (targetPowerRate - headRunestone.getPowerRate()) * 0.35F;
 
-        if (headRunestone.getStoredSoulEnergy() > 0) {
+        if (RequiemConfig.OBELISK_STORED_ENERGY_BONUS.get() && headRunestone.getStoredSoulEnergy() > 0) {
             // Повільно витрачає накопичену енергію душ під час роботи обеліска
             headRunestone.consumeStoredSoulEnergy(1);
             if (headRunestone.shouldPlayChargeSound(level.getGameTime(), CHARGE_SOUND_COOLDOWN_TICKS)) {
@@ -589,8 +584,13 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
 
         double range = coreWidth * 10.0D + 10.0D;
         AABB box = new AABB(headPos).inflate(range);
+        // Куб AABB лише відсікає кандидатів; справжня зона дії — куля радіусом range від центру голови.
+        Vec3 headCenter = Vec3.atCenterOf(headPos);
+        double rangeSqr = range * range;
 
-        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box, this::canReceiveObeliskEffects)) {
+        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class, box,
+                candidate -> candidate.distanceToSqr(headCenter) <= rangeSqr
+                        && canReceiveObeliskEffects(candidate))) {
             for (Map.Entry<String, Integer> entry : runestone.getRuneLevels().entrySet()) {
                 applyRuneEffectToPlayer(
                         level,

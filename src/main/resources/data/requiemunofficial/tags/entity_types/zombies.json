@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:humanoid_zombies",
-    "minecraft:zombie_horse"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:zombies", "required": false}]}

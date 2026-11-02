@@ -4,9 +4,7 @@
   "requiemunofficial:advancements.requiem.i_hate_sand.description": "Renascer como um Husk.",
   "requiemunofficial:advancements.adventure.the_choice.title": "Um dilema diabólico",
   "requiemunofficial:advancements.adventure.the_choice.description": "Escolha entre uma vida normal e uma eternidade bizarra",
-
   "requiemunofficial:argument.entity.options.possessor.description": "Entidades possuídas por",
-
   "requiemunofficial:commands.query.success.other": "%2$s é %1$s",
   "requiemunofficial:commands.query.success.self": "Você é %s",
   "requiemunofficial:commands.ethereal.set.fail.mortal": "Falha ao fazer %s etéreo porque ele já é Mortal",
@@ -27,10 +25,8 @@
   "requiemunofficial:commands.possession.start.success.self": "Começou a possuir %s",
   "requiemunofficial:commands.possession.stop.success.other": "%s parou de possuir %s",
   "requiemunofficial:commands.possession.stop.success.self": "Parou de possuir %s",
-
   "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
   "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
-
   "requiemunofficial:dialogue.first_contact.introduction.text": "Você ouve uma voz falando com você, mas você não consegue saber de onde está vindo.",
   "requiemunofficial:dialogue.first_contact.introduction.explain": "O que está acontecendo?",
   "requiemunofficial:dialogue.first_contact.introduction.yes": "Faça eu ser um demônio logo.",
@@ -45,12 +41,10 @@
   "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Tem certeza que quer ficar humano?",
   "requiemunofficial:dialogue.first_contact.final_confirm": "Confirmar",
   "requiemunofficial:dialogue.first_contact.final_doubt": "Voltar",
-
   "requiemunofficial:subtitles.effect.become.mortal": "Se tornando mortal",
   "requiemunofficial:subtitles.effect.become.remnant": "Adquirindo um demônio",
   "requiemunofficial:subtitles.effect.possession.attempt": "Tentativa de Possessão",
   "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
-
   "requiemunofficial:tooltip.bony_prosthesis": "Prótese Óssea",
   "requiemunofficial:tooltip.calcium_bucket": "Balde de Cálcio",
   "requiemunofficial:tooltip.cure_catalyst": "Catalisador da Cura",
@@ -59,14 +53,16 @@
   "requiemunofficial:tooltip.drowned_grip": "Punho de Afogado",
   "requiemunofficial:tooltip.skeletal_efficiency": "Eficiência esqueletal",
   "requiemunofficial:tooltip.zombie_food": "Comida de Zumbi",
-
   "death.attack.requiem.attrition.hardcore": "%1$s foi posto para dormir, para sempre.",
   "death.attack.requiem.attrition.hardcore.player": "%2$s fez %1$s dormir, para sempre.",
-
   "effect.requiem.attrition": "Atrito",
-
   "enchantment.requiem.humanity": "Humanidade",
-
-  "item.requiem.opus_daemonium": "Opus Daemonium"
+  "block.requiemunofficial.tachylite.tachylite_slab": "Tachylite Slab",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Tachylite Stairs",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }
-

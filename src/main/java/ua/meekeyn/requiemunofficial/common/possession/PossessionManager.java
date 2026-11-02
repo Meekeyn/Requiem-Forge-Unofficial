@@ -80,6 +80,7 @@ import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
 import net.minecraftforge.event.entity.EntityJoinLevelEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
 import net.minecraftforge.event.entity.EntityTeleportEvent;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
@@ -125,6 +126,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -162,7 +164,22 @@ public final class PossessionManager {
     private static final String STORED_DISCONNECT_HOST_TYPE = "Type";
     private static final String STORED_DISCONNECT_HOST_DIMENSION = "Dimension";
     private static final String STORED_DISCONNECT_HOST_ENTITY = "Entity";
+    private static final String ORIGINAL_PLAYER_FLIGHT_CREATIVE = "RequiemOriginalPlayerFlightCreative";
     private static final String LAST_POSSESSOR = "RequiemLastPossessor";
+    // Released bodies that may hang in mid-air (NoAI shells etc.): manual gravity until they land.
+    private static final Map<UUID, FallAssist> FALL_ASSISTS = new HashMap<>();
+    private static final int FALL_ASSIST_MAX_TICKS = 1200;
+
+    private static final class FallAssist {
+        final LivingEntity host;
+        int ticksLeft = FALL_ASSIST_MAX_TICKS;
+        double lastY = Double.NaN;
+        double velocityY;
+
+        FallAssist(LivingEntity host) {
+            this.host = host;
+        }
+    }
     private static final String PROVOKED_BY_POSSESSED_HOST = "RequiemProvokedByPossessedHost";
     private static final String PROVOKED_BY_POSSESSED_HOST_UNTIL = "RequiemProvokedByPossessedHostUntil";
     private static final String GUARDIAN_BEAM_TARGET = "RequiemGuardianBeamTarget";
@@ -179,10 +196,23 @@ public final class PossessionManager {
     private static final int AXOLOTL_PLAYING_DEAD_TICKS = 200;
     private static final int POSSESSED_HOST_PROVOKE_TICKS = 20 * 30;
     private static final int RELEASE_INPUT_GRACE_TICKS = 10;
+    // Після виходу з тіла-носія повторне V (подвійне натискання) не повинне одразу розколоти
+    // власне тіло гравця.
+    private static final int OWN_BODY_SPLIT_AFTER_RELEASE_GUARD_TICKS = 10;
+    private static final Map<UUID, Long> LAST_HOST_RELEASE_AT = new HashMap<>();
+    /** Тіло після входу може з'явитися лише коли довантажиться його чанк: не викидаємо душу одразу. */
+    private static final Map<UUID, Integer> RECONNECT_HOST_GRACE = new HashMap<>();
+    private static final int RECONNECT_HOST_GRACE_TICKS = 100;
     private static final UUID AXOLOTL_PLAYING_DEAD_SLOWDOWN =
             UUID.fromString("5a13c664-7932-4a73-b341-0745cb737754");
     private static final UUID BETA16_PLAYER_SPEED_MODIFIER =
             UUID.fromString("f25420ed-4041-4cc6-87fa-6e5272dddb2b");
+    // Vanilla Witch "Drinking speed penalty" (-0.25 ADDITION); must never reach the Player Body.
+    private static final UUID WITCH_DRINKING_SPEED_MODIFIER =
+            UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
+    // Ridden spider walk pace: the same humanoid Player Body scale used on foot, applied to the
+    // spider's own (non-sprint) movement speed, i.e. 0.3 * 0.4.
+    private static final double RIDDEN_SPIDER_WALK_SPEED_SCALE = HUMANOID_PLAYER_BODY_SPEED_SCALE;
     private static final double POSSESSOR_RESYNC_DISTANCE_SQR = 64.0D;
     private static final Map<UUID, PendingPossession> PENDING_POSSESSIONS = new HashMap<>();
     private static final Map<UUID, ServerPlayer> ACTIVE_POSSESSORS = new HashMap<>();
@@ -191,10 +221,20 @@ public final class PossessionManager {
     private static final Map<UUID, List<Integer>> VAGRANT_SENSE_TARGETS = new HashMap<>();
     private static final Map<UUID, Long> POSSESSION_STARTED_AT = new HashMap<>();
     private static final Map<UUID, Boolean> POSSESSED_RIDING_STATE = new HashMap<>();
+    // Скільки ще кроків ШІ (aiStep) павук утримує керування після погоні/втечі. Запис
+    // прибирається, коли лічильник вичерпано, при злізанні, виході з тіла та вивантаженні павука.
     private static final Map<UUID, Integer> SPIDER_AI_HOLD = new HashMap<>();
     private static final int SPIDER_CONTROL_RETURN_TICKS = 6;
     // MoveControl транспорту може стерти ввід між підготовкою та travel.
     private static final Map<UUID, RiddenDrive> RIDDEN_VEHICLE_DRIVE = new HashMap<>();
+    /**
+     * Гравці, яким ми самі наклали нічний зір від тіла господаря. Видаляємо його лише
+     * при виході з захоплення і лише якщо воно наше — щоб не чіпати незалежний нічний
+     * зір (зілля/маяк), який гравець міг отримати самостійно. Тримаємо вище порога
+     * пульсації {@code getNightVisionScale} (200 тиків), щоб яскравість не мерехтіла.
+     */
+    private static final Set<UUID> HOST_NIGHT_VISION_OWNED = new HashSet<>();
+    private static final int HOST_NIGHT_VISION_DURATION = 260;
     private static final Set<String> ALEX_NIGHT_EYED = Set.of(
             "cave_centipede",
             "cockroach",
@@ -418,6 +458,10 @@ public final class PossessionManager {
 
         long completeTime = player.level().getGameTime() + POSSESSION_DELAY_TICKS;
         PENDING_POSSESSIONS.put(player.getUUID(), new PendingPossession(target.getUUID(), completeTime));
+        // beta.16 VagrantPossessAbility#run: звук спроби вселення чути всім поряд, крім самого гравця.
+        target.level().playSound(player, target.getX(), target.getY(), target.getZ(),
+                ua.meekeyn.requiemunofficial.common.init.ModSounds.EFFECT_POSSESSION_ATTEMPT.get(),
+                net.minecraft.sounds.SoundSource.PLAYERS, 2.0F, 0.6F);
         if (feedback) {
             player.level().playSound(
                     null,
@@ -448,17 +492,27 @@ public final class PossessionManager {
             return false;
         }
 
+        // A successful restoreHost always removes the ORIGINAL_* keys. If they are still present,
+        // a previous possession of this body was never restored (crash, unloaded host...) and the
+        // body still carries the proxy state (NoAI/NoGravity/noPhysics = true): keep the real
+        // originals instead of capturing the broken proxy state as "original".
         if (target instanceof Mob mob) {
-            target.getPersistentData().putBoolean(ORIGINAL_NO_AI, mob.isNoAi());
+            if (!target.getPersistentData().contains(ORIGINAL_NO_AI, Tag.TAG_BYTE)) {
+                target.getPersistentData().putBoolean(ORIGINAL_NO_AI, mob.isNoAi());
+            }
             mob.setNoAi(false);
             mob.setPersistenceRequired();
         }
-        target.getPersistentData().putBoolean(ORIGINAL_NO_GRAVITY, target.isNoGravity());
+        if (!target.getPersistentData().contains(ORIGINAL_NO_GRAVITY, Tag.TAG_BYTE)) {
+            target.getPersistentData().putBoolean(ORIGINAL_NO_GRAVITY, target.isNoGravity());
+        }
         EntityMobilityManager.MobilityProfile initialMobility = EntityMobilityManager.get(target);
         if (initialMobility != EntityMobilityManager.MobilityProfile.DEFAULT) {
             target.setNoGravity(initialMobility.forcesFlight());
         }
-        target.getPersistentData().putBoolean(ORIGINAL_NO_PHYSICS, target.noPhysics);
+        if (!target.getPersistentData().contains(ORIGINAL_NO_PHYSICS, Tag.TAG_BYTE)) {
+            target.getPersistentData().putBoolean(ORIGINAL_NO_PHYSICS, target.noPhysics);
+        }
         if (initialMobility != EntityMobilityManager.MobilityProfile.DEFAULT) {
             target.noPhysics = initialMobility.phasesThroughWalls();
         }
@@ -466,7 +520,6 @@ public final class PossessionManager {
 
         target.getPersistentData().putBoolean(POSSESSED, true);
         target.getPersistentData().putUUID(POSSESSOR, player.getUUID());
-        player.removeEffect(ModEffects.EMANCIPATION.get());
         PossessionInventoryManager.onPossessionStarted(player, target);
         applyHostFoodData(player, target);
         applyPossessorName(player, target);
@@ -486,6 +539,8 @@ public final class PossessionManager {
                 new PossessionFxPacket(PossessionFxPacket.Phase.ACK, target.getId())
         );
         ModCriteria.PLAYER_POSSESSED_ENTITY.trigger(player, target);
+        // beta.16 LootingPossessedData#giftFirstPossessionLoot (requiem/possession/<entity>).
+        ua.meekeyn.requiemunofficial.common.loot.PossessionLootManager.giftFirstPossessionLoot(player, target);
         return true;
     }
 
@@ -524,6 +579,8 @@ public final class PossessionManager {
         applyPossessedStepHeight(replacement);
         replacement.getPersistentData().putBoolean(POSSESSED, true);
         replacement.getPersistentData().putUUID(POSSESSOR, player.getUUID());
+        // beta.16 copyFrom: нове тіло успадковує previously_possessed — подарунковий лут не видається.
+        ua.meekeyn.requiemunofficial.common.loot.PossessionLootManager.markPreviouslyPossessed(replacement);
         applyHostFoodData(player, replacement);
         applyPossessorName(player, replacement);
 
@@ -576,6 +633,41 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
+    public static void onServerTickFallAssist(TickEvent.ServerTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || FALL_ASSISTS.isEmpty()) {
+            return;
+        }
+        FALL_ASSISTS.values().removeIf(PossessionManager::tickFallAssist);
+    }
+
+    /** Returns true when the assist is finished and must be dropped. */
+    private static boolean tickFallAssist(FallAssist assist) {
+        LivingEntity host = assist.host;
+        if (!host.isAlive() || host.isRemoved() || host.level().isClientSide() || --assist.ticksLeft <= 0
+                || getPossessor(host) != null || host.isPassenger() || host.isNoGravity()
+                || host.isInWater() || host.isInLava() || host.onClimbable()) {
+            return true;
+        }
+        if (host.onGround()) {
+            return true;
+        }
+        // Vanilla physics already moves it: nothing to assist.
+        if (!Double.isNaN(assist.lastY) && Math.abs(host.getY() - assist.lastY) > 1.0E-4D) {
+            assist.lastY = host.getY();
+            assist.velocityY = host.getDeltaMovement().y;
+            return false;
+        }
+        assist.velocityY = (assist.velocityY - 0.08D) * 0.98D;
+        host.move(net.minecraft.world.entity.MoverType.SELF, new Vec3(0.0D, assist.velocityY, 0.0D));
+        if (host.onGround() || host.verticalCollision) {
+            return host.onGround();
+        }
+        host.hasImpulse = true;
+        assist.lastY = host.getY();
+        return false;
+    }
+
+    @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END
                 || event.player.level().isClientSide()
@@ -605,6 +697,21 @@ public final class PossessionManager {
         }
 
         LivingEntity storedHost = findHost(player, possessedId);
+        if (storedHost == null && player.getPersistentData().contains(STORED_DISCONNECT_HOST, Tag.TAG_COMPOUND)) {
+            storedHost = restoreDisconnectedHost(player);
+            if (storedHost != null && !resumeAfterDisconnect(player, storedHost)) {
+                clearHostPossessionFlags(storedHost);
+                storedHost = null;
+            }
+        }
+        if (storedHost == null) {
+            Integer grace = RECONNECT_HOST_GRACE.get(player.getUUID());
+            if (grace != null && grace > 0) {
+                RECONNECT_HOST_GRACE.put(player.getUUID(), grace - 1);
+                return;
+            }
+        }
+        RECONNECT_HOST_GRACE.remove(player.getUUID());
         if (storedHost == null || !storedHost.isAlive()) {
             release(player, storedHost);
             return;
@@ -925,6 +1032,17 @@ public final class PossessionManager {
         syncBeta16HostToPlayer(player, host);
     }
 
+    // Павук помер/вивантажився/змінив вимір: прибираємо його утримання ШІ та ввід транспорту.
+    @SubscribeEvent
+    public static void onVehicleLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().isClientSide()) {
+            return;
+        }
+        UUID entityId = event.getEntity().getUUID();
+        SPIDER_AI_HOLD.remove(entityId);
+        RIDDEN_VEHICLE_DRIVE.remove(entityId);
+    }
+
     @SubscribeEvent
     public static void onHostDeath(LivingDeathEvent event) {
         if (event.getEntity().level().isClientSide() || event.getEntity().getServer() == null) {
@@ -1018,6 +1136,9 @@ public final class PossessionManager {
     public static void onPlayerLogout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
             clearVagrantSenseTargets(player);
+            HOST_NIGHT_VISION_OWNED.remove(player.getUUID());
+            LAST_HOST_RELEASE_AT.remove(player.getUUID());
+            RECONNECT_HOST_GRACE.remove(player.getUUID());
         }
 
         if (event.getEntity() instanceof ServerPlayer player
@@ -1160,6 +1281,36 @@ public final class PossessionManager {
         return true;
     }
 
+    /** Дає тілу час з'явитися після входу гравця (чанк тіла вантажиться асинхронно). */
+    public static void beginReconnectGrace(ServerPlayer player) {
+        RECONNECT_HOST_GRACE.put(player.getUUID(), RECONNECT_HOST_GRACE_TICKS);
+    }
+
+    /** Знімає з тіла позначки вселення, якщо його власник уже не керує ним. */
+    public static void clearHostPossessionFlags(LivingEntity host) {
+        host.getPersistentData().remove(POSSESSED);
+        host.getPersistentData().remove(POSSESSOR);
+    }
+
+    /**
+     * Позначка {@code RequiemPossessed} на тілі актуальна лише тоді, коли гравець-власник онлайн
+     * і справді вселений саме в це тіло. Інакше це залишок після виходу/збою — його прибираємо.
+     */
+    private static boolean isActivelyPossessed(LivingEntity target) {
+        if (!target.getPersistentData().getBoolean(POSSESSED)) {
+            return false;
+        }
+        UUID possessorId = getPossessor(target);
+        ServerPlayer possessor = possessorId == null || target.getServer() == null
+                ? null
+                : target.getServer().getPlayerList().getPlayer(possessorId);
+        if (possessor != null && target.getUUID().equals(SoulManager.getPossessedEntityId(possessor))) {
+            return true;
+        }
+        clearHostPossessionFlags(target);
+        return false;
+    }
+
     public static boolean resumeAfterDisconnect(ServerPlayer player, LivingEntity host) {
         POSSESSION_INPUTS.remove(player.getUUID());
         UUID hostId = SoulManager.getPossessedEntityId(player);
@@ -1216,8 +1367,13 @@ public final class PossessionManager {
         float xRot = host.getXRot();
         boolean consumeHost = !(host instanceof ServerPlayer);
 
-        release(player, host, false);
+        // When the host body is consumed (healing, death), the player's inventory must
+        // stay with the soul. Transferring it to the host here would bury the items in a
+        // body that is about to be discarded. Equipment mirrors are NOT cleared by this
+        // release path; releaseFromHostDeath clears them explicitly before the drops.
+        releaseWithoutInventoryTransfer(player, host);
         if (consumeHost && host.isAlive()) {
+            playHealingFx(level, position);
             host.discard();
         }
         if (player.connection != null) {
@@ -1229,44 +1385,71 @@ public final class PossessionManager {
     }
 
     public static void handleAction(ServerPlayer player, PossessionActionPacket.Action action) {
+        boolean reqExitAction = action == PossessionActionPacket.Action.RELEASE || action == PossessionActionPacket.Action.EMERGENCY_RELEASE || action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE; // ТИМЧАСОВО [REQ-EXIT]
+        if (!player.isAlive()) {
+            if (reqExitAction) reqExitLog("handleAction {}: stopped, player is dead", action); // ТИМЧАСОВО [REQ-EXIT]
+            return;
+        }
         if (player.isSpectator()) {
+            if (reqExitAction) reqExitLog("handleAction {}: stopped, player is spectator", action); // ТИМЧАСОВО [REQ-EXIT]
             return;
         }
         if (action == PossessionActionPacket.Action.RELEASE) {
             if (isWithinReleaseInputGrace(player)) {
+                reqExitLog("RELEASE: stopped, within {}-tick grace after possession start", RELEASE_INPUT_GRACE_TICKS); // ТИМЧАСОВО [REQ-EXIT]
                 return;
             }
             LivingEntity host = getControlledHost(player);
             if (host != null) {
                 // Оригінальна beta.16 умова виходу з тіла за клавішею дисоціації.
                 if (canDissociateFrom(player, host)) {
+                    reqExitLog("RELEASE: calling release, host={}", host); // ТИМЧАСОВО [REQ-EXIT]
                     release(player, host);
-                }
+                    reqExitLog("RELEASE: release returned, state={} possessedId={}", SoulManager.getState(player), SoulManager.getPossessedEntityId(player)); // ТИМЧАСОВО [REQ-EXIT]
+                } else reqExitLog("RELEASE: stopped, canDissociateFrom=false (frictionless={}, emancipation={})", host.getType().is(ModTags.FRICTIONLESS_HOSTS), player.hasEffect(ModEffects.EMANCIPATION.get())); // ТИМЧАСОВО [REQ-EXIT]
                 return;
             }
+            reqExitLog("RELEASE: no controlled host ({}), trying split, canSplitFromKey={}", reqExitDescribeNoHost(player), canSplitFromKey(player)); // ТИМЧАСОВО [REQ-EXIT]
             // Оригінальний beta.16 раскол («Ethereal Fracture») вимагає стану remnant та
             // ефекту Емансипації; команди нижче використовують примусовий раскол окремо.
-            if (canSplitFromKey(player)) {
+            if (canSplitFromKey(player) && !isWithinOwnBodySplitGuard(player)) {
                 SoulLifecycleManager.splitPlayer(player);
             }
             return;
         }
         if (action == PossessionActionPacket.Action.EMERGENCY_RELEASE) {
             LivingEntity host = getControlledHost(player);
-            if (host != null && host.getType().is(ModTags.IMMOVABLE)) {
+            // Розширення порту: аварійний Shift-вихід працює для immovable і frictionless_hosts;
+            // для frictionless (не immovable) — лише коли ні тіло, ні гравець не на транспорті, і не в перші
+            // тіки після вселення (інакше Shift, утриманий вагрантом для спуску, одразу виводить із голема).
+            if (host != null && (host.getType().is(ModTags.IMMOVABLE)
+                    || (host.getType().is(ModTags.FRICTIONLESS_HOSTS)
+                            && !host.isPassenger() && !player.isPassenger()
+                            && !EntityMobilityManager.get(host).canFly()
+                            && !isWithinReleaseInputGrace(player)))) {
                 release(player, host);
             }
             return;
         }
         if (action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE) {
+            reqExitLog("UNCONDITIONAL_RELEASE: config allowUnconditionalPossessionExit={}", RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()); // ТИМЧАСОВО [REQ-EXIT]
             // Port-only: серверно-авторитетна перевірка конфігу.
             if (!RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()) {
+                reqExitLog("UNCONDITIONAL_RELEASE: stopped by config"); // ТИМЧАСОВО [REQ-EXIT]
                 return;
             }
             LivingEntity host = getControlledHost(player);
             if (host != null) {
+                reqExitLog("UNCONDITIONAL_RELEASE: calling release, host={}", host); // ТИМЧАСОВО [REQ-EXIT]
                 release(player, host);
-            }
+                reqExitLog("UNCONDITIONAL_RELEASE: release returned, state={} possessedId={}", SoulManager.getState(player), SoulManager.getPossessedEntityId(player)); // ТИМЧАСОВО [REQ-EXIT]
+            } else if (isWithinOwnBodySplitGuard(player)) {
+                reqExitLog("UNCONDITIONAL_RELEASE: stopped, within {}-tick guard after host release", OWN_BODY_SPLIT_AFTER_RELEASE_GUARD_TICKS); // ТИМЧАСОВО [REQ-EXIT]
+            } else if (SoulManager.getState(player) == SoulState.REMNANT) {
+                // Розширення порту: з увімкненим конфігом V виводить і з власного живого тіла, без Емансипації.
+                reqExitLog("UNCONDITIONAL_RELEASE: no host, splitting own body"); // ТИМЧАСОВО [REQ-EXIT]
+                SoulLifecycleManager.splitPlayer(player);
+            } else reqExitLog("UNCONDITIONAL_RELEASE: stopped, no controlled host ({})", reqExitDescribeNoHost(player)); // ТИМЧАСОВО [REQ-EXIT]
             return;
         }
 
@@ -1290,7 +1473,11 @@ public final class PossessionManager {
      */
     private static boolean canDissociateFrom(ServerPlayer player, LivingEntity host) {
         return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
-                || player.hasEffect(ModEffects.EMANCIPATION.get());
+                || player.hasEffect(ModEffects.EMANCIPATION.get())
+                // Port-only: вселення у власну оболонку — це теж «власне тіло».
+                || (host instanceof PlayerShellEntity shell
+                        && shell.belongsTo(player.getUUID())
+                        && allowsOwnBodyExitWithoutEmancipation());
     }
 
     /**
@@ -1298,8 +1485,16 @@ public final class PossessionManager {
      * лише для remnant-стану за наявності Емансипації.
      */
     private static boolean canSplitFromKey(ServerPlayer player) {
+        // beta.16: потрібна Емансипація. Розширення порту: з увімкненим allowUnconditionalPossessionExit — і без неї.
         return SoulManager.getState(player) == SoulState.REMNANT
-                && player.hasEffect(ModEffects.EMANCIPATION.get());
+                && (player.hasEffect(ModEffects.EMANCIPATION.get())
+                        || allowsOwnBodyExitWithoutEmancipation());
+    }
+
+    /** Port-only: вихід із власного тіла на ',' без Емансипації (окремий конфіг або безумовний вихід). */
+    private static boolean allowsOwnBodyExitWithoutEmancipation() {
+        return RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.get()
+                || RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get();
     }
 
     public static void updatePossessionInput(ServerPlayer player, PossessionInputPacket packet) {
@@ -1433,8 +1628,9 @@ public final class PossessionManager {
                 accessor.requiemunofficial$setLivingEntityFlag(1, true);
                 accessor.requiemunofficial$setLivingEntityFlag(2, hand == InteractionHand.OFF_HAND);
             }
+            int remaining = ((LivingEntityAccessor) player).requiemunofficial$getUseItemRemaining();
             ((LivingEntityAccessor) host).requiemunofficial$setUseItemRemaining(
-                    Math.max(2, hostStack.getUseDuration() + 1)
+                    remaining > 0 ? remaining : Math.max(2, hostStack.getUseDuration() + 1)
             );
             if (host instanceof AbstractSkeleton skeleton && hostStack.getItem() instanceof BowItem) {
                 skeleton.setAggressive(true);
@@ -1705,6 +1901,20 @@ public final class PossessionManager {
     private record RedirectedTargets(List<Entity> targets, boolean changed) {
     }
 
+    // ТИМЧАСОВО [REQ-EXIT]: діагностика без побічних ефектів — повторює перевірки getControlledHost і повертає причину null.
+    private static String reqExitDescribeNoHost(ServerPlayer player) { // ТИМЧАСОВО [REQ-EXIT]
+        if (SoulManager.getState(player) != SoulState.VAGRANT) return "state=" + SoulManager.getState(player) + " (not VAGRANT)"; // ТИМЧАСОВО [REQ-EXIT]
+        UUID id = SoulManager.getPossessedEntityId(player); // ТИМЧАСОВО [REQ-EXIT]
+        if (id == null) return "possessedId=null"; // ТИМЧАСОВО [REQ-EXIT]
+        LivingEntity h = findHost(player, id); // ТИМЧАСОВО [REQ-EXIT]
+        if (h == null) return "host " + id + " not found in any level"; // ТИМЧАСОВО [REQ-EXIT]
+        return "host=" + h + " uuidMatch=" + id.equals(h.getUUID()) + " possessor=" + getPossessor(h) + " alive=" + h.isAlive(); // ТИМЧАСОВО [REQ-EXIT]
+    } // ТИМЧАСОВО [REQ-EXIT]
+
+    private static void reqExitLog(String message, Object... args) { // ТИМЧАСОВО [REQ-EXIT]
+        ua.meekeyn.requiemunofficial.RequiemUnofficial.LOGGER.info("[REQ-EXIT] server: " + message, args); // ТИМЧАСОВО [REQ-EXIT]
+    } // ТИМЧАСОВО [REQ-EXIT]
+
     private static LivingEntity getControlledHost(ServerPlayer player) {
         if (SoulManager.getState(player) != SoulState.VAGRANT) {
             return null;
@@ -1810,7 +2020,18 @@ public final class PossessionManager {
             return;
         }
 
+        if (host instanceof net.minecraft.world.entity.monster.Creeper creeper) {
+            // beta.16 CreeperPrimingAbility: атака вмикає/вимикає підготовку до вибуху.
+            creeper.setSwellDir(creeper.getSwellDir() > 0 ? -1 : 1);
+            host.getPersistentData().putLong(NEXT_ATTACK_TIME, gameTime + 5L);
+            return;
+        }
+
         LivingEntity target = findAttackTarget(player, host, getAttackReach(host));
+        if ((target == null || !host.hasLineOfSight(target)) && host.getType() == EntityType.SHULKER) {
+            // beta.16 AutoAimAbility(16, 4): без цілі в прицілі шалкер стріляє в найближчу.
+            target = findShulkerAutoAimTarget(player, host);
+        }
         if (target == null || !host.hasLineOfSight(target)) {
             if (tryForwardSpecialAttack(host)) {
                 host.getPersistentData().putLong(NEXT_ATTACK_TIME, gameTime + getAttackCooldown(host));
@@ -1837,6 +2058,20 @@ public final class PossessionManager {
         if (!vanillaMobAttack) {
             host.swing(InteractionHand.MAIN_HAND, true);
         }
+    }
+
+    @org.jetbrains.annotations.Nullable
+    private static LivingEntity findShulkerAutoAimTarget(ServerPlayer player, LivingEntity host) {
+        return host.level().getNearestEntity(
+                LivingEntity.class,
+                net.minecraft.world.entity.ai.targeting.TargetingConditions.forCombat()
+                        .selector(candidate -> candidate != player && candidate != host),
+                host,
+                host.getX(),
+                host.getEyeY(),
+                host.getZ(),
+                host.getBoundingBox().inflate(16.0D, 4.0D, 16.0D)
+        );
     }
 
     private static boolean tryAttributeAttack(LivingEntity host, LivingEntity target) {
@@ -1915,6 +2150,15 @@ public final class PossessionManager {
             return;
         }
         if (host instanceof Evoker evoker) {
+            // beta.16: directInteract = Wololo (ціль-вівця в межах 16 блоків), інакше indirectInteract = Vex.
+            if (findAttackTarget(player, host, 16.0D) instanceof net.minecraft.world.entity.animal.Sheep sheep
+                    && sheep.getColor() == net.minecraft.world.item.DyeColor.BLUE
+                    && host.hasLineOfSight(sheep)) {
+                sheep.setColor(net.minecraft.world.item.DyeColor.RED);
+                host.playSound(SoundEvents.EVOKER_PREPARE_WOLOLO, 1.0F, 1.0F);
+                host.getPersistentData().putLong(NEXT_INTERACT_TIME, gameTime + 140L);
+                return;
+            }
             summonVexes(evoker);
             host.getPersistentData().putLong(NEXT_INTERACT_TIME, gameTime + 340L);
             return;
@@ -2026,9 +2270,6 @@ public final class PossessionManager {
         }
         if (type == EntityType.WITCH || type == EntityType.SNOW_GOLEM) {
             return 10.0D;
-        }
-        if (type.is(ModTags.HUMANOID_SKELETONS)) {
-            return 15.0D;
         }
         if (type == EntityType.IRON_GOLEM || type == EntityType.RAVAGER) {
             return 5.5D;
@@ -2589,17 +2830,29 @@ public final class PossessionManager {
             axolotl.getPersistentData().remove(AXOLOTL_PLAYING_DEAD_END_TIME);
         }
 
+        // Ванільний WaterAnimal#baseTick (handleAirSupply) не залежить від NoAI і вже душить рибу
+        // на суші; власне пересихання лишаємо тільки тілам, де ванільна логіка вимкнена NoAI.
         if (shouldDryOutWhenPossessed(host)
+                && !hasVanillaLandSuffocation(host)
                 && !host.isInWaterRainOrBubble()
                 && host.level().getGameTime() % 20L == 0L) {
             host.hurt(host.damageSources().dryOut(), 1.0F);
         }
 
+        // LivingEntity#aiStep сам шкодить isSensitiveToWater-тілам (blaze, strider) навіть з NoAI.
         if (isWaterHurtBody(host.getType())
+                && !host.isSensitiveToWater()
                 && host.isInWaterRainOrBubble()
                 && host.level().getGameTime() % 20L == 0L) {
             host.hurt(host.damageSources().drown(), 1.0F);
         }
+    }
+
+    private static boolean hasVanillaLandSuffocation(LivingEntity host) {
+        // Dolphin перевизначає handleAirSupply, а його пересихання в tick() вимкнене NoAI.
+        return host instanceof net.minecraft.world.entity.animal.WaterAnimal
+                && !(host instanceof net.minecraft.world.entity.animal.Dolphin)
+                && "minecraft".equals(BuiltInRegistries.ENTITY_TYPE.getKey(host.getType()).getNamespace());
     }
 
     private static boolean shouldDryOutWhenPossessed(LivingEntity host) {
@@ -2882,7 +3135,14 @@ public final class PossessionManager {
     private static void applyHostPassiveTraits(ServerPlayer player, LivingEntity host) {
         EntityType<?> type = host.getType();
         if (hasNightVision(type)) {
-            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, 260, 0, true, false, false));
+            boolean owned = HOST_NIGHT_VISION_OWNED.contains(player.getUUID());
+            // Якщо гравець вже має чужий нічний зір (зілля/маяк) і ми його не накладали —
+            // не чіпаємо його взагалі (ні не продовжуємо, ні при виході не знімаємо).
+            // Своє (або відсутнє) накладаємо й трекаємо, щоб прибрати лише наше.
+            if (owned || !player.hasEffect(MobEffects.NIGHT_VISION)) {
+                HOST_NIGHT_VISION_OWNED.add(player.getUUID());
+                player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, HOST_NIGHT_VISION_DURATION, 0, true, false, false));
+            }
         }
         if (hasUnderwaterVision(type)) {
             player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, 260, 0, true, false, false));
@@ -3165,6 +3425,23 @@ public final class PossessionManager {
                         && !entity.isPassengerOfSameVehicle(player)
         );
 
+        // Primary: exact crosshair ray against the target hitboxes (what the player actually sees).
+        Vec3 end = origin.add(look.scale(reach));
+        LivingEntity rayTarget = null;
+        double best = Double.MAX_VALUE;
+        for (LivingEntity entity : candidates) {
+            AABB box = entity.getBoundingBox().inflate(Math.max(0.1D, entity.getPickRadius()) + 0.05D);
+            Optional<Vec3> hit = box.clip(origin, end);
+            double distance = box.contains(origin) ? 0.0D : hit.map(origin::distanceToSqr).orElse(Double.MAX_VALUE);
+            if (distance < best) {
+                best = distance;
+                rayTarget = entity;
+            }
+        }
+        if (rayTarget != null) {
+            return rayTarget;
+        }
+        // Fallback for long-range hosts: a narrow cone around the look vector.
         return candidates.stream()
                 .filter(entity -> isInAttackCone(origin, look, entity, reach))
                 .min(Comparator.comparingDouble(entity -> origin.distanceToSqr(entity.getEyePosition())))
@@ -3176,11 +3453,20 @@ public final class PossessionManager {
         double distance = toTarget.length();
         return distance <= reach
                 && distance > 1.0E-4D
-                && toTarget.normalize().dot(look) >= 0.85D;
+                && toTarget.normalize().dot(look) >= 0.97D;
     }
 
     private static void release(ServerPlayer player, LivingEntity host, boolean notify) {
         release(player, host, notify, true);
+    }
+
+    /**
+     * Releases the player from the host WITHOUT transferring the player's inventory
+     * to the host. Used by {@link #restorePlayerBodyFromHost} when the host body is
+     * about to be discarded (healing, death), so the items stay with the soul.
+     */
+    public static void releaseWithoutInventoryTransfer(ServerPlayer player, LivingEntity host) {
+        release(player, host, false, false);
     }
 
     private static void release(ServerPlayer player, LivingEntity host, boolean notify, boolean transferInventory) {
@@ -3190,17 +3476,28 @@ public final class PossessionManager {
             host.stopUsingItem();
         }
         if (host != null) {
-            storeHostFoodData(player, host);
-            if (transferInventory) {
-                PossessionInventoryManager.onPossessionEnded(player, host);
+            // The body must always get its own physics/AI back (gravity, collisions, NoAI): a
+            // failure in the bookkeeping below must never leave it a floating, POSSESSED proxy.
+            try {
+                storeHostFoodData(player, host);
+                if (transferInventory) {
+                    PossessionInventoryManager.onPossessionEnded(player, host);
+                }
+                clearPossessorNameTag(host);
+            } catch (RuntimeException exception) {
+                RequiemUnofficial.LOGGER.error("Failed to finish releasing possessed host {}", host, exception);
+            } finally {
+                restoreHost(host);
             }
-            clearPossessorNameTag(host);
-            restoreHost(host);
         }
         restorePlayerFoodData(player);
         SoulLifecycleManager.clearReclamation(player);
         if (host != null && host.getVehicle() != null) {
             RIDDEN_VEHICLE_DRIVE.remove(host.getVehicle().getUUID());
+            SPIDER_AI_HOLD.remove(host.getVehicle().getUUID());
+        }
+        if (host != null) {
+            LAST_HOST_RELEASE_AT.put(player.getUUID(), player.level().getGameTime());
         }
         player.stopRiding();
         if (player.connection != null && player.getCamera() != player) {
@@ -3233,6 +3530,12 @@ public final class PossessionManager {
         POSSESSION_STARTED_AT.remove(player.getUUID());
         POSSESSED_RIDING_STATE.remove(player.getUUID());
         clearVagrantSenseTargets(player);
+        // Прибираємо нічний зір, яке накладали ми від тіла господаря (воно більше не
+        // актуальне і, коли стихає до <=200 тиків, мерехтіло б). Чужий нічний зір
+        // (зілля/маяк) не чіпаємо — прибираємо лише власне (див. HOST_NIGHT_VISION_OWNED).
+        if (HOST_NIGHT_VISION_OWNED.remove(player.getUUID())) {
+            player.removeEffect(MobEffects.NIGHT_VISION);
+        }
         ModNetwork.sendToConnectedPlayer(player, new PossessionTargetHintPacket(false));
         restoreBeta16PlayerBodyParameters(player);
         restorePossessorBody(player);
@@ -3250,7 +3553,16 @@ public final class PossessionManager {
         Vec3 deathPosition = host.position();
         float yRot = host.getYRot();
         float xRot = host.getXRot();
-        release(player, host, false);
+        // When host dies with player inside, inventory must stay with the player.
+        // Use releaseWithoutInventoryTransfer to avoid transferring items to the dying host.
+        releaseWithoutInventoryTransfer(player, host);
+        // Clear visual equipment mirrors from the dying host so they don't drop with dropChance=2.0
+        PossessionInventoryManager.clearVisualMirrors(host);
+        // Тіло, що носило речі, загинуло: усе випадає на місці смерті (крім possessionKeepInventory=ALWAYS).
+        // LivingDeathEvent іде до dropAllDeathLoot, тож дзеркала вже прибрані і не задублюються.
+        if (ModGameRules.shouldTransferPossessionInventory(level.getGameRules(), false)) {
+            PossessionInventoryManager.dropSoulInventoryAtDeath(player, host, deathPosition);
+        }
         applyHostDeathExperienceLoss(player, level, deathPosition);
         if (player.connection != null) {
             player.teleportTo(level, deathPosition.x, deathPosition.y, deathPosition.z, yRot, xRot);
@@ -3303,6 +3615,8 @@ public final class PossessionManager {
     }
 
     private static void restoreHost(LivingEntity host) {
+        // Physics first, so nothing below can leave the released body hanging in the air.
+        restoreHostPhysics(host);
         PossessionMovementController.restoreFlightState(host);
         host.xxa = host.yya = host.zza = 0.0F;
         host.setShiftKeyDown(false);
@@ -3335,6 +3649,9 @@ public final class PossessionManager {
         }
         host.getPersistentData().remove(AXOLOTL_PLAYING_DEAD_END_TIME);
         restoreCustomName(host);
+    }
+
+    private static void restoreHostPhysics(LivingEntity host) {
         host.setNoGravity(host.getPersistentData().getBoolean(ORIGINAL_NO_GRAVITY));
         host.getPersistentData().remove(ORIGINAL_NO_GRAVITY);
         host.noPhysics = host.getPersistentData().getBoolean(ORIGINAL_NO_PHYSICS);
@@ -3349,6 +3666,55 @@ public final class PossessionManager {
             mob.setNoAi(host.getPersistentData().getBoolean(ORIGINAL_NO_AI));
             host.getPersistentData().remove(ORIGINAL_NO_AI);
         }
+        // The Player Body proxy was teleported every tick with onGround/collision flags copied from
+        // the player; let the body's own physics take over from this tick on (falls, lands and
+        // takes fall damage through its own travel/move) and push the state to clients now.
+        host.hasImpulse = true;
+        if (!host.level().isClientSide()) {
+            FALL_ASSISTS.put(host.getUUID(), new FallAssist(host));
+        }
+    }
+
+    /**
+     * Visible healing effect at the moment the host body is discarded and the soul
+     * returns to its living form. Spawned at the body's position, independently of
+     * the host entity (which is about to be removed), so it is visible from a
+     * first-person camera located inside the body. Totem-style particles and the
+     * zombie-villager cure sound, ~1-2 seconds, cheap.
+     */
+    private static void playHealingFx(ServerLevel level, Vec3 position) {
+        level.playSound(
+                null,
+                position.x,
+                position.y,
+                position.z,
+                SoundEvents.ZOMBIE_VILLAGER_CURE,
+                SoundSource.HOSTILE,
+                1.0F,
+                1.0F
+        );
+        level.sendParticles(
+                ParticleTypes.TOTEM_OF_UNDYING,
+                position.x,
+                position.y + 1.0D,
+                position.z,
+                80,
+                1.2D,
+                1.2D,
+                1.2D,
+                0.05D
+        );
+        level.sendParticles(
+                ParticleTypes.HAPPY_VILLAGER,
+                position.x,
+                position.y + 1.0D,
+                position.z,
+                40,
+                1.0D,
+                1.0D,
+                1.0D,
+                0.05D
+        );
     }
 
     private static void applyPossessedStepHeight(LivingEntity host) {
@@ -3490,7 +3856,7 @@ public final class PossessionManager {
         if (target.getType().is(ModTags.POSSESSION_BLACKLIST)) {
             return Component.translatable("message.requiemunofficial.possession.blacklisted");
         }
-        if (target.getPersistentData().getBoolean(POSSESSED)) {
+        if (isActivelyPossessed(target)) {
             return Component.translatable("message.requiemunofficial.possession.already_possessed");
         }
         if (!target.getPassengers().isEmpty()) {
@@ -3519,6 +3885,9 @@ public final class PossessionManager {
 
     public static void preparePossessedHostForAiStep(LivingEntity entity) {
         PossessionControl control = findPossessionControl(entity);
+        if (control == null) {
+            restoreStalePossessedHost(entity);
+        }
         if (control != null) {
             if (isRiddenVehicleControl(control, entity)) {
                 prepareRiddenVehicleControl(control.player(), control.host(), entity);
@@ -3534,6 +3903,27 @@ public final class PossessionManager {
             }
             controlHost(control.player(), control.host(), true);
         }
+    }
+
+    /**
+     * A body still flagged POSSESSED whose online possessor no longer possesses it was never
+     * restored (e.g. released while unloaded/not found): it would keep the Player Body proxy state
+     * (NoGravity + noPhysics + NoAI) and hang in the air forever, and could never be possessed
+     * again. Offline possessors are left alone: the disconnect logic owns their body.
+     */
+    private static void restoreStalePossessedHost(LivingEntity entity) {
+        if (!entity.getPersistentData().getBoolean(POSSESSED)
+                || !(entity.level() instanceof ServerLevel level)) {
+            return;
+        }
+        UUID possessorId = getPossessor(entity);
+        if (possessorId != null) {
+            ServerPlayer possessor = getActivePossessor(level, possessorId);
+            if (possessor == null || entity.getUUID().equals(SoulManager.getPossessedEntityId(possessor))) {
+                return;
+            }
+        }
+        restoreHost(entity);
     }
 
     public static void finishPossessedHostAiStep(LivingEntity entity) {
@@ -3574,7 +3964,7 @@ public final class PossessionManager {
             RiddenDrive drive = RIDDEN_VEHICLE_DRIVE.remove(entity.getUUID());
             // Нова ціль або навігація, запущена в цьому aiStep, також має пріоритет.
             if (entity instanceof Spider spider && isSpiderAiActive(spider)) {
-                SPIDER_AI_HOLD.put(spider.getUUID(), SPIDER_CONTROL_RETURN_TICKS);
+                holdSpiderAi(spider);
                 return originalTravelVector;
             }
             if (drive != null) {
@@ -3606,6 +3996,7 @@ public final class PossessionManager {
         if (input.shifting()) {
             // Shift always dismounts the rider from its vehicle (spider or horse).
             RIDDEN_VEHICLE_DRIVE.remove(vehicle.getUUID());
+            SPIDER_AI_HOLD.remove(vehicle.getUUID());
             host.stopRiding();
             if (vehicle instanceof Spider) {
                 host.setDeltaMovement(host.getDeltaMovement().add(0.0D, 0.08D, 0.0D));
@@ -3617,10 +4008,10 @@ public final class PossessionManager {
         // of whether the player or the vehicle's AI is currently driving movement.
         applyControlledRotation(host, input.yRot(), input.xRot(), true);
         RiddenDrive drive = null;
-        if (vehicle instanceof Spider spider) {
+        if (vehicle instanceof Spider spider && PossessedMountRules.isSpiderRide(spider, host)) {
             drive = driveRiddenSpider(player, spider, input);
-        } else if (vehicle instanceof AbstractHorse horse) {
-            drive = driveRiddenHorse(player, horse, input);
+        } else if (PossessedMountRules.isSteerableRide(vehicle, host)) {
+            drive = driveSteerableMount(vehicle, input);
         }
         if (drive == null) {
             // Під час керування AI не підміняємо ввід транспорту.
@@ -3637,34 +4028,58 @@ public final class PossessionManager {
 
     private static RiddenDrive driveRiddenSpider(ServerPlayer player, Spider spider, PossessionInput input) {
         UUID spiderId = spider.getUUID();
+        // A ridden spider only walks: drop the sprint flag (and with it vanilla's sprint speed
+        // modifier) on the spider, its rider and the possessing player, whose sprint key is ignored.
+        suppressSpiderRideSprint(player, spider);
         if (isSpiderAiActive(spider)) {
             // Spider AI (chase/flee) has full priority: leave the spider's navigation and rotation
             // untouched and never suppress its AI.
-            SPIDER_AI_HOLD.put(spiderId, SPIDER_CONTROL_RETURN_TICKS);
+            holdSpiderAi(spider);
             return null;
         }
         int hold = SPIDER_AI_HOLD.getOrDefault(spiderId, 0);
         if (hold > 0) {
             // Small delay after AI stops before handing control back, to avoid jitter.
-            SPIDER_AI_HOLD.put(spiderId, hold - 1);
+            if (hold > 1) {
+                SPIDER_AI_HOLD.put(spiderId, hold - 1);
+            } else {
+                SPIDER_AI_HOLD.remove(spiderId);
+            }
             return null;
         }
 
-        // Player drives the spider at its normal speed; no artificial slowdown, no jump input,
-        // and sprint is ignored so it cannot accelerate. Wall climbing happens naturally through
+        // Player drives the spider at walking pace: the input is a full 1.0 forward/strafe, so the
+        // raw attribute (0.3) would move it ~3x faster than its own AI walk (MoveControl feeds
+        // speed as zza too). Scale it like the humanoid Player Body on foot; no jump input, and
+        // sprint is ignored so it cannot accelerate. Wall climbing happens naturally through
         // the spider's own travel because the entity_mobility profile marks it climbsWalls.
         RiddenDrive drive = new RiddenDrive(
                 input.strafe(),
                 input.forward(),
-                (float) spider.getAttributeValue(Attributes.MOVEMENT_SPEED),
+                (float) (spider.getAttributeValue(Attributes.MOVEMENT_SPEED) * RIDDEN_SPIDER_WALK_SPEED_SCALE),
                 input.yRot()
         );
         applyRiddenDrive(spider, drive);
         return drive;
     }
 
-    private static RiddenDrive driveRiddenHorse(ServerPlayer player, AbstractHorse horse, PossessionInput input) {
-        // Mirror vanilla ridden-horse input shaping: strafe halved, backward scaled to a quarter.
+    private static void suppressSpiderRideSprint(ServerPlayer player, Spider spider) {
+        if (spider.isSprinting()) {
+            spider.setSprinting(false);
+        }
+        for (Entity passenger : spider.getPassengers()) {
+            if (passenger.isSprinting()) {
+                passenger.setSprinting(false);
+            }
+        }
+        if (player.isSprinting()) {
+            player.setSprinting(false);
+        }
+    }
+
+    // Кінь, спустошувач, курка, страйдер: спільне керування, як у beta.16 MobEntityMixin
+    // (копія HorseBaseEntity#travel): стрейф навпіл, рух назад - чверть швидкості.
+    private static RiddenDrive driveSteerableMount(LivingEntity vehicle, PossessionInput input) {
         float forward = input.forward();
         float strafe = input.strafe() * 0.5F;
         if (forward <= 0.0F) {
@@ -3673,12 +4088,12 @@ public final class PossessionManager {
         RiddenDrive drive = new RiddenDrive(
                 strafe,
                 forward,
-                (float) horse.getAttributeValue(Attributes.MOVEMENT_SPEED),
+                PossessedMountRules.steeringSpeed(vehicle),
                 input.yRot()
         );
-        applyRiddenDrive(horse, drive);
-        if (input.jumping() && horse.onGround()) {
-            jump(horse, EntityMobilityManager.get(horse));
+        applyRiddenDrive(vehicle, drive);
+        if (input.jumping() && vehicle.onGround()) {
+            jump(vehicle, EntityMobilityManager.get(vehicle));
         }
         return drive;
     }
@@ -3722,9 +4137,11 @@ public final class PossessionManager {
         return vehicle instanceof Spider && possessedRiderPassenger(vehicle) != null;
     }
 
-    // Керованому коню вимикаємо блукання, щоб MoveControl не затирав ввід вершника.
+    // Керованому транспорту (кінь, спустошувач, курка, страйдер) вимикаємо власний ШІ,
+    // щоб MoveControl і цілі не затирали ввід вершника.
     public static boolean shouldSuppressRiddenVehicleAi(Mob vehicle) {
-        return vehicle instanceof AbstractHorse && possessedRiderPassenger(vehicle) != null;
+        LivingEntity rider = possessedRiderPassenger(vehicle);
+        return rider != null && PossessedMountRules.isSteerableRide(vehicle, rider);
     }
 
     private static void handlePossessedRiderTransition(ServerPlayer player, LivingEntity host) {
@@ -3784,20 +4201,12 @@ public final class PossessionManager {
     }
 
     private static LivingEntity possessedRiderPassenger(LivingEntity entity) {
-        boolean spider = entity instanceof Spider;
-        boolean horse = entity instanceof AbstractHorse;
-        if (!spider && !horse) {
+        if (!entity.isVehicle()) {
             return null;
         }
         for (Entity passenger : entity.getPassengers()) {
-            if (!(passenger instanceof LivingEntity living) || getPossessor(living) == null) {
-                continue;
-            }
-            if (spider && living.getType().is(ModTags.HUMANOID_SKELETONS)) {
-                return living;
-            }
-            if (horse && (living.getType().is(ModTags.HUMANOID_SKELETONS)
-                    || living.getType().is(ModTags.HUMANOID_ZOMBIES))) {
+            if (passenger instanceof LivingEntity living && getPossessor(living) != null
+                    && PossessedMountRules.canMount(entity, living)) {
                 return living;
             }
         }
@@ -4077,6 +4486,27 @@ public final class PossessionManager {
         }
     }
 
+    private static void rememberOriginalFlight(ServerPlayer player) {
+        player.getPersistentData().putBoolean(ORIGINAL_PLAYER_MAYFLY, player.getAbilities().mayfly);
+        player.getPersistentData().putBoolean(ORIGINAL_PLAYER_FLYING, player.getAbilities().flying);
+        player.getPersistentData().putBoolean(ORIGINAL_PLAYER_FLIGHT_CREATIVE, player.isCreative());
+    }
+
+    /** Extended bodies (enderman, ...): only a creative possessor may fly; survival never gets flight. */
+    private static void enforceExtendedBodyFlightPolicy(ServerPlayer player) {
+        if (player.isSpectator()) {
+            return;
+        }
+        boolean allowed = player.isCreative();
+        if (player.getAbilities().mayfly != allowed || !allowed && player.getAbilities().flying) {
+            player.getAbilities().mayfly = allowed;
+            if (!allowed) {
+                player.getAbilities().flying = false;
+            }
+            updateAbilities(player);
+        }
+    }
+
     private static void suppressPossessorBody(ServerPlayer player) {
         if (!player.getPersistentData().contains(ORIGINAL_PLAYER_NO_PHYSICS, Tag.TAG_BYTE)) {
             boolean originalNoPhysics = player.getPersistentData().contains(ORIGINAL_NO_PHYSICS, Tag.TAG_BYTE)
@@ -4085,8 +4515,7 @@ public final class PossessionManager {
             player.getPersistentData().putBoolean(ORIGINAL_PLAYER_NO_PHYSICS, originalNoPhysics);
         }
         if (!player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
-            player.getPersistentData().putBoolean(ORIGINAL_PLAYER_MAYFLY, player.getAbilities().mayfly);
-            player.getPersistentData().putBoolean(ORIGINAL_PLAYER_FLYING, player.getAbilities().flying);
+            rememberOriginalFlight(player);
         }
         if (!player.getPersistentData().contains(ORIGINAL_PLAYER_NO_GRAVITY, Tag.TAG_BYTE)) {
             player.getPersistentData().putBoolean(ORIGINAL_PLAYER_NO_GRAVITY, player.isNoGravity());
@@ -4094,6 +4523,7 @@ public final class PossessionManager {
         player.noPhysics = true;
         player.setNoGravity(true);
         if (player.isCreative()) {
+            // Креатив літає в будь-якому тілі; виживання — ні (див. enforceExtendedBodyFlightPolicy).
             player.getAbilities().mayfly = true;
             updateAbilities(player);
         } else if (!player.isSpectator()) {
@@ -4164,7 +4594,7 @@ public final class PossessionManager {
     }
 
     private static double beta16PlayerBodyMovementSpeed(ServerPlayer player, LivingEntity host) {
-        double hostSpeed = Math.max(0.0D, host.getAttributeValue(Attributes.MOVEMENT_SPEED));
+        double hostSpeed = Math.max(0.0D, hostMovementSpeedIgnoringWitchDrinking(host));
         if (host.isSprinting()) {
             // syncBeta16HostToPlayer дзеркалить прапорець спринту гравця на хоста, тому ванільний
             // множник спринту вже вбудовано в атрибут хоста; фізичний гравець застосовує власний
@@ -4192,6 +4622,41 @@ public final class PossessionManager {
             targetSpeed = hostSpeed * hostSpeed;
         }
         return Math.max(0.0D, targetSpeed);
+    }
+
+    /**
+     * Host MOVEMENT_SPEED as vanilla computes it, but without the witch drinking penalty: a
+     * possessed witch must never pass that transient -0.25 (speed 0) on to the Player Body.
+     */
+    private static double hostMovementSpeedIgnoringWitchDrinking(LivingEntity host) {
+        AttributeInstance speed = host.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (speed == null) {
+            return host.getAttributeValue(Attributes.MOVEMENT_SPEED);
+        }
+        if (speed.getModifier(WITCH_DRINKING_SPEED_MODIFIER) == null) {
+            return speed.getValue();
+        }
+        double base = speed.getBaseValue();
+        for (AttributeModifier modifier : speed.getModifiers()) {
+            if (modifier.getOperation() == AttributeModifier.Operation.ADDITION
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
+                base += modifier.getAmount();
+            }
+        }
+        double value = base;
+        for (AttributeModifier modifier : speed.getModifiers()) {
+            if (modifier.getOperation() == AttributeModifier.Operation.MULTIPLY_BASE
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
+                value += base * modifier.getAmount();
+            }
+        }
+        for (AttributeModifier modifier : speed.getModifiers()) {
+            if (modifier.getOperation() == AttributeModifier.Operation.MULTIPLY_TOTAL
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
+                value *= 1.0D + modifier.getAmount();
+            }
+        }
+        return speed.getAttribute().sanitizeValue(value);
     }
 
     /**
@@ -4223,6 +4688,7 @@ public final class PossessionManager {
     private static void applyBeta16MobilityToPlayer(ServerPlayer player, LivingEntity host) {
         EntityMobilityManager.MobilityProfile mobility = EntityMobilityManager.get(host);
         if (usesExtendedPlayerBody(host)) {
+            enforceExtendedBodyFlightPolicy(player);
             return;
         }
         applyBeta16FlightAbilities(player, host);
@@ -4243,21 +4709,19 @@ public final class PossessionManager {
 
     private static void applyBeta16FlightAbilities(ServerPlayer player, LivingEntity host) {
         boolean flyingHost = isBeta16FlyingHost(host);
-        if (usesExtendedPlayerBody(host)) {
-            if (!player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
-                player.getPersistentData().putBoolean(ORIGINAL_PLAYER_MAYFLY, player.getAbilities().mayfly);
-                player.getPersistentData().putBoolean(ORIGINAL_PLAYER_FLYING, player.getAbilities().flying);
-            }
-            flyingHost = false;
-        }
         player.setNoGravity(flyingHost);
-        if (player.isCreative() || player.isSpectator()) {
+        if (player.isSpectator()) {
             return;
         }
-        boolean changed = player.getAbilities().mayfly != flyingHost
-                || player.getAbilities().flying && !flyingHost;
-        player.getAbilities().mayfly = flyingHost;
-        if (!flyingHost) {
+        if (!player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
+            rememberOriginalFlight(player);
+        }
+        // Креатив-власник літає в будь-якому тілі, виживання — лише у природно літаючих.
+        boolean mayFly = flyingHost || player.isCreative();
+        boolean changed = player.getAbilities().mayfly != mayFly
+                || player.getAbilities().flying && !mayFly;
+        player.getAbilities().mayfly = mayFly;
+        if (!mayFly) {
             player.getAbilities().flying = false;
         }
         if (changed) {
@@ -4288,13 +4752,22 @@ public final class PossessionManager {
             player.noPhysics = false;
         }
         if (player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
-            if (!player.isCreative()) {
+            boolean wasCreative = player.getPersistentData().getBoolean(ORIGINAL_PLAYER_FLIGHT_CREATIVE);
+            if (!player.isCreative() && wasCreative) {
+                // Режим змінили з креативу під час одержимості: креативний політ не повертаємо.
+                player.getAbilities().mayfly = false;
+                player.getAbilities().flying = false;
+            } else if (!player.isCreative()) {
                 player.getAbilities().mayfly = player.getPersistentData().getBoolean(ORIGINAL_PLAYER_MAYFLY);
                 player.getAbilities().flying = player.getAbilities().mayfly
                         && player.getPersistentData().getBoolean(ORIGINAL_PLAYER_FLYING);
+            } else if (!player.isSpectator()) {
+                player.getAbilities().mayfly = true;
+                player.getAbilities().flying = player.getPersistentData().getBoolean(ORIGINAL_PLAYER_FLYING);
             }
             player.getPersistentData().remove(ORIGINAL_PLAYER_MAYFLY);
             player.getPersistentData().remove(ORIGINAL_PLAYER_FLYING);
+            player.getPersistentData().remove(ORIGINAL_PLAYER_FLIGHT_CREATIVE);
             updateAbilities(player);
         }
         if (player.getPersistentData().contains(ORIGINAL_PLAYER_NO_GRAVITY, Tag.TAG_BYTE)) {
@@ -4323,6 +4796,23 @@ public final class PossessionManager {
         return host.getPersistentData().hasUUID(POSSESSOR)
                 ? host.getPersistentData().getUUID(POSSESSOR)
                 : null;
+    }
+
+    private static void holdSpiderAi(Spider spider) {
+        SPIDER_AI_HOLD.put(spider.getUUID(), SPIDER_CONTROL_RETURN_TICKS);
+    }
+
+    private static boolean isWithinOwnBodySplitGuard(ServerPlayer player) {
+        Long releasedAt = LAST_HOST_RELEASE_AT.get(player.getUUID());
+        if (releasedAt == null) {
+            return false;
+        }
+        long elapsed = player.level().getGameTime() - releasedAt;
+        if (elapsed >= 0 && elapsed < OWN_BODY_SPLIT_AFTER_RELEASE_GUARD_TICKS) {
+            return true;
+        }
+        LAST_HOST_RELEASE_AT.remove(player.getUUID());
+        return false;
     }
 
     private static boolean isWithinReleaseInputGrace(ServerPlayer player) {

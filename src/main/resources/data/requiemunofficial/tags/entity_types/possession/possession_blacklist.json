@@ -1,9 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:bosses",
-    "#requiemunofficial:ghosts",
-    "requiemunofficial:mortician"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:possession/possession_blacklist", "required": false}]}

@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "minecraft:warden",
-    "minecraft:wither"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:soul_capture/soul_aggregates", "required": false}]}

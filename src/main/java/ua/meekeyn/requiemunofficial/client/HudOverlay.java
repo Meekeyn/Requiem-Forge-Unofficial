@@ -5,6 +5,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
@@ -18,6 +19,7 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.api.distmarker.Dist;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
@@ -50,7 +52,23 @@ public final class HudOverlay {
         if (isFreeVagrant(minecraft) && isBodyStatusOverlay(event)
                 || isPossessing(minecraft) && isHiddenPossessedOverlay(minecraft, event)) {
             event.setCanceled(true);
+            return;
         }
+        if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type() && hasLimitedHotbar(minecraft)) {
+            // Ванільний хотбар показав би заблоковані слоти; малюємо власний, а Post-логіку
+            // хотбара (серця тіла тощо) викликаємо вручну, бо скасований оверлей Post не отримує.
+            event.setCanceled(true);
+            onRenderGuiOverlay(new RenderGuiOverlayEvent.Post(
+                    event.getWindow(), event.getGuiGraphics(), event.getPartialTick(), event.getOverlay()));
+        }
+    }
+
+    private static boolean hasLimitedHotbar(Minecraft minecraft) {
+        if (!isPossessing(minecraft) || minecraft.player.isCreative() || minecraft.player.isSpectator()) {
+            return false;
+        }
+        LivingEntity host = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
+        return host != null && !PossessionInventoryManager.canCarryHotbar(host);
     }
 
     private static boolean isHiddenPossessedOverlay(Minecraft minecraft, RenderGuiOverlayEvent.Pre event) {
@@ -90,7 +108,7 @@ public final class HudOverlay {
         }
         if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type()
                 && isPossessing(minecraft)
-                && minecraft.getCameraEntity() != minecraft.player) {
+                && (minecraft.getCameraEntity() != minecraft.player || hasLimitedHotbar(minecraft))) {
             renderPossessionHotbar(minecraft, guiGraphics);
         }
 
@@ -219,6 +237,11 @@ public final class HudOverlay {
         int top = minecraft.getWindow().getGuiScaledHeight() - 22;
         int selected = minecraft.player.getInventory().selected;
 
+        if (hasLimitedHotbar(minecraft)) {
+            renderLimitedPossessionHotbar(minecraft, guiGraphics, top);
+            return;
+        }
+
         guiGraphics.blit(WIDGETS, left, top, 0, 0, 182, 22);
         guiGraphics.blit(WIDGETS, left - 1 + selected * 20, top - 1, 0, 22, 24, 22);
 
@@ -228,6 +251,28 @@ public final class HudOverlay {
             int y = top + 3;
             guiGraphics.renderItem(stack, x, y);
             guiGraphics.renderItemDecorations(minecraft.font, stack, x, y);
+        }
+    }
+
+    /** Тіло без хотбара: лише слот 0 (якщо є руки) і друга рука, як у beta.16. */
+    private static void renderLimitedPossessionHotbar(Minecraft minecraft, GuiGraphics guiGraphics, int top) {
+        LivingEntity host = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
+        if (host == null || !PossessionInventoryManager.canUseItems(host)) {
+            return;
+        }
+        int left = minecraft.getWindow().getGuiScaledWidth() / 2 - 11;
+        guiGraphics.blit(WIDGETS, left, top, 0, 0, 21, 22);
+        guiGraphics.blit(WIDGETS, left + 21, top, 181, 0, 1, 22);
+        guiGraphics.blit(WIDGETS, left - 1, top - 1, 0, 22, 24, 22);
+        ItemStack mainHand = minecraft.player.getInventory().items.get(0);
+        guiGraphics.renderItem(mainHand, left + 3, top + 3);
+        guiGraphics.renderItemDecorations(minecraft.font, mainHand, left + 3, top + 3);
+
+        ItemStack offHand = minecraft.player.getOffhandItem();
+        if (!offHand.isEmpty() && PossessionInventoryManager.canUseEquipmentSlot(host, EquipmentSlot.OFFHAND)) {
+            guiGraphics.blit(WIDGETS, left - 29, top - 1, 24, 22, 29, 24);
+            guiGraphics.renderItem(offHand, left - 26, top + 3);
+            guiGraphics.renderItemDecorations(minecraft.font, offHand, left - 26, top + 3);
         }
     }
 

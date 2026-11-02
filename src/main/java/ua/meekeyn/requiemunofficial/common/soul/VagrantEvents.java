@@ -132,7 +132,8 @@ public final class VagrantEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity target = event.getNewTarget();
-        if (target instanceof ServerPlayer player && VagrantRules.isRestricted(player)) {
+        if ((target instanceof ServerPlayer player && VagrantRules.isRestricted(player))
+                || VagrantRules.isEmptyPlayerShell(target)) {
             event.setCanceled(true);
             event.setNewTarget(null);
             if (event.getEntity() instanceof Mob mob) {

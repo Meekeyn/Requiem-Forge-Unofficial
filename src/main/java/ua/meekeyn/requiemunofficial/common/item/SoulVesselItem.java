@@ -26,6 +26,9 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.registries.ForgeRegistries;
 import ua.meekeyn.requiemunofficial.common.init.ModItems;
 import ua.meekeyn.requiemunofficial.common.init.ModSounds;
+import ua.meekeyn.requiemunofficial.common.init.ModEntityAttributes;
+import ua.meekeyn.requiemunofficial.common.init.ModParticles;
+import ua.meekeyn.requiemunofficial.common.particle.RequiemEntityParticleOptions;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.record.BodyRecordData;
 import ua.meekeyn.requiemunofficial.common.soul.EntitySoulManager;
@@ -155,6 +158,15 @@ public class SoulVesselItem extends Item {
         if (!isCaptureVessel(stack)) {
             return InteractionResult.PASS;
         }
+        // Творча посудина в другій руці — лише прискорювач для звичайної в основній. Якщо основна
+        // посудина відмовилась (PASS: нема душі, ціль у чорному списку), ваніль передає взаємодію
+        // другій руці — творча посудина не повинна починати власне захоплення.
+        if (hand == InteractionHand.OFF_HAND
+                && isCreativeSoulVessel(stack)
+                && isCaptureVessel(player.getMainHandItem())
+                && !isCreativeSoulVessel(player.getMainHandItem())) {
+            return InteractionResult.PASS;
+        }
 
         // Клієнт має поглинути взаємодію тією самою рукою, що й сервер.
         if (player.level().isClientSide) {
@@ -225,10 +237,18 @@ public class SoulVesselItem extends Item {
         }
 
         player.awardStat(Stats.ITEM_USED.get(this));
-        if (!active.getBoolean(TAG_CAPTURE_CREATIVE_BOOST) && !wins(player, target, captureType.get())) {
+        // Буст перевіряємо заново: якщо творчу посудину прибрали з другої руки посеред
+        // захоплення, збереженому тегу не довіряємо.
+        boolean creativeBoost = active.getBoolean(TAG_CAPTURE_CREATIVE_BOOST)
+                && (isCreativeSoulVessel(stack)
+                || player.getMainHandItem() == stack && player.getOffhandItem().is(ModItems.CREATIVE_SOUL_VESSEL.get()));
+        if (!creativeBoost && !wins(player, target, captureType.get())) {
             player.sendSystemMessage(Component.translatable(
                     "message.requiemunofficial.soul_vessel.capture_failed"
             ));
+            // beta.16 EmptySoulVesselItem: провал = +1 рівень Attrition (мінімум 5 хв) і хмара частинок attrition.
+            ua.meekeyn.requiemunofficial.common.effect.AttritionMobEffect.apply(player, 1, 20 * 60 * 5);
+            spawnAttritionParticles(player, player);
             return exchangeStack(player, stack, new ItemStack(ModItems.SHATTERED_SOUL_VESSEL.get()));
         }
 
@@ -356,24 +376,26 @@ public class SoulVesselItem extends Item {
     }
 
     private static boolean wins(LivingEntity user, LivingEntity target, CaptureType captureType) {
-        double configChance = RequiemConfig.SOUL_CAPTURE_CHANCE.get();
+        // Формула beta.16 (EmptySoulVesselItem.wins); конфіг множить шанс, за типового 1.0 поведінка як в оригіналі.
+        double configChance = ua.meekeyn.requiemunofficial.common.config.RequiemConfig.SOUL_CAPTURE_CHANCE.get();
         if (configChance <= 0.0D) {
             return false;
         }
-
         int soulOffense = Math.max(1, computeSoulOffense(user));
         int soulDefense = Math.max(1, computeSoulDefense(target, captureType));
+
         if (soulOffense > soulDefense) {
-            return user.getRandom().nextDouble() < configChance;
+            return configChance >= 1.0D || user.getRandom().nextDouble() < configChance;
         }
 
         float strengthRatio = (float) soulOffense / soulDefense;
-        return user.getRandom().nextDouble() < (strengthRatio * strengthRatio * configChance);
+        return user.getRandom().nextFloat() < (strengthRatio * strengthRatio * configChance);
     }
 
     private static int computeSoulOffense(LivingEntity user) {
-        int soulPower = user instanceof Player player ? SoulManager.getSoulPower(player) : 0;
-        return (int) Math.round(user.getMaxHealth() + soulPower);
+        // beta.16: сила душі — це атрибут soul_offense (гравець 15, Attrition −20% за рівень).
+        var offense = user.getAttribute(ModEntityAttributes.SOUL_OFFENSE.get());
+        return offense == null ? 0 : (int) Math.round(offense.getValue());
     }
 
     private static int computeSoulDefense(LivingEntity entity, CaptureType captureType) {
@@ -386,7 +408,9 @@ public class SoulVesselItem extends Item {
         double healthModifier = woundedModifier * 0.8D + 0.2D;
         double strengthModifier = computeStrengthModifier(intrinsicStrength);
         double physicalModifier = strengthModifier * healthModifier;
-        return (int) Math.round(physicalModifier * (maxHealth + intrinsicArmor * 2.0D + intrinsicArmorToughness * 3.0D));
+        var defense = entity.getAttribute(ModEntityAttributes.SOUL_DEFENSE.get());
+        double base = defense == null ? 0.0D : defense.getValue();
+        return (int) Math.round(base + physicalModifier * (maxHealth + intrinsicArmor * 2.0D + intrinsicArmorToughness * 3.0D));
     }
 
     private static double computeStrengthModifier(double intrinsicStrength) {
@@ -427,48 +451,8 @@ public class SoulVesselItem extends Item {
             return;
         }
 
-        Vec3 from = target.getEyePosition();
-        Vec3 to = user.getEyePosition().subtract(0.0D, 0.15D, 0.0D);
-        Vec3 delta = to.subtract(from);
-        int steps = 12;
-
-        level.sendParticles(
-                ParticleTypes.SOUL,
-                from.x,
-                from.y,
-                from.z,
-                18,
-                target.getBbWidth() * 0.35D,
-                target.getBbHeight() * 0.25D,
-                target.getBbWidth() * 0.35D,
-                0.03D
-        );
-        for (int i = 0; i <= steps; i++) {
-            double progress = i / (double) steps;
-            Vec3 point = from.add(delta.scale(progress));
-            level.sendParticles(
-                    ParticleTypes.SOUL,
-                    point.x,
-                    point.y,
-                    point.z,
-                    2,
-                    0.04D,
-                    0.04D,
-                    0.04D,
-                    0.015D
-            );
-        }
-        level.sendParticles(
-                ParticleTypes.SOUL_FIRE_FLAME,
-                to.x,
-                to.y,
-                to.z,
-                8,
-                0.12D,
-                0.12D,
-                0.12D,
-                0.01D
-        );
+        // beta.16 EmptySoulVesselItem.finishUsing не спавнить частинок при успішному захопленні,
+        // тому тут лишається тільки звук порту; частинки — лише під час каналу (playSoulCaptureEffects).
         level.playSound(
                 null,
                 target.blockPosition(),
@@ -479,6 +463,15 @@ public class SoulVesselItem extends Item {
         );
     }
 
+    public static void spawnAttritionParticles(LivingEntity player, LivingEntity body) {
+        if (!(player.level() instanceof ServerLevel level)) {
+            return;
+        }
+        // beta.16 WandererRemnantState.spawnAttritionParticles
+        level.sendParticles(ModParticles.ATTRITION.get(), body.getX(), body.getY(0.5D), body.getZ(), 60,
+                body.getBbWidth() * 0.8D, body.getBbHeight() * 0.6D, body.getBbWidth() * 0.8D, 1.0D);
+    }
+
     public static void playSoulCaptureEffects(LivingEntity user, LivingEntity target) {
         if (!(user.level() instanceof ServerLevel level)) {
             return;
@@ -487,32 +480,18 @@ public class SoulVesselItem extends Item {
             return;
         }
 
-        Vec3 from = target.getEyePosition();
-        Vec3 to = user.getEyePosition().subtract(0.0D, 0.15D, 0.0D);
-        Vec3 delta = to.subtract(from);
-        double progress = user.getRandom().nextDouble();
-        Vec3 point = from.add(delta.scale(progress));
+        // Як beta.16 EmptySoulVesselItem.playSoulCaptureEffects: ENTITY_DUST (джерело — ціль, політ до user)
+        // з центру тіла цілі, 4–9 штук, розкид 0.2 розміру, швидкість 1.0.
         level.sendParticles(
-                ParticleTypes.SOUL,
-                point.x,
-                point.y,
-                point.z,
-                4 + level.random.nextInt(6),
-                target.getBbWidth() * 0.12D,
-                target.getBbHeight() * 0.12D,
-                target.getBbWidth() * 0.12D,
-                0.08D
-        );
-        level.sendParticles(
-                ParticleTypes.SOUL_FIRE_FLAME,
-                point.x,
-                point.y,
-                point.z,
-                1,
-                0.02D,
-                0.02D,
-                0.02D,
-                0.01D
+                new RequiemEntityParticleOptions(ModParticles.ENTITY_DUST.get(), target.getId(), user.getId()),
+                target.getX(),
+                target.getY(0.5D),
+                target.getZ(),
+                level.random.nextInt(6) + 4,
+                target.getBbWidth() * 0.2D,
+                target.getBbHeight() * 0.2D,
+                target.getBbWidth() * 0.2D,
+                1.0D
         );
         level.playSound(
                 null,

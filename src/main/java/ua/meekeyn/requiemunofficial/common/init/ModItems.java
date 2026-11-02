@@ -12,7 +12,6 @@ import ua.meekeyn.requiemunofficial.common.item.SoulVesselItem;
 import ua.meekeyn.requiemunofficial.common.item.TotemOfSkeletonizationItem;
 import ua.meekeyn.requiemunofficial.common.item.RemnantVesselItem;
 import ua.meekeyn.requiemunofficial.common.item.FilledSoulVesselItem;
-import ua.meekeyn.requiemunofficial.common.item.OpusDaemoniumItem;
 import ua.meekeyn.requiemunofficial.common.item.HumanityEnchantedBookItem;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 import net.minecraft.ChatFormatting;
@@ -21,12 +20,6 @@ public final class ModItems {
 
     public static final DeferredRegister<Item> ITEMS =
             DeferredRegister.create(ForgeRegistries.ITEMS, RequiemUnofficial.MODID);
-
-    public static final RegistryObject<Item> DEBUG_ITEM =
-            ITEMS.register("debug_item", () -> new DebugItem(new Item.Properties()));
-
-    public static final RegistryObject<Item> OPUS_DAEMONIUM =
-            ITEMS.register("opus_daemonium", () -> new OpusDaemoniumItem(new Item.Properties().stacksTo(1)));
 
     public static final RegistryObject<Item> HUMANITY_ENCHANTED_BOOK =
             ITEMS.register("humanity_enchanted_book",

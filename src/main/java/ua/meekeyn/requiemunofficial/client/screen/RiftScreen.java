@@ -7,7 +7,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.menu.RiftMenu;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
@@ -117,7 +116,7 @@ public class RiftScreen extends AbstractContainerScreen<RiftMenu> {
             this.decayZombieButton.active = available && this.menu.getStoredSoulEnergy() >= 3;
             this.decaySkeletonButton.active = available && this.menu.getStoredSoulEnergy() >= 3;
             this.teleportButton.active = available
-                    && this.menu.getStoredSoulEnergy() >= RequiemConfig.RIFT_TELEPORT_ENERGY_COST.get()
+                    && this.menu.getStoredSoulEnergy() >= this.menu.getTeleportEnergyCost()
                     && !this.menu.getDestinations().isEmpty();
             this.previousDestinationButton.active = this.menu.getDestinations().size() > 1;
             this.nextDestinationButton.active = this.menu.getDestinations().size() > 1;

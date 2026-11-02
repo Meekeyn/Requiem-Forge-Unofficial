@@ -1,0 +1,10 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:humanoid_zombies",
+    "#requiemunofficial:humanoid_skeletons",
+    "#requiemunofficial:humans",
+    "#requiemunofficial:piglins"
+  ]
+}
+

@@ -24,20 +24,19 @@ public class EmancipationMobEffect extends MobEffect implements StickyMobEffect 
 
     @Override
     public void applyEffectTick(LivingEntity entity, int amplifier) {
-        if (!(entity instanceof ServerPlayer player)) {
-            return;
-        }
-
-        UUID possessedId = SoulManager.getPossessedEntityId(player);
-        if (possessedId != null) {
-            PossessionManager.release(player, PossessionManager.findPossessedHost(player, possessedId));
-            player.removeEffect(ModEffects.EMANCIPATION.get());
-        }
+        // Emancipation allows dissociation via the release key while possessed.
+        // Auto-release on effect tick was removed: the effect should not force
+        // exit every second, which would make possession impossible to maintain.
     }
 
     @Override
     public boolean shouldStick(LivingEntity entity) {
-        return entity instanceof ServerPlayer player && SoulManager.getState(player) == SoulState.REMNANT;
+        // Emancipation should stick to both REMNANT and VAGRANT players, so they can
+        // use the dissociation key to exit possession. Without this, the effect would
+        // be stripped when a REMNANT becomes VAGRANT by possessing a body.
+        return entity instanceof ServerPlayer player
+                && (SoulManager.getState(player) == SoulState.REMNANT
+                || SoulManager.getState(player) == SoulState.VAGRANT);
     }
 
     @Override

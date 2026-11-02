@@ -2,14 +2,14 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1,
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
       "entries": [
         {
           "type": "minecraft:alternatives",
           "children": [
             {
               "type": "minecraft:item",
-              "name": "requiemunofficial:tachylite/derelict",
               "conditions": [
                 {
                   "condition": "minecraft:match_tool",
@@ -24,11 +24,11 @@
                     ]
                   }
                 }
-              ]
+              ],
+              "name": "requiemunofficial:tachylite/derelict"
             },
             {
               "type": "minecraft:item",
-              "name": "requiemunofficial:shattered_soul_vessel",
               "conditions": [
                 {
                   "condition": "minecraft:survives_explosion"
@@ -43,7 +43,8 @@
                     0.5
                   ]
                 }
-              ]
+              ],
+              "name": "requiemunofficial:shattered_soul_vessel"
             }
           ]
         }
@@ -51,3 +52,4 @@
     }
   ]
 }
+

@@ -1,7 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:tachylite"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:obelisk/frame", "required": false}]}

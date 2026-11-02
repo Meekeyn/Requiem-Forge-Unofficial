@@ -25,7 +25,6 @@ public final class JeiRequiemPlugin implements IModPlugin {
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
-        addInfo(registration, new ItemStack(ModItems.OPUS_DAEMONIUM.get()), "opus_daemonium");
         addInfo(registration, new ItemStack(ModItems.HUMANITY_ENCHANTED_BOOK.get()), "humanity");
         addInfo(registration, new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get()), "empty_soul_vessel");
         addInfo(registration, new ItemStack(ModItems.FILLED_SOUL_VESSEL.get()), "filled_soul_vessel");

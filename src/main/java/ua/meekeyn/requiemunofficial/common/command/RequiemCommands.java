@@ -2,7 +2,6 @@ package ua.meekeyn.requiemunofficial.common.command;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -13,7 +12,9 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.GameProfileArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
@@ -35,7 +36,6 @@ import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -109,8 +109,9 @@ public final class RequiemCommands {
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
+        // Як RequiemCommand.checkPermissions у beta.16: рівень 2 або будь-який вузол requiem.command*.
         event.getDispatcher().register(Commands.literal("requiem")
-                .requires(source -> source.hasPermission(2))
+                .requires(ModPermissions::checkRoot)
                 .then(vagrantSubcommand())
                 .then(possessionSubcommand())
                 .then(remnantSubcommand())
@@ -137,14 +138,18 @@ public final class RequiemCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> soulSubcommand() {
         return Commands.literal("soul")
+                .requires(ModPermissions.require(ModPermissions.SOUL_QUERY)
+                        .or(ModPermissions.require(ModPermissions.SOUL_SET)))
                 .then(Commands.literal("query")
                         .then(Commands.argument("target", EntityArgument.entity())
+                                .requires(ModPermissions.require(ModPermissions.SOUL_QUERY))
                                 .executes(context -> querySoul(
                                         context.getSource(),
                                         EntityArgument.getEntity(context, "target")
                                 ))))
                 .then(Commands.literal("remove")
                         .then(Commands.argument("target", EntityArgument.entities())
+                                .requires(ModPermissions.require(ModPermissions.SOUL_REMOVE))
                                 .executes(context -> setSoul(
                                         context.getSource(),
                                         EntityArgument.getEntities(context, "target"),
@@ -152,6 +157,7 @@ public final class RequiemCommands {
                                 ))))
                 .then(Commands.literal("restore")
                         .then(Commands.argument("target", EntityArgument.entities())
+                                .requires(ModPermissions.require(ModPermissions.SOUL_RESTORE))
                                 .executes(context -> setSoul(
                                         context.getSource(),
                                         EntityArgument.getEntities(context, "target"),
@@ -161,18 +167,23 @@ public final class RequiemCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> remnantSubcommand() {
         return Commands.literal("remnant")
+                .requires(ModPermissions.require(ModPermissions.REMNANT_QUERY_SELF)
+                        .or(ModPermissions.require(ModPermissions.REMNANT_SET_SELF)))
                 .then(Commands.literal("query")
+                        .requires(ModPermissions.require(ModPermissions.REMNANT_QUERY_SELF))
                         .executes(context -> queryRemnant(
                                 context.getSource(),
                                 context.getSource().getPlayerOrException()
                         ))
                         .then(Commands.argument("target", EntityArgument.player())
+                                .requires(ModPermissions.require(ModPermissions.REMNANT_QUERY))
                                 .executes(context -> queryRemnant(
                                         context.getSource(),
                                         EntityArgument.getPlayer(context, "target")
                                 ))))
                 .then(Commands.literal("set")
-                        .then(Commands.argument("remnant_type", StringArgumentType.word())
+                        .requires(ModPermissions.require(ModPermissions.REMNANT_SET_SELF))
+                        .then(Commands.argument("remnant_type", ResourceLocationArgument.id())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(
                                         List.of("true", "false", "requiem:mortal", "requiem:remnant"),
                                         builder
@@ -183,6 +194,7 @@ public final class RequiemCommands {
                                         parseRemnantState(context, "remnant_type")
                                 ))
                                 .then(Commands.argument("target", EntityArgument.players())
+                                        .requires(ModPermissions.require(ModPermissions.REMNANT_SET))
                                         .executes(context -> setRemnant(
                                                 context.getSource(),
                                                 EntityArgument.getPlayers(context, "target"),
@@ -192,17 +204,22 @@ public final class RequiemCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> vagrantSubcommand() {
         return Commands.literal("vagrant")
+                .requires(ModPermissions.require(ModPermissions.VAGRANT_QUERY_SELF)
+                        .or(ModPermissions.require(ModPermissions.VAGRANT_SET_SELF)))
                 .then(Commands.literal("query")
+                        .requires(ModPermissions.require(ModPermissions.VAGRANT_QUERY_SELF))
                         .executes(context -> queryVagrant(
                                 context.getSource(),
                                 context.getSource().getPlayerOrException()
                         ))
                         .then(Commands.argument("target", EntityArgument.player())
+                                .requires(ModPermissions.require(ModPermissions.VAGRANT_QUERY))
                                 .executes(context -> queryVagrant(
                                         context.getSource(),
                                         EntityArgument.getPlayer(context, "target")
                                 ))))
                 .then(Commands.literal("set")
+                        .requires(ModPermissions.require(ModPermissions.VAGRANT_SET_SELF))
                         .then(Commands.argument("ethereal", BoolArgumentType.bool())
                                 .executes(context -> setVagrant(
                                         context.getSource(),
@@ -210,6 +227,7 @@ public final class RequiemCommands {
                                         BoolArgumentType.getBool(context, "ethereal")
                                 ))
                                 .then(Commands.argument("target", EntityArgument.players())
+                                        .requires(ModPermissions.require(ModPermissions.VAGRANT_SET))
                                         .executes(context -> setVagrant(
                                                 context.getSource(),
                                                 EntityArgument.getPlayers(context, "target"),
@@ -219,17 +237,22 @@ public final class RequiemCommands {
 
     private static LiteralArgumentBuilder<CommandSourceStack> possessionSubcommand() {
         return Commands.literal("possession")
+                .requires(ModPermissions.require(ModPermissions.POSSESSION_START_SELF)
+                        .or(ModPermissions.require(ModPermissions.POSSESSION_STOP_SELF)))
                 .then(Commands.literal("stop")
+                        .requires(ModPermissions.require(ModPermissions.POSSESSION_STOP_SELF))
                         .executes(context -> stopPossession(
                                 context.getSource(),
                                 Set.of(context.getSource().getPlayerOrException())
                         ))
                         .then(Commands.argument("target", EntityArgument.players())
+                                .requires(ModPermissions.require(ModPermissions.POSSESSION_STOP))
                                 .executes(context -> stopPossession(
                                         context.getSource(),
                                         EntityArgument.getPlayers(context, "target")
                                 ))))
                 .then(Commands.literal("start")
+                        .requires(ModPermissions.require(ModPermissions.POSSESSION_START_SELF))
                         .then(Commands.argument("possessed", EntityArgument.entity())
                                 .executes(context -> startPossession(
                                         context.getSource(),
@@ -237,6 +260,7 @@ public final class RequiemCommands {
                                         context.getSource().getPlayerOrException()
                                 ))
                                 .then(Commands.argument("possessor", EntityArgument.player())
+                                        .requires(ModPermissions.require(ModPermissions.POSSESSION_START))
                                         .executes(context -> startPossession(
                                                 context.getSource(),
                                                 EntityArgument.getEntity(context, "possessed"),
@@ -245,7 +269,9 @@ public final class RequiemCommands {
     }
 
     private static LiteralArgumentBuilder<CommandSourceStack> shellSubcommand() {
+        // В оригіналі shell не має власних вузлів (лише корінь); тут лишаємо рівень 2 — ризик дюпу.
         return Commands.literal("shell")
+                .requires(source -> source.hasPermission(2))
                 .then(Commands.literal("create")
                         .executes(context -> runOne(
                                 context.getSource().getPlayerOrException(),
@@ -357,8 +383,8 @@ public final class RequiemCommands {
     }
 
     private static int queryVagrant(CommandSourceStack source, ServerPlayer player) {
-        boolean vagrant = SoulManager.getState(player) == SoulState.VAGRANT
-                && SoulManager.getPossessedEntityId(player) == null;
+        // Як isVagrant() у beta.16: true і під час одержимості.
+        boolean vagrant = SoulManager.getState(player) == SoulState.VAGRANT;
         Component name = Component.translatable("requiemunofficial:" + (vagrant ? "ethereal" : "not_ethereal"));
         source.sendSuccess(() -> queryComponent(source, player, name), true);
         return vagrant ? 1 : 0;
@@ -369,18 +395,11 @@ public final class RequiemCommands {
                                   boolean vagrant) throws CommandSyntaxException {
         int count = 0;
         for (ServerPlayer player : players) {
-            boolean current = SoulManager.getState(player) == SoulState.VAGRANT
-                    && SoulManager.getPossessedEntityId(player) == null;
+            boolean current = SoulManager.getState(player) == SoulState.VAGRANT;
             if (current == vagrant) {
                 continue;
             }
             if (vagrant) {
-                if (SoulManager.getState(player) == SoulState.VAGRANT
-                        && SoulManager.getPossessedEntityId(player) != null) {
-                    sendSetVagrantFeedback(source, player, true);
-                    count++;
-                    continue;
-                }
                 if (SoulManager.getState(player) != SoulState.REMNANT) {
                     throw VAGRANT_MORTAL.create(player.getDisplayName());
                 }
@@ -388,14 +407,16 @@ public final class RequiemCommands {
                     throw VAGRANT_FAILED.create(player.getDisplayName());
                 }
             } else {
-                if (SoulManager.getState(player) == SoulState.VAGRANT
-                        && SoulManager.getPossessedEntityId(player) != null) {
-                    sendSetVagrantFeedback(source, player, false);
-                    count++;
-                    continue;
-                }
+                // Спершу перевіряємо оболонку, щоб не випустити гравця з носія даремно; далі відпускаємо носія.
                 PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
-                if (shell == null || !SoulLifecycleManager.tryReclaimShell(player, shell)) {
+                if (shell == null) {
+                    throw VAGRANT_FAILED.create(player.getDisplayName());
+                }
+                LivingEntity host = PossessionManager.findPossessedHost(player);
+                if (host != null) {
+                    PossessionManager.release(player, host);
+                }
+                if (!SoulLifecycleManager.tryReclaimShell(player, shell)) {
                     throw VAGRANT_FAILED.create(player.getDisplayName());
                 }
             }
@@ -462,7 +483,9 @@ public final class RequiemCommands {
         PlayerShellEntity shell = new PlayerShellEntity(ModEntities.PLAYER_SHELL.get(), player.serverLevel());
         shell.moveTo(source.getPosition().x, source.getPosition().y, source.getPosition().z,
                 player.getYRot(), player.getXRot());
-        shell.setOwner(player.getUUID(), player.getDisplayName());
+        // Оригінал: PlayerSplitter.createShell(player) копіює дані гравця разом з інвентарем,
+        // а сам гравець нічого не втрачає (без finishBodySplit і без прив'язки оболонки).
+        shell.captureBody(player);
         player.serverLevel().addFreshEntity(shell);
     }
 
@@ -483,9 +506,8 @@ public final class RequiemCommands {
         if (!(entity instanceof PlayerShellEntity shell)) {
             throw NOT_SHELL.create(entity.getDisplayName());
         }
-        if (!SoulLifecycleManager.tryReclaimShell(player, shell)) {
-            throw SHELL_MERGE_FAILED.create(player.getDisplayName());
-        }
+        // Оригінал: RemnantComponent.get(player).merge(shell) — результат ігнорується, без повідомлення.
+        SoulLifecycleManager.mergeShellForCommand(player, shell);
     }
 
     private static int setShellIdentity(CommandContext<CommandSourceStack> context) throws CommandSyntaxException {
@@ -502,7 +524,7 @@ public final class RequiemCommands {
             if (!(shell instanceof PlayerShellEntity playerShell)) {
                 throw NOT_SHELL.create(shell.getDisplayName());
             }
-            playerShell.setOwner(id, Component.literal(profile.getName()));
+            playerShell.setDisplayProfile(profile);
         });
     }
 
@@ -578,19 +600,38 @@ public final class RequiemCommands {
     }
 
     private static Component remnantName(SoulState state) {
+        // Ключ як у SimpleRemnantType beta.16: remnant_type.<id з '.' замість ':'>.name
         return Component.translatable(state == SoulState.REMNANT
-                ? "requiemunofficial:remnant"
-                : "requiemunofficial:mortal");
+                ? "requiemunofficial:remnant_type.requiem.remnant.name"
+                : "requiemunofficial:remnant_type.requiem.mortal.name");
     }
 
     private static SoulState parseRemnantState(CommandContext<CommandSourceStack> context,
                                                String name) throws CommandSyntaxException {
-        String value = StringArgumentType.getString(context, name).toLowerCase(Locale.ROOT);
-        return switch (value) {
-            case "true", "remnant", "requiem:remnant" -> SoulState.REMNANT;
-            case "false", "mortal", "requiem:mortal" -> SoulState.MORTAL;
-            default -> throw REMNANT_TYPE_NOT_FOUND.create(value);
-        };
+        // Аналог RemnantArgumentType: true/false, id без простору імен трактуємо як requiem:<id>.
+        ResourceLocation id = ResourceLocationArgument.getId(context, name);
+        String namespace = id.getNamespace();
+        String path = id.getPath();
+        if ("minecraft".equals(namespace)) {
+            if ("true".equals(path)) {
+                return SoulState.REMNANT;
+            }
+            if ("false".equals(path)) {
+                return SoulState.MORTAL;
+            }
+            namespace = "requiem";
+        }
+        if ("requiem".equals(namespace) || RequiemUnofficial.MODID.equals(namespace)) {
+            if ("remnant".equals(path)) {
+                return SoulState.REMNANT;
+            }
+            if ("mortal".equals(path)) {
+                return SoulState.MORTAL;
+            }
+        }
+        throw REMNANT_TYPE_NOT_FOUND.create("minecraft".equals(id.getNamespace())
+                ? new ResourceLocation("requiem", path).toString()
+                : id.toString());
     }
 
     private static <T> int runOne(T element, ThrowingConsumer<T> action) throws CommandSyntaxException {

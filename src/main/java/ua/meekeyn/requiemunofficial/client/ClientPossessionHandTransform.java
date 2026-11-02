@@ -6,6 +6,7 @@ import net.minecraftforge.client.event.RenderHandEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 
@@ -26,6 +27,14 @@ public final class ClientPossessionHandTransform {
         }
         if (SoulManager.getPossessedEntityId(minecraft.player) == null) {
             return;
+        }
+        // Предмет у слоті, якого тіло не має, інвентар не показує: тож і в руці його не малюємо.
+        boolean mainHand = event.getHand() == net.minecraft.world.InteractionHand.MAIN_HAND;
+        int slot = mainHand ? minecraft.player.getInventory().selected
+                : net.minecraft.world.entity.player.Inventory.SLOT_OFFHAND;
+        if (!event.getItemStack().isEmpty()
+                && !PossessionInventoryManager.canAccessPlayerInventorySlot(minecraft.player, slot)) {
+            event.setCanceled(true);
         }
     }
 }

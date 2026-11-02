@@ -1,10 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:humanoid_zombies",
-    "#requiemunofficial:humanoid_skeletons",
-    "#requiemunofficial:humans",
-    "#requiemunofficial:piglins"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:transformation/skeletonizable", "required": false}]}

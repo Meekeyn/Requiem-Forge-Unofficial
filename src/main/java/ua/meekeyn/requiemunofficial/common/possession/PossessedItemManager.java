@@ -252,13 +252,19 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             return;
         }
 
-        if (host.hasEffect(MobEffects.WEAKNESS)
+        if (getCureWeakness(player, host) != null
                 && player.level().getGameTime() < pending.completeGameTime()) {
             playCureProgress(host);
             return;
         }
 
         PENDING_BODY_CURES.remove(player.getUUID());
+        // beta.16 BODY_CURE: 40 частинок cure навколо тіла в момент лікування.
+        if (host.level() instanceof ServerLevel cureLevel) {
+            cureLevel.sendParticles(ua.meekeyn.requiemunofficial.common.init.ModParticles.CURE.get(),
+                    host.getX(), host.getY(0.5D), host.getZ(), 40,
+                    host.getBbWidth() * 0.5D, host.getBbHeight() * 0.5D, host.getBbWidth() * 0.5D, 0.05D);
+        }
         PossessionManager.restorePlayerBodyFromHost(player, host);
         SoulManager.setState(player, SoulState.REMNANT);
         SoulManager.clearPossession(player);
@@ -278,7 +284,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
 
         UseDecision cureDecision = getCureUseDecision(player, host, stack, player);
         if (cureDecision == UseDecision.START_LONG_USE) {
-            OverridablePossessedItemStack.overrideUseDuration(stack, 48);
+            OverridablePossessedItemStack.overrideUseDuration(stack, getNormalFoodUseDuration(stack));
             player.startUsingItem(hand);
             return true;
         } else if (cureDecision == UseDecision.BLOCK) {
@@ -357,6 +363,16 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         return tryStartBodyCure(possessor, host, stack, hand, user);
     }
 
+    /**
+     * Weakness required for the body cure. A possessor who drinks a Weakness potion gets the effect
+     * on the player entity, not on the host body, so either of the two counts.
+     */
+    @org.jetbrains.annotations.Nullable
+    private static MobEffectInstance getCureWeakness(Player possessor, LivingEntity host) {
+        MobEffectInstance onHost = host.getEffect(MobEffects.WEAKNESS);
+        return onHost != null ? onHost : possessor.getEffect(MobEffects.WEAKNESS);
+    }
+
     private static UseDecision getCureUseDecision(ServerPlayer possessor,
                                                   LivingEntity host,
                                                   ItemStack stack,
@@ -373,7 +389,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
                     || itemUser.getCooldowns().isOnCooldown(stack.getItem())) {
                 return UseDecision.BLOCK;
             }
-            return host.hasEffect(MobEffects.WEAKNESS) ? UseDecision.START_LONG_USE : UseDecision.BLOCK;
+            return getCureWeakness(possessor, host) != null ? UseDecision.START_LONG_USE : UseDecision.BLOCK;
         }
         return matchedReagent ? UseDecision.BLOCK : UseDecision.PASS;
     }
@@ -537,12 +553,12 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
                     || possessor.level().getGameRules().getBoolean(ModGameRules.DISABLE_CURE)
                     || PenanceMobEffect.blocksCure(host.getEffect(ModEffects.PENANCE.get()))
                     || PenanceMobEffect.blocksCure(possessor.getEffect(ModEffects.PENANCE.get()))
-                    || !host.hasEffect(MobEffects.WEAKNESS)
+                    || getCureWeakness(possessor, host) == null
                     || itemUser.getCooldowns().isOnCooldown(stack.getItem())) {
                 continue;
             }
 
-            MobEffectInstance weakness = host.getEffect(MobEffects.WEAKNESS);
+            MobEffectInstance weakness = getCureWeakness(possessor, host);
             addCooldown(itemUser, stack.getItem(), 40);
             if (!itemUser.getAbilities().instabuild) {
                 stack.shrink(1);
@@ -561,6 +577,19 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         if (ticks > 0) {
             player.getCooldowns().addCooldown(item, ticks);
         }
+    }
+
+    /**
+     * Vanilla food use duration (32 ticks in 1.20.1, {@link Item#EAT_DURATION}).
+     * Falls back to the held stack's own duration for non-food items so that
+     * ranged weapons (bows/crossbows) keep their long draw instead of being
+     * forced to a 32-tick eat cycle.
+     */
+    private static int getNormalFoodUseDuration(ItemStack stack) {
+        if (stack.getFoodProperties(null) != null) {
+            return Item.EAT_DURATION;
+        }
+        return stack.getUseDuration();
     }
 
     private static DietDecision getDietDecision(LivingEntity host, ItemStack stack) {
@@ -644,7 +673,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         }
         JsonObject mob = root.getAsJsonObject("mob");
         JsonObject override = root.getAsJsonObject("override");
-        if (mob == null || override == null || !"requiemunofficial:healing".equals(string(override, "type"))) {
+        if (mob == null || override == null || !isOverrideType(override, "healing")) {
             return null;
         }
 
@@ -673,7 +702,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         }
         JsonObject mob = root.getAsJsonObject("mob");
         JsonObject override = root.getAsJsonObject("override");
-        if (mob == null || override == null || !"requiemunofficial:diet".equals(string(override, "type"))) {
+        if (mob == null || override == null || !isOverrideType(override, "diet")) {
             return null;
         }
         JsonObject food = override.getAsJsonObject("food");
@@ -697,7 +726,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             return null;
         }
         JsonObject override = root.getAsJsonObject("override");
-        if (override == null || !"requiemunofficial:cure".equals(string(override, "type"))) {
+        if (override == null || !isOverrideType(override, "cure")) {
             return null;
         }
         int priority = root.has("priority") ? root.get("priority").getAsInt() : 100;
@@ -749,6 +778,12 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         return id == null ? null : BuiltInRegistries.POTION.getOptional(id).orElse(null);
     }
 
+    /** Приймає тип як у власному (requiemunofficial:), так і в оригінальному (requiem:) просторі імен. */
+    private static boolean isOverrideType(JsonObject override, String path) {
+        String type = string(override, "type");
+        return ("requiemunofficial:" + path).equals(type) || ("requiem:" + path).equals(type);
+    }
+
     private static String string(JsonObject object, String key) {
         return object.has(key) ? object.get(key).getAsString() : "";
     }
@@ -793,10 +828,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
 
     public record CureRule(int priority, Component tooltip, ItemMatcher reagent) {
         public boolean matches(LivingEntity host, ItemStack stack) {
-            return (host.getType() == EntityType.ZOMBIE
-                    || host.getType() == EntityType.ZOMBIE_VILLAGER
-                    || host.getType() == EntityType.ZOMBIFIED_PIGLIN)
-                    && reagent.matches(stack);
+            return host.getType().is(ModTags.CURABLE_UNDEAD) && reagent.matches(stack);
         }
 
         TooltipMatch tooltipMatch(LivingEntity host, ItemStack stack, Player player) {
@@ -804,7 +836,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
                 return null;
             }
             boolean ready = !player.level().getGameRules().getBoolean(ModGameRules.DISABLE_CURE)
-                    && host.hasEffect(MobEffects.WEAKNESS)
+                    && getCureWeakness(player, host) != null
                     && !player.getCooldowns().isOnCooldown(stack.getItem());
             return new TooltipMatch(priority, tooltip, ready);
         }
@@ -812,9 +844,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
 
     private record OldTooltipRule(int priority, Component tooltip, Potion potion) {
         TooltipMatch tooltipMatch(LivingEntity host, ItemStack stack) {
-            if ((host.getType() == EntityType.ZOMBIE
-                    || host.getType() == EntityType.ZOMBIE_VILLAGER
-                    || host.getType() == EntityType.ZOMBIFIED_PIGLIN)
+            if (host.getType().is(ModTags.CURABLE_UNDEAD)
                     && PotionUtils.getPotion(stack) == potion) {
                 return new TooltipMatch(priority, tooltip, true);
             }

@@ -101,8 +101,12 @@ public final class PlayerSoulEvents {
                     host = PossessionManager.restoreDisconnectedHost(serverPlayer);
                 }
                 if (host != null && !PossessionManager.resumeAfterDisconnect(serverPlayer, host)) {
+                    PossessionManager.clearHostPossessionFlags(host);
                     SoulManager.clearPossession(serverPlayer);
                     serverPlayer.setInvisible(false);
+                } else if (host == null) {
+                    // Тіло ще не завантажене (чанк вантажиться пізніше): чекаємо, а не викидаємо душу.
+                    PossessionManager.beginReconnectGrace(serverPlayer);
                 }
             } else if (!restoredVessel && SoulManager.getState(serverPlayer) == SoulState.REMNANT) {
                 SoulManager.clearPossession(serverPlayer);
@@ -135,6 +139,7 @@ public final class PlayerSoulEvents {
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase == TickEvent.Phase.END
                 && event.player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+            ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.tickPlayer(serverPlayer);
         }
     }
 

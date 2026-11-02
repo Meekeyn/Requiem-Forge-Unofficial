@@ -5,10 +5,7 @@ import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.animal.horse.AbstractHorse;
-import net.minecraft.world.entity.monster.Spider;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
@@ -22,6 +19,7 @@ import ua.meekeyn.requiemunofficial.common.network.ModNetwork;
 import ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket;
 import ua.meekeyn.requiemunofficial.common.network.PossessionInputPacket;
 import ua.meekeyn.requiemunofficial.common.possession.EntityMobilityManager;
+import ua.meekeyn.requiemunofficial.common.possession.PossessedMountRules;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
@@ -33,9 +31,21 @@ public final class ClientPossessionInput {
     private static int attackRepeatCooldown;
     private static int currentCameraHostId = -1;
     private static boolean emergencyShiftPressed;
+    private static boolean reqExitPending; // ТИМЧАСОВО [REQ-EXIT]
 
     private ClientPossessionInput() {
     }
+
+    // ТИМЧАСОВО [REQ-EXIT]: фіксуємо сире натискання V, до будь-яких ранніх виходів обробника тіку.
+    @SubscribeEvent // ТИМЧАСОВО [REQ-EXIT]
+    public static void reqExitOnKey(InputEvent.Key event) { // ТИМЧАСОВО [REQ-EXIT]
+        if (event.getAction() != org.lwjgl.glfw.GLFW.GLFW_PRESS || !ModKeyMappings.UNCONDITIONAL_EXIT.matches(event.getKey(), event.getScanCode())) return; // ТИМЧАСОВО [REQ-EXIT]
+        Minecraft mc = Minecraft.getInstance(); // ТИМЧАСОВО [REQ-EXIT]
+        StringBuilder conflicts = new StringBuilder(); // ТИМЧАСОВО [REQ-EXIT]
+        for (net.minecraft.client.KeyMapping km : mc.options.keyMappings) { if (km != ModKeyMappings.UNCONDITIONAL_EXIT && km.same(ModKeyMappings.UNCONDITIONAL_EXIT)) conflicts.append(km.getName()).append(' '); } // ТИМЧАСОВО [REQ-EXIT]
+        RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V pressed key={} conflicts=[{}] player={} screen={} camera={} clientPossessedId={}", ModKeyMappings.UNCONDITIONAL_EXIT.getKey().getName(), conflicts.toString().trim(), mc.player != null, mc.screen == null ? "none" : mc.screen.getClass().getSimpleName(), mc.getCameraEntity() == null ? "null" : mc.getCameraEntity().getClass().getSimpleName() + "#" + mc.getCameraEntity().getId(), mc.player == null ? "n/a" : SoulManager.getPossessedEntityId(mc.player)); // ТИМЧАСОВО [REQ-EXIT]
+        reqExitPending = true; // ТИМЧАСОВО [REQ-EXIT]
+    } // ТИМЧАСОВО [REQ-EXIT]
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -49,9 +59,11 @@ public final class ClientPossessionInput {
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
             emergencyShiftPressed = false;
+            reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
             return;
         }
         if (minecraft.screen != null) {
+            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, screen open: {}", minecraft.screen.getClass().getSimpleName()); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             emergencyShiftPressed = false;
@@ -67,6 +79,7 @@ public final class ClientPossessionInput {
             return;
         }
         if (minecraft.player.isSpectator()) {
+            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, player is spectator"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
@@ -75,6 +88,7 @@ public final class ClientPossessionInput {
         }
 
         while (ModKeyMappings.DISSOCIATION.consumeClick()) {
+            RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: ',' consumed, sending RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
             ModNetwork.CHANNEL.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.RELEASE)
             );
@@ -83,6 +97,15 @@ public final class ClientPossessionInput {
         boolean controllingHost = minecraft.getCameraEntity() != minecraft.player
                 || SoulManager.getPossessedEntityId(minecraft.player) != null;
         if (!controllingHost) {
+            // V поза тілом-носієм: сервер вирішує (конфіг + стан remnant), чи вийти з власного тіла.
+            while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
+                reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
+                RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed outside host, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
+                ModNetwork.CHANNEL.sendToServer(
+                        new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
+                );
+            }
+            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, controllingHost=false (camera==player, clientPossessedId=null)"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
@@ -92,10 +115,13 @@ public final class ClientPossessionInput {
 
         // Port-only безумовний вихід. Сервер вирішує, чи він дозволений конфігом.
         while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
+            RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
+            reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
             ModNetwork.CHANNEL.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
             );
         }
+        if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V pressed but consumeClick() returned nothing (click taken by another mapping?)"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
 
         LivingEntity beta16Host = PossessionManager.getBeta16PlayerBodyHost(minecraft.player);
         if (beta16Host != null) {
@@ -103,6 +129,7 @@ public final class ClientPossessionInput {
             // Недвижні тіла керуються через beta16-шлях, тому аварійний Shift-вихід перевіряємо тут.
             sendEmergencyExitIfRequested(minecraft, beta16Host);
             sendBeta16PossessionActions(minecraft);
+            sendAbilityKeyActions(minecraft);
             applyLocalBeta16VerticalPrediction(minecraft, beta16Host);
             sendPossessionInput(minecraft);
             return;
@@ -118,6 +145,7 @@ public final class ClientPossessionInput {
         sendPossessionInput(minecraft);
 
         sendPossessionActions(minecraft);
+        sendAbilityKeyActions(minecraft);
         sendEmergencyExitIfRequested(minecraft, (LivingEntity) camera);
 
         if (jumpCooldown > 0) {
@@ -126,16 +154,27 @@ public final class ClientPossessionInput {
     }
 
     // Оригінальний beta.16 аварійний вихід: Shift, утримуваний на недвижному (immovable) тілі.
+    // Розширення порту: те саме для frictionless_hosts (големи), але не коли Shift означає злізання.
     // Надсилаємо рівно один пакет на натискання, а не щотик.
     private static void sendEmergencyExitIfRequested(Minecraft minecraft, LivingEntity host) {
         if (!minecraft.options.keyShift.isDown()) {
             emergencyShiftPressed = false;
             return;
         }
-        if (emergencyShiftPressed || !host.getType().is(ModTags.IMMOVABLE)) {
+        if (emergencyShiftPressed) {
+            return;
+        }
+        boolean immovable = host.getType().is(ModTags.IMMOVABLE);
+        if (!immovable && !host.getType().is(ModTags.FRICTIONLESS_HOSTS)) {
             return;
         }
         emergencyShiftPressed = true;
+        // Для frictionless-тіл на транспорті це натискання лишається злізанням; вихід лише наступним натисканням.
+        // Літаючим frictionless-тілам Shift потрібен для спуску, тому для них аварійного виходу немає.
+        if (!immovable && (host.isPassenger() || minecraft.player.isPassenger()
+                || EntityMobilityManager.get(host).canFly())) {
+            return;
+        }
         ModNetwork.CHANNEL.sendToServer(
                 new PossessionActionPacket(PossessionActionPacket.Action.EMERGENCY_RELEASE)
         );
@@ -163,6 +202,32 @@ public final class ClientPossessionInput {
         }
     }
 
+    /** Клавіша здібності збігається з «використати» (ПКМ за замовчуванням) — тоді діє стара схема в onInteractionKey. */
+    private static boolean abilitySharesUseKey(Minecraft minecraft) {
+        return ModKeyMappings.ABILITY.same(minecraft.options.keyUse);
+    }
+
+    private static void sendAbilityKeyActions(Minecraft minecraft) {
+        if (abilitySharesUseKeyOrDrain(minecraft)) {
+            return;
+        }
+        while (ModKeyMappings.ABILITY.consumeClick()) {
+            ModNetwork.CHANNEL.sendToServer(
+                    new PossessionActionPacket(PossessionActionPacket.Action.INTERACT)
+            );
+        }
+    }
+
+    private static boolean abilitySharesUseKeyOrDrain(Minecraft minecraft) {
+        if (!abilitySharesUseKey(minecraft)) {
+            return false;
+        }
+        while (ModKeyMappings.ABILITY.consumeClick()) {
+            // обробляється в onInteractionKey
+        }
+        return true;
+    }
+
     private static void sendPossessionInput(Minecraft minecraft) {
         float yRot = minecraft.player.getYRot();
         float xRot = minecraft.player.getXRot();
@@ -170,6 +235,14 @@ public final class ClientPossessionInput {
         boolean jumping = minecraft.options.keyJump.isDown();
         float forward = movement(minecraft.options.keyUp.isDown(), minecraft.options.keyDown.isDown());
         float strafe = movement(minecraft.options.keyLeft.isDown(), minecraft.options.keyRight.isDown());
+        // A possessed rider on a spider only walks: the sprint key does nothing (no sprint flag,
+        // no sprint particles/FOV on the local player), matching the server-side drive.
+        boolean ridingSpider = minecraft.getCameraEntity() instanceof LivingEntity cameraHost
+                && cameraHost != minecraft.player
+                && cameraHost.getVehicle() instanceof net.minecraft.world.entity.monster.Spider;
+        if (ridingSpider && minecraft.player.isSprinting()) {
+            minecraft.player.setSprinting(false);
+        }
         ModNetwork.CHANNEL.sendToServer(new PossessionInputPacket(
                 forward,
                 strafe,
@@ -177,7 +250,7 @@ public final class ClientPossessionInput {
                 shifting,
                 yRot,
                 xRot,
-                minecraft.options.keySprint.isDown() || minecraft.player.isSprinting()
+                !ridingSpider && (minecraft.options.keySprint.isDown() || minecraft.player.isSprinting())
         ));
     }
 
@@ -295,6 +368,12 @@ public final class ClientPossessionInput {
     }
 
     private static void stabilizeLocalHostRender(LivingEntity host) {
+        // Вершник-носій рухається разом із транспортом: xo = x вимикало б інтерполяцію камери
+        // між тіками (камера стрибала раз на тік, рух ставав «дерганим»). Залишаємо ванільні xo,
+        // які rideTick уже виставив перед positionRider.
+        if (host.isPassenger()) {
+            return;
+        }
         host.xo = host.getX();
         host.yo = host.getY();
         host.zo = host.getZ();
@@ -311,7 +390,8 @@ public final class ClientPossessionInput {
         if (PossessionManager.isUsingBeta16PlayerBody(minecraft.player)) {
             return;
         }
-        if (shouldAllowPossessedMount(minecraft)) {
+        // Обхід для посадки - лише на ПКМ; ЛКМ по транспорту лишається звичайною атакою носія.
+        if (event.isUseItem() && shouldAllowPossessedMount(minecraft)) {
             return;
         }
         if (event.isAttack()) {
@@ -324,6 +404,9 @@ public final class ClientPossessionInput {
             return;
         }
         if (event.isUseItem()) {
+            if (!abilitySharesUseKey(minecraft)) {
+                return;
+            }
             // Оригінальна схема: непряма взаємодія (здібність INTERACT) — на ПКМ із порожньою
             // рукою. Якщо в руці є предмет або ціль — блок, лишаємо ванильне використання,
             // щоб не ламати застосування предметів та взаємодію з блоками.
@@ -340,9 +423,9 @@ public final class ClientPossessionInput {
         }
     }
 
-    // Left/right click is normally swallowed while possessing a host so the player's own body does
-    // not interact. Let it through for the specific mount targets (spider + undead horses) so the
-    // server-side riding events can put the possessed host onto the vehicle.
+    // Правий клік під час одержимості зазвичай поглинається, щоб власне тіло гравця не
+    // взаємодіяло. Пропускаємо його (лише use) для цілей-транспорту (PossessedMountRules: павук, коні-нежить,
+    // спустошувач, курка, страйдер), щоб серверні події посадили тіло-носій верхи.
     private static boolean shouldAllowPossessedMount(Minecraft minecraft) {
         if (!(minecraft.getCameraEntity() instanceof LivingEntity host)
                 || host.isPassenger()
@@ -354,17 +437,7 @@ public final class ClientPossessionInput {
         if (!target.getPassengers().isEmpty()) {
             return false;
         }
-        boolean skeletonRider = host.getType().is(ModTags.HUMANOID_SKELETONS);
-        boolean zombieRider = host.getType().is(ModTags.HUMANOID_ZOMBIES);
-        if (target instanceof Spider) {
-            return skeletonRider;
-        }
-        if (target instanceof AbstractHorse horse) {
-            return horse.getMobType() == MobType.UNDEAD
-                    && host.getMobType() == MobType.UNDEAD
-                    && (skeletonRider || zombieRider);
-        }
-        return false;
+        return PossessedMountRules.canMount(target, host);
     }
 
     private static boolean isMiningBlock(Minecraft minecraft) {

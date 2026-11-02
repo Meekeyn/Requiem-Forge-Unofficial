@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:food/meat_based",
-    { "id": "bonecheese:bone_cheese", "required": false }
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:food/illager_diet", "required": false}]}

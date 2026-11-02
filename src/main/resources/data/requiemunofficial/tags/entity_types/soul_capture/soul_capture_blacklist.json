@@ -1,10 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:bosses",
-    "#requiemunofficial:ghosts",
-    "minecraft:player",
-    "requiemunofficial:mortician"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:soul_capture/soul_capture_blacklist", "required": false}]}

@@ -92,6 +92,33 @@ public class AttritionMobEffect extends MobEffect implements StickyMobEffect {
         return player.connection != null && player.connection.connection != null;
     }
 
+    private boolean soulOffenseModifierAdded;
+
+    private void ensureSoulOffenseModifier() {
+        // Ефекти реєструються раніше за атрибути, тож модифікатор soul_offense (beta.16: −20% за рівень) додаємо ліниво.
+        if (!soulOffenseModifierAdded && ua.meekeyn.requiemunofficial.common.init.ModEntityAttributes.SOUL_OFFENSE.isPresent()) {
+            soulOffenseModifierAdded = true;
+            addAttributeModifier(
+                    ua.meekeyn.requiemunofficial.common.init.ModEntityAttributes.SOUL_OFFENSE.get(),
+                    "eb72767d-93d1-4fc2-861b-f3c9406497a9",
+                    -0.2D,
+                    AttributeModifier.Operation.MULTIPLY_BASE
+            );
+        }
+    }
+
+    @Override
+    public java.util.Map<net.minecraft.world.entity.ai.attributes.Attribute, AttributeModifier> getAttributeModifiers() {
+        ensureSoulOffenseModifier();
+        return super.getAttributeModifiers();
+    }
+
+    @Override
+    public void removeAttributeModifiers(LivingEntity entity, AttributeMap attributes, int amplifier) {
+        ensureSoulOffenseModifier();
+        super.removeAttributeModifiers(entity, attributes, amplifier);
+    }
+
     @Override
     public double getAttributeModifierValue(int amplifier, AttributeModifier modifier) {
         return super.getAttributeModifierValue(Math.min(amplifier, MAX_LEVEL), modifier);
@@ -99,6 +126,7 @@ public class AttritionMobEffect extends MobEffect implements StickyMobEffect {
 
     @Override
     public void addAttributeModifiers(LivingEntity entity, AttributeMap attributes, int amplifier) {
+        ensureSoulOffenseModifier();
         super.addAttributeModifiers(entity, attributes, amplifier);
         if (entity.getHealth() > entity.getMaxHealth()) {
             entity.setHealth(entity.getMaxHealth());

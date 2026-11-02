@@ -184,7 +184,6 @@
   "entity.requiem.mortician": "Maréchal des funérailles",
   "entity.requiem.player_shell": "Coque de joueur",
   "item.requiem.totem_of_skeletonization": "Totem de skeletonisation",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
   "item.requiem.empty_soul_vessel": "Vaisseau d'âme vide",
   "item.requiem.creative_soul_vessel": "Vaisseau d'âme créatif",
   "item.requiem.filled_soul_vessel": "Vaisseau d'âme rempli",
@@ -230,5 +229,13 @@
   "stat.requiem.interact_with_rift": "[Requiem] Interactions avec la faille de l'obélisque",
   "requiem.message.peaceful_despawn": "Cet hôte ne peut pas appartenir à un monde aussi paisible",
   "ritual.requiem.ritual.decay_zombie": "Zombie en décomposition",
-  "ritual.requiem.ritual.decay_skeleton": "Squelette en décomposition"
+  "ritual.requiem.ritual.decay_skeleton": "Squelette en décomposition",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Dalle de tachylite",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Escalier de tachylite",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }

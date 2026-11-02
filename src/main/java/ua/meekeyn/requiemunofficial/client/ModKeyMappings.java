@@ -32,11 +32,21 @@ public final class ModKeyMappings {
             CATEGORY
     );
 
+    // Здібність тіла (телепорт ендермена, прикликання векс, випад тощо). За замовчуванням — права кнопка миші,
+    // як в оригінальному Requiem; перепризначається в «Options → Controls → Requiem».
+    public static final KeyMapping ABILITY = new KeyMapping(
+            "key.requiemunofficial.ability",
+            InputConstants.Type.MOUSE,
+            GLFW.GLFW_MOUSE_BUTTON_RIGHT,
+            CATEGORY
+    );
+
     private ModKeyMappings() {
     }
 
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(DISSOCIATION);
         event.register(UNCONDITIONAL_EXIT);
+        event.register(ABILITY);
     }
 }

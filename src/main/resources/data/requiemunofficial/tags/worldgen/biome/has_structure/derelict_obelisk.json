@@ -1,6 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#c:soul_sand_valleys"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:has_structure/derelict_obelisk", "required": false}]}

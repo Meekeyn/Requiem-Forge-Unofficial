@@ -12,6 +12,7 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import ua.meekeyn.requiemunofficial.common.entity.PlayerShellEntity;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 import java.util.Collection;
@@ -44,11 +45,16 @@ public final class VagrantRules {
     }
 
     public static boolean shouldBeIgnoredByOrdinaryTargeting(Entity entity) {
-        return isRestrictedVagrantEntity(entity);
+        return isRestrictedVagrantEntity(entity) || isEmptyPlayerShell(entity);
     }
 
     public static boolean shouldBeIgnoredByOrdinarySensors(Entity entity) {
-        return isRestrictedVagrantEntity(entity);
+        return isRestrictedVagrantEntity(entity) || isEmptyPlayerShell(entity);
+    }
+
+    /** Покинуте тіло гравця (без душі всередині) — не ціль для звичайних мобів. */
+    public static boolean isEmptyPlayerShell(Entity entity) {
+        return entity instanceof PlayerShellEntity shell && !shell.isControlledBySoul();
     }
 
     public static int weightedPressureSignal(Collection<? extends Entity> entities, int maxWeight) {

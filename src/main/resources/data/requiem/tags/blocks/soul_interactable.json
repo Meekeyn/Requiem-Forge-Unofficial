@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "requiemunofficial:rift_rune",
+    {"id": "requiemunofficial:tachylite/runic/rift", "required": false}
+  ]
+}
+

@@ -2,31 +2,20 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1,
+      "rolls": 1.0,
+      "bonus_rolls": 0.0,
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "requiemunofficial:tachylite/chiseled_slab",
-          "functions": [
-            {
-              "function": "minecraft:set_count",
-              "count": 2,
-              "conditions": [
-                {
-                  "condition": "minecraft:block_state_property",
-                  "block": "requiemunofficial:tachylite/chiseled_slab",
-                  "properties": {
-                    "type": "double"
-                  }
-                }
-              ]
-            },
-            {
-              "function": "minecraft:explosion_decay"
-            }
-          ]
+          "name": "requiemunofficial:tachylite/chiseled_slab"
+        }
+      ],
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
         }
       ]
     }
   ]
 }
+

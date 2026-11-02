@@ -86,7 +86,7 @@ public class ObeliskSoulEntity extends Entity {
         }
 
         if (this.lifetime-- <= 0) {
-            this.discard();
+            this.disintegrate();
             return;
         }
 
@@ -95,7 +95,7 @@ public class ObeliskSoulEntity extends Entity {
         double dz = this.targetZ - this.getZ();
         double distanceSqr = dx * dx + dy * dy + dz * dz;
         if (distanceSqr <= 0.04D) {
-            this.discard();
+            this.disintegrate();
             return;
         }
 
@@ -126,5 +126,15 @@ public class ObeliskSoulEntity extends Entity {
     @Override
     public Packet<ClientGamePacketListener> getAddEntityPacket() {
         return NetworkHooks.getEntitySpawningPacket(this);
+    }
+
+    private void disintegrate() {
+        // beta.16 ObeliskSoulEntity#getDisintegrationSound
+        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                net.minecraft.sounds.SoundEvents.SOUL_ESCAPE, net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 1.5F);
+        this.level().playSound(null, this.getX(), this.getY(), this.getZ(),
+                ua.meekeyn.requiemunofficial.common.init.ModSounds.ENTITY_OBELISK_SOUL_DISINTEGRATE.get(),
+                net.minecraft.sounds.SoundSource.AMBIENT, 1.0F, 1.0F);
+        this.discard();
     }
 }

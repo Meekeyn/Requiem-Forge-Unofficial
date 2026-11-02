@@ -13,6 +13,13 @@
       "conditions": [
         {
           "condition": "minecraft:killed_by_player"
+        },
+        {
+          "condition": "inverted",
+          "term": {
+            "condition": "requiem:rift_mortician",
+            "entity": "this"
+          }
         }
       ]
     }

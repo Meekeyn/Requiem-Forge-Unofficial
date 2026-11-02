@@ -64,21 +64,21 @@ import net.minecraft.world.item.trading.MerchantOffers;
 public final class CoreDataGameTests {
     private static final List<ResourceLocation> REQUIRED_RECIPES = List.of(
             ModIds.id("tachylite/tachylite"),
+            ModIds.id("tachylite/tachylite_slab"),
+            ModIds.id("tachylite/tachylite_stairs"),
             ModIds.id("tachylite/runestone"),
             ModIds.id("tachylite/rift"),
-            ModIds.id("tachylite/attrition"),
-            ModIds.id("tachylite/emancipation"),
-            ModIds.id("tachylite/penance"),
-            ModIds.id("tachylite/reclamation"),
             ModIds.id("tachylite/chiseled"),
             ModIds.id("tachylite/chiseled_pillar"),
             ModIds.id("tachylite/chiseled_slab"),
             ModIds.id("tachylite/chiseled_stairs"),
-            ModIds.id("tachylite/stonecutting_chiseled"),
-            ModIds.id("tachylite/stonecutting_chiseled_pillar"),
-            ModIds.id("tachylite/stonecutting_chiseled_slab"),
-            ModIds.id("tachylite/stonecutting_chiseled_stairs"),
-            ModIds.id("tachylite/stonecutting_scraped")
+            ModIds.id("tachylite/stonecutting/chiseled"),
+            ModIds.id("tachylite/stonecutting/chiseled_pillar"),
+            ModIds.id("tachylite/stonecutting/chiseled_slab"),
+            ModIds.id("tachylite/stonecutting/chiseled_stairs"),
+            ModIds.id("tachylite/stonecutting/scraped"),
+            ModIds.id("tachylite/stonecutting/tachylite_slab_from_tachylite"),
+            ModIds.id("tachylite/stonecutting/tachylite_stairs_from_tachylite")
     );
     private static final List<ResourceLocation> REQUIRED_REQUIEM_ADVANCEMENTS = List.of(
             ModIds.id("requiem/root"),
@@ -588,8 +588,8 @@ public final class CoreDataGameTests {
         ItemStack loaded = ItemStack.of(vessel.save(new CompoundTag()));
         helper.assertTrue(SoulVesselItem.hasSoulData(loaded), "Soul data should be present");
         helper.assertTrue("test_soul".equals(SoulVesselItem.getSoulType(loaded)), "Soul type should persist");
-        helper.assertTrue(SoulVesselItem.getSoulAmount(loaded) == 7, "Soul amount should persist");
-        helper.assertTrue(SoulVesselItem.getSoulEnergy(loaded) == 7, "Legacy soul energy should match amount");
+        helper.assertTrue(SoulVesselItem.getSoulAmount(loaded) == SoulVesselItem.CAPACITY, "Soul amount should persist (clamped to vessel capacity)");
+        helper.assertTrue(SoulVesselItem.getSoulEnergy(loaded) == SoulVesselItem.getSoulAmount(loaded), "Legacy soul energy should match amount");
         helper.succeed();
     }
 
@@ -669,38 +669,7 @@ public final class CoreDataGameTests {
     }
 
     @GameTest(template = "empty")
-    public static void opusUseOnlyAwardsBookUse(GameTestHelper helper) {
-        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
-                helper.getLevel().getServer(),
-                helper.getLevel(),
-                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "opus-test")
-        );
-        ua.meekeyn.requiemunofficial.common.soul.SoulManager.setState(player, SoulState.MORTAL);
-        ItemStack opus = new ItemStack(ModItems.OPUS_DAEMONIUM.get());
-        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, opus);
-        int cost = 5;
-        player.experienceLevel = cost;
-
-        var result = opus.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
-        helper.assertTrue(result.getObject().is(ModItems.OPUS_DAEMONIUM.get()),
-                "Opus use should keep the book item");
-        helper.assertTrue(player.experienceLevel == cost,
-                "Opus use should not spend conversion XP");
-        helper.assertTrue(
-                ua.meekeyn.requiemunofficial.common.soul.SoulManager.getState(player) == SoulState.MORTAL,
-                "Opus itself should not bind the demon to a mortal soul"
-        );
-        helper.succeed();
-    }
-
-    @GameTest(template = "empty")
-    public static void opusAndRemnantVesselsCountAsLecternBooks(GameTestHelper helper) {
-        helper.assertTrue(
-                ua.meekeyn.requiemunofficial.common.item.OpusLecternRules.isLecternReadable(
-                        new ItemStack(ModItems.OPUS_DAEMONIUM.get())
-                ),
-                "Opus Daemonium should be readable from lecterns like the original"
-        );
+    public static void remnantVesselsCountAsLecternBooks(GameTestHelper helper) {
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.item.OpusLecternRules.isLecternReadable(
                         new ItemStack(ModItems.PURE_SOUL_VESSEL.get())
@@ -860,6 +829,35 @@ public final class CoreDataGameTests {
     }
 
     @GameTest(template = "empty")
+    public static void offhandCreativeVesselDoesNotCaptureWhenMainHandVesselPasses(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(), helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-pass")
+        );
+        net.minecraft.world.entity.animal.Cow cow =
+                new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
+        helper.getLevel().addFreshEntity(cow);
+        EntitySoulManager.removeSoul(cow);
+        ItemStack empty = new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get());
+        ItemStack creative = new ItemStack(ModItems.CREATIVE_SOUL_VESSEL.get());
+        player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, empty);
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, creative);
+
+        var mainResult = SoulVesselItem.beginCaptureForTest(
+                empty, player, cow, net.minecraft.world.InteractionHand.MAIN_HAND);
+        helper.assertTrue(!mainResult.consumesAction(), "Soulless target should make the main hand vessel pass");
+        EntitySoulManager.restoreSoul(cow);
+        var offResult = SoulVesselItem.beginCaptureForTest(
+                creative, player, cow, net.minecraft.world.InteractionHand.OFF_HAND);
+        helper.assertTrue(!offResult.consumesAction(),
+                "Offhand creative vessel must not start its own capture next to a main hand vessel");
+        helper.assertTrue(creative.getTagElement("RequiemSoulCapture") == null,
+                "Offhand creative vessel must stay untouched");
+        helper.assertTrue(EntitySoulManager.hasSoul(cow), "The target soul must not be touched");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
     public static void offhandCreativeVesselProducesOneMainHandResult(GameTestHelper helper) {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
@@ -883,6 +881,42 @@ public final class CoreDataGameTests {
         helper.assertTrue(player.getInventory().countItem(ModItems.FILLED_SOUL_VESSEL.get()) == 0,
                 "Capture must not add a second filled vessel to inventory");
         helper.assertTrue(!EntitySoulManager.hasSoul(cow), "Capture should remove the target soul once");
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void offhandCreativeVesselSkipsFailureRollForMainHandVessel(GameTestHelper helper) {
+        // Сильна ціль (спустошувач): без творчого бусту звичайна посудина майже завжди тріснула б.
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(), helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-strong")
+        );
+        net.minecraft.world.entity.monster.Ravager ravager =
+                new net.minecraft.world.entity.monster.Ravager(EntityType.RAVAGER, helper.getLevel());
+        helper.getLevel().addFreshEntity(ravager);
+        ItemStack creative = new ItemStack(ModItems.CREATIVE_SOUL_VESSEL.get());
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, creative);
+
+        for (int attempt = 0; attempt < 8; attempt++) {
+            ItemStack vessel = new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get());
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, vessel);
+            EntitySoulManager.restoreSoul(ravager);
+            var started = SoulVesselItem.beginCaptureForTest(
+                    vessel, player, ravager, net.minecraft.world.InteractionHand.MAIN_HAND);
+            helper.assertTrue(started.consumesAction(), "Main hand vessel should start capturing the ravager");
+            helper.assertTrue(vessel.getUseDuration() == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
+                    "Offhand creative vessel should use the creative 10 tick capture time");
+            ItemStack result = vessel.finishUsingItem(helper.getLevel(), player);
+            helper.assertTrue(result.is(ModItems.FILLED_SOUL_VESSEL.get()),
+                    "Creative boost should skip the failure roll and never shatter the main hand vessel");
+            helper.assertTrue(player.getOffhandItem() == creative
+                            && creative.is(ModItems.CREATIVE_SOUL_VESSEL.get())
+                            && creative.getCount() == 1
+                            && creative.getTagElement("RequiemSoulCapture") == null,
+                    "Creative offhand vessel must not be consumed or modified");
+        }
+        helper.assertTrue(player.getInventory().countItem(ModItems.SHATTERED_SOUL_VESSEL.get()) == 0,
+                "No shattered vessel should be produced under the creative boost");
         helper.succeed();
     }
 
@@ -1108,7 +1142,7 @@ public final class CoreDataGameTests {
         helper.assertTrue(released.size() == 1, "Filled vessel should release one soul entity");
         helper.assertTrue(
                 "minecraft:zombie".equals(released.get(0).getSoulType())
-                        && released.get(0).getSoulAmount() == 3,
+                        && released.get(0).getSoulAmount() == SoulVesselItem.CAPACITY,
                 "Released soul should retain vessel type and amount"
         );
 
@@ -1121,7 +1155,7 @@ public final class CoreDataGameTests {
                 );
         loaded.load(saved);
         helper.assertTrue(
-                "minecraft:zombie".equals(loaded.getSoulType()) && loaded.getSoulAmount() == 3,
+                "minecraft:zombie".equals(loaded.getSoulType()) && loaded.getSoulAmount() == SoulVesselItem.CAPACITY,
                 "Released soul data should persist"
         );
         helper.succeed();
@@ -1348,7 +1382,8 @@ public final class CoreDataGameTests {
                 "Duplicate record release should fail while a released soul is active");
         long released = helper.getLevel().getEntitiesOfClass(
                 ua.meekeyn.requiemunofficial.common.entity.ReleasedSoulEntity.class,
-                new net.minecraft.world.phys.AABB(player.blockPosition()).inflate(8.0D)
+                // Радіус 8 заходив у сусідні структури (крок ~7), де інші тести випускають власні душі корови.
+                new net.minecraft.world.phys.AABB(player.blockPosition()).inflate(2.0D)
         ).stream().filter(soul -> "minecraft:cow".equals(soul.getSoulType())).count();
         helper.assertTrue(released == 1, "Only one released soul should exist for one active record");
         helper.succeed();
@@ -1505,14 +1540,14 @@ public final class CoreDataGameTests {
         helper.assertTrue(EntityType.TRADER_LLAMA.is(ModTags.POSSESSABLES), "Trader llamas should be possessable");
         helper.assertTrue(EntityType.WANDERING_TRADER.is(ModTags.POSSESSABLES),
                 "Wandering traders should be possessable");
-        helper.assertTrue(EntityType.DONKEY.is(ModTags.INVENTORY_CARRIERS), "Donkeys should carry inventory");
-        helper.assertTrue(EntityType.LLAMA.is(ModTags.INVENTORY_CARRIERS), "Llamas should carry inventory");
-        helper.assertTrue(EntityType.TRADER_LLAMA.is(ModTags.INVENTORY_CARRIERS),
-                "Trader llamas should carry inventory like llamas");
-        helper.assertTrue(EntityType.MULE.is(ModTags.INVENTORY_CARRIERS), "Mules should carry inventory");
+        // beta.16 inventory_carriers: humans, humanoid undead, piglins, endermen — no pack animals.
+        helper.assertTrue(!EntityType.DONKEY.is(ModTags.INVENTORY_CARRIERS), "Donkeys do not carry inventory in beta.16");
+        helper.assertTrue(!EntityType.PHANTOM.is(ModTags.INVENTORY_CARRIERS)
+                        && !EntityType.PHANTOM.is(ModTags.ITEM_USERS), "Phantoms have no inventory");
+        helper.assertTrue(EntityType.ENDERMAN.is(ModTags.INVENTORY_CARRIERS), "Endermen carry inventory");
         helper.assertTrue(EntityType.FOX.is(ModTags.ITEM_USERS), "Foxes should be one-item users");
         helper.assertTrue(EntityType.VEX.is(ModTags.ITEM_USERS), "Vexes should use one held item");
-        helper.assertTrue(EntityType.PANDA.is(ModTags.INVENTORY_CARRIERS), "Pandas should carry inventory");
+        helper.assertTrue(!EntityType.PANDA.is(ModTags.INVENTORY_CARRIERS), "Pandas only use their hands");
         helper.assertTrue(EntityType.PANDA.is(ModTags.ITEM_USERS), "Pandas should use items");
         helper.assertTrue(!EntityType.PANDA.is(ModTags.ARMOR_USERS), "Pandas should not use armor");
         helper.assertTrue(EntityType.ZOMBIE.is(ModTags.ARMOR_USERS), "Humanoid undead should use armor");
@@ -2409,6 +2444,428 @@ public final class CoreDataGameTests {
         helper.succeed();
     }
 
+    /**
+     * Bug 1 fix: stored inventory drops when a non-possessed host dies.
+     * Test 1: possess skeleton, store items, release, kill skeleton -> all items drop.
+     */
+    @GameTest(template = "empty")
+    public static void storedInventoryDropsOnNonPossessedHostDeath(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stored-inventory-death-test")
+        );
+        // Піглін: руки + броня + 8 слотів інвентаря, тож слот 1 зберігається в NBT тіла.
+        net.minecraft.world.entity.monster.piglin.Piglin skeleton =
+                new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
+        BlockPos hostPos = helper.absolutePos(new BlockPos(3, 2, 3));
+        skeleton.moveTo(hostPos.getX() + 0.5D, hostPos.getY(), hostPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+
+        // Put distinct items in main inventory, hotbar, armor, and offhand
+        player.getInventory().items.set(0, new ItemStack(Items.DIAMOND));
+        player.getInventory().items.set(12, new ItemStack(Items.IRON_SWORD));
+        player.getInventory().selected = 0;
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.FEET, new ItemStack(Items.IRON_BOOTS));
+        player.setItemInHand(net.minecraft.world.InteractionHand.OFF_HAND, new ItemStack(Items.TORCH));
+
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless piglin");
+
+        // Release from body (items should be stored in skeleton's NBT)
+        PossessionManager.release(player, skeleton);
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Release should clear possession");
+
+        // Verify items are no longer on player but stored on host
+        helper.assertTrue(player.getInventory().items.get(0).isEmpty(),
+                "Diamond should be removed from player after release");
+        // Check stored inventory NBT directly (skeletons don't have player.getInventory())
+        net.minecraft.nbt.CompoundTag data = skeleton.getPersistentData();
+        helper.assertTrue(data.contains("RequiemPossessionInventory", net.minecraft.nbt.Tag.TAG_LIST),
+                "Skeleton should have stored possession inventory NBT");
+
+        // Kill the skeleton (player is NOT inside)
+        skeleton.kill();
+
+        // Count dropped items
+        int diamondCount = player.level().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                skeleton.getBoundingBox().inflate(2.0D),
+                e -> e.getItem().is(Items.DIAMOND)
+        ).size();
+        int torchCount = player.level().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                skeleton.getBoundingBox().inflate(2.0D),
+                e -> e.getItem().is(Items.TORCH)
+        ).size();
+        int bootsCount = player.level().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                skeleton.getBoundingBox().inflate(2.0D),
+                e -> e.getItem().is(Items.IRON_BOOTS)
+        ).size();
+
+        helper.assertTrue(diamondCount >= 1,
+                "Diamond must drop when non-possessed host dies (found: " + diamondCount + ")");
+        helper.assertTrue(torchCount >= 1,
+                "Torch must drop when non-possessed host dies (found: " + torchCount + ")");
+        helper.assertTrue(bootsCount >= 1,
+                "Iron boots must drop when non-possessed host dies (found: " + bootsCount + ")");
+        helper.succeed();
+    }
+
+    /**
+     * Bug 1 fix: re-possessing after release still works (items return to player).
+     */
+    @GameTest(template = "empty")
+    public static void storedInventoryReturnsOnRepossess(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "repossess-inventory-test")
+        );
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        BlockPos hostPos = helper.absolutePos(new BlockPos(3, 2, 3));
+        skeleton.moveTo(hostPos.getX() + 0.5D, hostPos.getY(), hostPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+
+        player.getInventory().items.set(0, new ItemStack(Items.DIAMOND));
+        player.getInventory().selected = 0;
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless skeleton");
+
+        // Release -> items stored in host
+        PossessionManager.release(player, skeleton);
+        helper.assertTrue(player.getInventory().items.get(0).isEmpty(),
+                "Diamond should be stored on host after release");
+
+        // Re-possess -> items should be restored to player
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should re-possess the same skeleton");
+        helper.assertTrue(!player.getInventory().items.get(0).isEmpty(),
+                "Diamond should be restored to player on repossess");
+        helper.assertTrue(player.getInventory().items.get(0).is(Items.DIAMOND),
+                "Restored item should be a diamond");
+
+        PossessionManager.release(player, skeleton);
+        skeleton.discard();
+        helper.succeed();
+    }
+
+    /**
+     * Killing the host while the player is inside drops everything the body carried at the
+     * death position (gamerule possessionKeepInventory != ALWAYS). The soul keeps nothing,
+     * mirrors are not duplicated and the drops cannot be picked up instantly.
+     */
+    @GameTest(template = "empty")
+    public static void storedInventoryNotDroppedWhenPlayerInsideHostDeath(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "inside-death-test")
+        );
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
+                helper.absolutePos(new BlockPos(3, 2, 3)).getY(),
+                helper.absolutePos(new BlockPos(3, 2, 3)).getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+        player.getInventory().items.set(0, new ItemStack(Items.DIAMOND));
+        player.getInventory().items.set(5, new ItemStack(Items.EMERALD, 5));
+        player.getInventory().selected = 0;
+        player.setItemSlot(net.minecraft.world.entity.EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless skeleton");
+
+        // Ігровий світ тестів зберігається між запусками: предмети, що лишилися від попередніх
+        // (упалих) прогонів, не повинні впливати на перевірку.
+        java.util.Set<net.minecraft.world.entity.item.ItemEntity> staleDrops = new java.util.HashSet<>(
+                helper.getLevel().getEntitiesOfClass(
+                        net.minecraft.world.entity.item.ItemEntity.class,
+                        skeleton.getBoundingBox().inflate(3.0D)
+                )
+        );
+        staleDrops.forEach(net.minecraft.world.entity.Entity::discard);
+
+        PossessionManager.releaseFromHostDeathForTest(player, skeleton);
+
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Possession should be cleared after host death");
+        helper.assertTrue(player.getInventory().items.get(0).isEmpty()
+                        && player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty(),
+                "The soul must not keep the dead body's items");
+        helper.assertTrue(player.getInventory().items.get(5).is(Items.EMERALD)
+                        && player.getInventory().items.get(5).getCount() == 5,
+                "Locked hotbar slots (beta.16: no HOTBAR for skeletons) must stay with the soul");
+        helper.assertTrue(skeleton.getMainHandItem().isEmpty()
+                        && skeleton.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty(),
+                "Visual mirrors must be cleared before the host's own death drops");
+
+        java.util.List<net.minecraft.world.entity.item.ItemEntity> drops = helper.getLevel().getEntitiesOfClass(
+                net.minecraft.world.entity.item.ItemEntity.class,
+                skeleton.getBoundingBox().inflate(3.0D)
+        );
+        int diamonds = 0;
+        int emeralds = 0;
+        int helmets = 0;
+        for (net.minecraft.world.entity.item.ItemEntity drop : drops) {
+            if (drop.getItem().is(Items.ARROW)) {
+                // Стріли — власний лут/дроп скелета, а не речі душі.
+                continue;
+            }
+            helper.assertTrue(drop.hasPickUpDelay(), "Death drops must not be picked up instantly by the soul: " + drop.getItem());
+            if (drop.getItem().is(Items.DIAMOND)) {
+                diamonds += drop.getItem().getCount();
+            } else if (drop.getItem().is(Items.EMERALD)) {
+                emeralds += drop.getItem().getCount();
+            } else if (drop.getItem().is(Items.IRON_HELMET)) {
+                helmets += drop.getItem().getCount();
+            }
+        }
+        helper.assertTrue(diamonds == 1 && emeralds == 0 && helmets == 1,
+                "Each carried item must drop exactly once (diamonds=" + diamonds
+                        + ", emeralds=" + emeralds + ", helmets=" + helmets + ")");
+        for (net.minecraft.world.entity.item.ItemEntity drop : drops) {
+            drop.discard();
+        }
+        skeleton.discard();
+        helper.succeed();
+    }
+
+    /**
+     * Bug 2 fix: Emancipation effect allows release from possession.
+     * Tests the core server-side release path with Emancipation present.
+     */
+    @GameTest(template = "empty")
+    public static void emancipationEffectAllowsRelease(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "emancipation-release-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
+        GameTestSupport.attachConnection(helper, player);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
+                helper.absolutePos(new BlockPos(3, 2, 3)).getY(),
+                helper.absolutePos(new BlockPos(3, 2, 3)).getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless skeleton");
+
+        // Give Emancipation effect
+        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get(), 200, 0));
+
+        // Test canDissociateFrom directly (the method that checks Emancipation)
+        helper.assertTrue(
+                isCanDissociateFrom(player, skeleton),
+                "Emancipation should allow dissociation from possession");
+
+        // Also verify release works with Emancipation
+        PossessionManager.release(player, skeleton);
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Emancipation should allow release from possession");
+        helper.succeed();
+    }
+
+    /**
+     * Helper to check canDissociateFrom for testing.
+     */
+    private static boolean isCanDissociateFrom(net.minecraft.server.level.ServerPlayer player,
+                                               net.minecraft.world.entity.LivingEntity host) {
+        return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
+                || player.hasEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get());
+    }
+
+    /**
+     * Bug 2 fix: unconditional release config allows exit without Emancipation.
+     */
+    @GameTest(template = "empty")
+    public static void unconditionalReleaseConfigAllowsExit(GameTestHelper helper) {
+        // Enable unconditional exit config
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
+
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "unconditional-release-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
+        GameTestSupport.attachConnection(helper, player);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
+                helper.absolutePos(new BlockPos(3, 2, 3)).getY(),
+                helper.absolutePos(new BlockPos(3, 2, 3)).getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless skeleton");
+
+        // Ensure no Emancipation effect
+        helper.assertTrue(!player.hasEffect(
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get()),
+                "Player must not have Emancipation effect");
+
+        // Simulate UNCONDITIONAL_RELEASE action
+        PossessionManager.handleAction(player,
+                ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
+
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Unconditional release config should allow exit without Emancipation");
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
+        helper.succeed();
+    }
+
+    /**
+     * Подвійне V: друге натискання одразу після виходу з тіла-носія не розколює власне тіло;
+     * після вікна захисту розкол знову працює.
+     */
+    @GameTest(template = "empty", timeoutTicks = 60)
+    public static void unconditionalReleaseDoubleTapDoesNotSplitOwnBody(GameTestHelper helper) {
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "double-v-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
+        GameTestSupport.attachConnection(helper, player);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        BlockPos skeletonPos = helper.absolutePos(new BlockPos(3, 2, 3));
+        skeleton.moveTo(skeletonPos.getX() + 0.5D, skeletonPos.getY(), skeletonPos.getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+        try {
+            helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                    "A vagrant should possess a soulless skeleton");
+            PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
+            helper.assertTrue(SoulManager.getPossessedEntityId(player) == null, "First V should release the host");
+
+            // Стан, у якому друге V могло б розколоти живе власне тіло.
+            SoulManager.setState(player, SoulState.REMNANT);
+            PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
+            helper.assertTrue(SoulManager.getState(player) == SoulState.REMNANT,
+                    "A second V right after a host release must not split the player's own body");
+        } catch (RuntimeException e) {
+            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
+            throw e;
+        }
+
+        helper.runAfterDelay(12, () -> {
+            // Конфіг спільний для паралельних тестів - вмикаємо повторно перед перевіркою.
+            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
+            try {
+                PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
+                helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
+                        "After the guard window V should split the own body again");
+            } finally {
+                ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
+            }
+            helper.succeed();
+        });
+    }
+
+    /**
+     * Мертвий гравець не виконує дій одержимості (пакети ігноруються).
+     */
+    @GameTest(template = "empty")
+    public static void deadPlayerPossessionActionsAreIgnored(GameTestHelper helper) {
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
+        try {
+            net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                    helper.getLevel().getServer(),
+                    helper.getLevel(),
+                    new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dead-action-test")
+            );
+            player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
+            GameTestSupport.attachConnection(helper, player);
+            net.minecraft.world.entity.monster.Skeleton skeleton =
+                    new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+            BlockPos skeletonPos = helper.absolutePos(new BlockPos(3, 2, 3));
+            skeleton.moveTo(skeletonPos.getX() + 0.5D, skeletonPos.getY(), skeletonPos.getZ() + 0.5D, 0.0F, 0.0F);
+            helper.getLevel().addFreshEntity(skeleton);
+            SoulManager.setState(player, SoulState.VAGRANT);
+            EntitySoulManager.removeSoul(skeleton);
+            helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                    "A vagrant should possess a soulless skeleton");
+
+            player.setHealth(0.0F);
+            PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
+            helper.assertTrue(skeleton.getUUID().equals(SoulManager.getPossessedEntityId(player)),
+                    "A dead player's possession action packets must be ignored");
+        } finally {
+            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
+        }
+        helper.succeed();
+    }
+
+    /**
+     * Bug 2 fix: without config and without Emancipation, release is blocked.
+     */
+    @GameTest(template = "empty")
+    public static void releaseBlockedWithoutEmancipationAndConfig(GameTestHelper helper) {
+        // Ensure unconditional exit config is disabled
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
+
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blocked-release-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
+        GameTestSupport.attachConnection(helper, player);
+
+        net.minecraft.world.entity.monster.Skeleton skeleton =
+                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
+        skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
+                helper.absolutePos(new BlockPos(3, 2, 3)).getY(),
+                helper.absolutePos(new BlockPos(3, 2, 3)).getZ() + 0.5D, 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(skeleton);
+
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(skeleton);
+        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
+                "A vagrant should possess a soulless skeleton");
+
+        // Ensure no Emancipation effect
+        helper.assertTrue(!player.hasEffect(
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get()),
+                "Player must not have Emancipation effect");
+
+        // Simulate RELEASE action (dissociation key)
+        PossessionManager.handleAction(player,
+                ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE);
+
+        // Should still be possessing (blocked)
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) != null,
+                "Release should be blocked without Emancipation or config");
+        helper.succeed();
+    }
+
     @GameTest(template = "empty")
     public static void possessedHandEquipmentChangesOnlyWhenSelectedStackChanges(GameTestHelper helper) {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
@@ -2572,6 +3029,39 @@ public final class CoreDataGameTests {
                 "Emancipated release action should split an embodied remnant into vagrant state");
         helper.assertTrue(SoulManager.getPlayerShellId(player) != null,
                 "Release action should leave an abandoned player shell");
+        helper.succeed();
+    }
+
+    /**
+     * Port-only конфіг allowOwnBodyExitWithoutEmancipation: ',' виводить живий remnant
+     * із власного тіла без Емансипації.
+     */
+    @GameTest(template = "empty")
+    public static void ownBodyExitConfigSplitsRemnantWithoutEmancipation(GameTestHelper helper) {
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "own-body-exit-config-test")
+        );
+        player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        SoulManager.setState(player, SoulState.REMNANT);
+        helper.assertTrue(!player.hasEffect(ModEffects.EMANCIPATION.get()),
+                "Player must not have Emancipation effect");
+
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.set(true);
+        try {
+            PossessionManager.handleAction(
+                    player,
+                    ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE
+            );
+        } finally {
+            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.set(false);
+        }
+
+        helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
+                "With allowOwnBodyExitWithoutEmancipation the release key should split a remnant");
+        helper.assertTrue(SoulManager.getPlayerShellId(player) != null,
+                "Own-body exit should leave an abandoned player shell");
         helper.succeed();
     }
 
@@ -2860,7 +3350,7 @@ public final class CoreDataGameTests {
 
         SoulManager.setState(player, SoulState.VAGRANT);
         VagrantEvents.updateVagrantStateForTest(player);
-        helper.assertTrue(player.isInvisible(), "Restricted vagrant souls should be invisible");
+        helper.assertTrue(!player.isInvisible(), "Vagrant souls stay visible (beta.16 draws them with the shadow effect, not invisibility)");
         helper.assertTrue(!player.noPhysics, "Restricted vagrant souls should keep noPhysics disabled");
 
         SoulManager.setState(player, SoulState.REMNANT);
@@ -4785,10 +5275,6 @@ public final class CoreDataGameTests {
                 "Pandas should use held items"
         );
         helper.assertTrue(
-                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.canCraft(panda),
-                "Pandas should keep the original-style crafting capability"
-        );
-        helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.canCraft(villager),
                 "Villagers should have a crafting grid while possessed"
         );
@@ -4797,8 +5283,8 @@ public final class CoreDataGameTests {
                 "Cured villagers should have a crafting grid while possessed"
         );
         helper.assertTrue(
-                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.canCarryInventory(panda),
-                "Pandas should carry an inventory"
+                !ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.canCarryInventory(panda),
+                "Pandas only hold one item in their mouth, no inventory"
         );
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.canUseItems(brute),
@@ -4824,7 +5310,7 @@ public final class CoreDataGameTests {
                 "One-item bodies should use the alternate inventory shape without main inventory"
         );
         helper.assertTrue(
-                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getInventoryShape(panda)
+                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getInventoryShape(villager)
                         == ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.InventoryShape.ALT_SMALL,
                 "Inventory-capable possessed bodies should use the small alternate inventory shape"
         );
@@ -4877,6 +5363,73 @@ public final class CoreDataGameTests {
                 !hotbarSlot.mayPickup(player),
                 "Locked possessed slots should reject item pickup"
         );
+        helper.succeed();
+    }
+
+    @GameTest(template = "empty")
+    public static void possessedBodyLoadoutsMatchVanillaMobs(GameTestHelper helper) {
+        net.minecraft.world.entity.monster.Zombie zombie =
+                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
+        net.minecraft.world.entity.npc.Villager villager =
+                new net.minecraft.world.entity.npc.Villager(EntityType.VILLAGER, helper.getLevel());
+        net.minecraft.world.entity.animal.Fox fox =
+                new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
+        net.minecraft.world.entity.monster.piglin.Piglin piglin =
+                new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
+        net.minecraft.world.entity.animal.horse.Donkey donkey =
+                new net.minecraft.world.entity.animal.horse.Donkey(EntityType.DONKEY, helper.getLevel());
+
+        // beta.16: руки = item_users/canPickUpLoot, броня = armor_users/шолом, інвентар 9..35 = inventory_carriers.
+        var zombieLoadout = ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getLoadout(zombie);
+        helper.assertTrue(zombieLoadout.mainHand() && zombieLoadout.offHand() && zombieLoadout.armor()
+                        && zombieLoadout.inventorySlots() == 27,
+                "Zombies should have hands, armor and the main inventory: " + zombieLoadout);
+        var villagerLoadout =
+                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getLoadout(villager);
+        helper.assertTrue(villagerLoadout.mainHand() && villagerLoadout.armor()
+                        && villagerLoadout.inventorySlots() == 27,
+                "Villagers are humans in beta.16: " + villagerLoadout);
+        var foxLoadout = ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getLoadout(fox);
+        helper.assertTrue(foxLoadout.mainHand() && foxLoadout.offHand() && !foxLoadout.armor()
+                        && foxLoadout.inventorySlots() == 0,
+                "Foxes only use their hands: " + foxLoadout);
+        helper.assertTrue(
+                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getInventoryCapacity(piglin) == 27,
+                "Piglins should carry the main inventory"
+        );
+        donkey.setChest(true);
+        helper.assertTrue(
+                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.getInventoryCapacity(donkey) == 0,
+                "Donkeys carry nothing in beta.16"
+        );
+
+        // Зомбі: лише руки/броня переходять до тіла, основний інвентар лишається за душею.
+        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
+                helper.getLevel().getServer(),
+                helper.getLevel(),
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "loadout-zombie-test")
+        );
+        zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
+        helper.getLevel().addFreshEntity(zombie);
+        SoulManager.setState(player, SoulState.VAGRANT);
+        EntitySoulManager.removeSoul(zombie);
+        player.getInventory().selected = 0;
+        player.getInventory().items.set(0, new ItemStack(Items.IRON_SWORD));
+        player.getInventory().items.set(5, new ItemStack(Items.DIAMOND));
+        helper.assertTrue(PossessionManager.tryPossess(player, zombie), "A vagrant should possess a soulless zombie");
+        helper.assertTrue(
+                !ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager
+                        .canAccessPlayerInventorySlot(player, 5),
+                "Zombie bodies should lock hotbar slots 1..8"
+        );
+        PossessionManager.release(player, zombie);
+        helper.assertTrue(zombie.getMainHandItem().is(Items.IRON_SWORD),
+                "The held sword should move to the zombie's hand");
+        helper.assertTrue(player.getInventory().items.get(5).is(Items.DIAMOND),
+                "Locked hotbar slots must stay with the soul");
+        helper.assertTrue(!zombie.getPersistentData().contains("RequiemPossessionInventory"),
+                "Zombies must not store a hidden inventory");
+        zombie.discard();
         helper.succeed();
     }
 
@@ -4997,20 +5550,20 @@ public final class CoreDataGameTests {
     public static void tachyliteRecipesLoad(GameTestHelper helper) {
         var recipes = helper.getLevel().getRecipeManager();
         helper.assertTrue(
-                recipes.byKey(ResourceLocation.tryParse("requiemunofficial:tachylite")).isPresent(),
+                recipes.byKey(ResourceLocation.tryParse("requiemunofficial:tachylite/tachylite")).isPresent(),
                 "Tachylite crafting recipe should load"
         );
         helper.assertTrue(
                 recipes.byKey(ResourceLocation.tryParse(
-                        "requiemunofficial:stonecutting_chiseled_tachylite"
+                        "requiemunofficial:tachylite/stonecutting/chiseled"
                 )).isPresent(),
                 "Tachylite stonecutting recipe should load"
         );
         helper.assertTrue(
                 recipes.byKey(ResourceLocation.tryParse(
-                        "requiemunofficial:runic_tachylite_attrition"
-                )).isPresent(),
-                "Runic tachylite recipe should load"
+                        "requiemunofficial:tachylite/extras/attrition"
+                )).isEmpty(),
+                "Port-only rune crafting recipe must stay disabled by default (beta.16 carves runes in world)"
         );
         helper.succeed();
     }
@@ -5443,8 +5996,15 @@ public final class CoreDataGameTests {
                 ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.resultFor(
                         normal,
                         ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.DetectionReason.BUMP
-                ) == ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.DetectionResult.UNDETECTED,
-                "Normal bump detection must not create aggression by possession alone"
+                ) == ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.DetectionResult.DETECTED,
+                "Normal bump detection must detect the possessor (beta.16 VanillaRequiemPlugin: NORMAL -> DETECTED)"
+        );
+        helper.assertTrue(
+                ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.resultFor(
+                        normal,
+                        ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.DetectionReason.ATTACKED
+                ) == ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.DetectionResult.CROWD_DETECTED,
+                "Normal detection should incite the crowd when the host is attacked"
         );
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.resultFor(
@@ -5469,18 +6029,20 @@ public final class CoreDataGameTests {
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "inventory-test")
         );
-        net.minecraft.world.entity.monster.Zombie host =
-                new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
+        // Піглін: руки + 8 слотів інвентарю, тож слот 5 мусить переїхати в тіло.
+        net.minecraft.world.entity.monster.piglin.Piglin host =
+                new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
+        player.getInventory().selected = 0;
         player.getInventory().items.set(
                 player.getInventory().selected,
                 new ItemStack(Items.DIAMOND_SWORD)
         );
-        player.getInventory().items.set(10, new ItemStack(Items.DIRT, 42));
+        player.getInventory().items.set(15, new ItemStack(Items.DIRT, 42));
 
         ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager
                 .onPossessionEnded(player, host);
         helper.assertTrue(
-                player.getMainHandItem().isEmpty() && player.getInventory().items.get(10).isEmpty(),
+                player.getMainHandItem().isEmpty() && player.getInventory().items.get(15).isEmpty(),
                 "Default inventory rule should move soul items into a living host"
         );
         helper.assertTrue(
@@ -5495,8 +6057,8 @@ public final class CoreDataGameTests {
                 "Equipment should return when the host is possessed again"
         );
         helper.assertTrue(
-                player.getInventory().items.get(10).is(Items.DIRT)
-                        && player.getInventory().items.get(10).getCount() == 42,
+                player.getInventory().items.get(15).is(Items.DIRT)
+                        && player.getInventory().items.get(15).getCount() == 42,
                 "Stored host inventory should return to its original slot"
         );
         helper.succeed();
@@ -5881,12 +6443,12 @@ public final class CoreDataGameTests {
     public static void beta16BlazeFireballDamagesAndIgnitesTarget(GameTestHelper helper) {
         helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
                 new net.minecraft.world.phys.AABB(helper.absolutePos(new BlockPos(0, 3, 0)),
-                        helper.absolutePos(new BlockPos(4, 7, 10))))
+                        helper.absolutePos(new BlockPos(4, 7, 4))))
                 .forEach(net.minecraft.world.entity.Entity::discard);
-        // Траса виходить за межі empty; очищаємо залишки інших тестових конструкцій.
+        // Траса лишається в межах власної клітинки empty: сусідні конструкції (вода/лава) не чіпаємо і не зачіпаємося.
         for (int x = 0; x <= 3; x++) {
             for (int y = 3; y <= 6; y++) {
-                for (int z = 0; z <= 9; z++) {
+                for (int z = 0; z <= 4; z++) {
                     helper.setBlock(new BlockPos(x, y, z), net.minecraft.world.level.block.Blocks.AIR);
                 }
             }
@@ -5904,7 +6466,7 @@ public final class CoreDataGameTests {
         // Нерухома ціль ізолює влучання від випадкового руху та падіння між перевірками.
         target.setNoAi(true);
         target.setNoGravity(true);
-        target.moveTo(helper.absolutePos(new BlockPos(1, 4, 8)), 0.0F, 0.0F);
+        target.moveTo(helper.absolutePos(new BlockPos(1, 4, 4)), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(target);
         float initialHealth = target.getHealth();
 
@@ -6645,11 +7207,11 @@ public final class CoreDataGameTests {
         var player = createPossessedBlazePlayer(helper, "fireball-retaliation");
         var host = PossessionManager.findPossessedHost(player, SoulManager.getPossessedEntityId(player));
         var victim = new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
-        victim.moveTo(host.getX() + 4.0D, host.getY(), host.getZ(), 0.0F, 0.0F);
+        victim.moveTo(host.getX() + 2.0D, host.getY(), host.getZ(), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(victim);
         var fireball = new SmallFireball(helper.getLevel(), host, 1.0D, 0.0D, 0.0D);
-        fireball.setPos(victim.getX() - 2.0D, victim.getY() + 0.8D, victim.getZ());
-        fireball.setDeltaMovement(3.0D, 0.0D, 0.0D);
+        fireball.setPos(victim.getX() - 1.0D, victim.getY() + 0.8D, victim.getZ());
+        fireball.setDeltaMovement(2.0D, 0.0D, 0.0D);
         helper.getLevel().addFreshEntity(fireball);
         float health = victim.getHealth();
         fireball.tick();

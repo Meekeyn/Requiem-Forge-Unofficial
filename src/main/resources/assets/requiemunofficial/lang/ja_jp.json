@@ -184,7 +184,6 @@
   "entity.requiem.mortician": " 死亡者管理担当者",
   "entity.requiem.player_shell": " プレイヤーシェル",
   "item.requiem.totem_of_skeletonization": " 骨格化のトーテム",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
   "item.requiem.empty_soul_vessel": " 空のソウルビークル",
   "item.requiem.creative_soul_vessel": " クリエイティブソウルビークル",
   "item.requiem.filled_soul_vessel": " 満たされたソウルビークル",
@@ -230,5 +229,13 @@
   "stat.requiem.interact_with_rift": "[Requiem] オベリスクリフトとの相互作用",
   "requiem.message.peaceful_despawn": "このホストはこのような平和な世界には属さないかもしれません",
   "ritual.requiem.ritual.decay_zombie": " ゾンビの腐敗",
-  "ritual.requiem.ritual.decay_skeleton": " スケルトンの腐敗"
+  "ritual.requiem.ritual.decay_skeleton": " スケルトンの腐敗",
+  "block.requiemunofficial.tachylite.tachylite_slab": " タキライトの slab",
+  "block.requiemunofficial.tachylite.tachylite_stairs": " タキライトの階段",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }

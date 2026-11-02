@@ -103,9 +103,13 @@ public abstract class InventoryScreenMixin extends EffectRenderingInventoryScree
             graphics.blit(INVENTORY_SLOTS, x + 97, y + 17, 97, 17, 75, 36);
         }
         if (PossessionInventoryManager.canCarryInventory(host)) {
-            graphics.blit(INVENTORY_SLOTS, x + 7, y + 83, 7, 83, 162, 76);
-        } else if (PossessionInventoryManager.canCarryHotbar(host)) {
+            graphics.blit(INVENTORY_SLOTS, x + 7, y + 83, 7, 83, 162, 54);
+        }
+        if (PossessionInventoryManager.canCarryHotbar(host)) {
             graphics.blit(INVENTORY_SLOTS, x + 7, y + 141, 7, 141, 162, 18);
+        } else if (PossessionInventoryManager.canUseItems(host)) {
+            // Без хотбара тіло тримає предмет лише в слоті 0.
+            graphics.blit(INVENTORY_SLOTS, x + 7, y + 141, 7, 141, 18, 18);
         }
     }
 

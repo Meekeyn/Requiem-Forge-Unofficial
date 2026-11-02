@@ -35,15 +35,35 @@ public final class SkeletonSpiderRidingEvents {
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onEntityInteract(PlayerInteractEvent.EntityInteract event) {
-        if (event.getLevel().isClientSide()
-                || event.getHand() != InteractionHand.MAIN_HAND
-                || !(event.getEntity() instanceof ServerPlayer player)
-                || !(event.getTarget() instanceof Spider spider)) {
+        if (!(event.getTarget() instanceof Spider spider)) {
+            return;
+        }
+        if (event.getLevel().isClientSide()) {
+            // Client mirror: a possessed skeleton's click on a spider is a mount request only. Never
+            // let it fall through to the held item (e.g. a soul vessel starting its capture channel
+            // with ENTITY_DUST every tick) or to the off hand. Persistent data is not synced, so the
+            // local check uses the possessed host's type.
+            if (isLocalPossessedSkeleton(event.getEntity())) {
+                event.setCanceled(true);
+                event.setCancellationResult(InteractionResult.CONSUME);
+            }
+            return;
+        }
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
 
         LivingEntity host = possessedSkeletonHost(player);
-        if (host == null || host.isPassenger() || !spider.getPassengers().isEmpty()) {
+        if (host == null) {
+            return;
+        }
+        // From here on the click is always consumed (both hands, success or failure), so it can
+        // never reach the item interaction / vanilla Mob#interact path.
+        event.setCanceled(true);
+        event.setCancellationResult(InteractionResult.FAIL);
+        if (event.getHand() != InteractionHand.MAIN_HAND
+                || host.isPassenger()
+                || !spider.getPassengers().isEmpty()) {
             return;
         }
 
@@ -52,11 +72,28 @@ public final class SkeletonSpiderRidingEvents {
         if (spider.getTarget() == host) {
             return;
         }
+        // Павук, яким керує інший одержимий гравець, не осідлується.
+        if (PossessedMountRules.isPossessedVehicle(spider)) {
+            return;
+        }
 
         if (host.startRiding(spider, true)) {
-            event.setCanceled(true);
             event.setCancellationResult(InteractionResult.CONSUME);
         }
+    }
+
+    private static boolean isLocalPossessedSkeleton(net.minecraft.world.entity.player.Player player) {
+        UUID hostId = SoulManager.getPossessedEntityId(player);
+        if (hostId == null) {
+            return false;
+        }
+        for (LivingEntity candidate : player.level().getEntitiesOfClass(
+                LivingEntity.class,
+                player.getBoundingBox().inflate(16.0D),
+                entity -> hostId.equals(entity.getUUID()))) {
+            return candidate.getType().is(ModTags.HUMANOID_SKELETONS);
+        }
+        return false;
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)

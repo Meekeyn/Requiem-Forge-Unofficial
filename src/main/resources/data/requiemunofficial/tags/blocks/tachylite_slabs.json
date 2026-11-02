@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "requiemunofficial:tachylite/chiseled_slab",
-    {"id": "requiemunofficial:tachylite/tachylite_slab", "required": false}
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:tachylite_slabs", "required": false}]}

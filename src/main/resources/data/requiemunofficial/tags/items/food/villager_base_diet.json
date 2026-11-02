@@ -1,11 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:food/baked_goods",
-    {
-      "id": "#origins:ignore_diet",
-      "required": false
-    }
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:food/villager_base_diet", "required": false}]}

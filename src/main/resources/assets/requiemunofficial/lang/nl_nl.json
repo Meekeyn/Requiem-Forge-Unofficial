@@ -11,12 +11,9 @@
   "requiemunofficial:advancements.requiem.makeshift_makeover.description": "Vervang ieder bot van een Wither Skelet",
   "requiemunofficial:advancements.adventure.the_choice.title": "Een duivels raadsel",
   "requiemunofficial:advancements.adventure.the_choice.description": "Kies tussen een normaal leven en een bizar bestaan",
-
   "requiemunofficial:argument.entity.options.possessor.description": "Entiteiten bezeten door",
-
   "requiemunofficial:remnant_type.requiem.mortal.name": "Sterveling",
   "requiemunofficial:remnant_type.requiem.remnant.name": "Overblijfsel",
-
   "requiemunofficial:commands.query.success.other": "%2$s is %1$s",
   "requiemunofficial:commands.query.success.self": "Jij bent %s",
   "requiemunofficial:commands.ethereal.set.fail.mortal": "%s's bestaan veranderen mislukt omdat ze Sterveling zijn",
@@ -37,11 +34,9 @@
   "requiemunofficial:commands.possession.start.success.self": "%s is nu bezeten",
   "requiemunofficial:commands.possession.stop.success.other": "%s bezit %s niet meer",
   "requiemunofficial:commands.possession.stop.success.self": "%s is niet meer bezeten",
-
   "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
   "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
   "requiemunofficial:opus.wanderer_sentence": "Ad Vitam Vagrate",
-
   "requiemunofficial:dialogue.first_contact.introduction.text": "Je hoort een stem tegen je praten, maar je weet niet precies waar het vandaan komt.",
   "requiemunofficial:dialogue.first_contact.introduction.explain": "Wat is er aan de hand?",
   "requiemunofficial:dialogue.first_contact.introduction.yes": "Maak mij nu een demoon.",
@@ -56,13 +51,11 @@
   "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Weet je zeker dat je mens wilt blijven?",
   "requiemunofficial:dialogue.first_contact.final_confirm": "Bevestigen",
   "requiemunofficial:dialogue.first_contact.final_doubt": "Ga terug",
-
   "requiemunofficial:subtitles.effect.become.mortal": "Sterfelijk worden",
   "requiemunofficial:subtitles.effect.become.remnant": "Een demoon worden",
   "requiemunofficial:subtitles.effect.phasing": "Speler Fasering",
   "requiemunofficial:subtitles.effect.possession.attempt": "Bezits Poging",
   "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
-
   "requiemunofficial:tooltip.ammo_generator": "Munitie Generatie",
   "requiemunofficial:tooltip.bolt_hoarder": "Pijlen Bewaarder",
   "requiemunofficial:tooltip.bony_prosthesis": "Bottige Prothese",
@@ -80,7 +73,6 @@
   "requiemunofficial:tooltip.villager_food": "Vegetarisch",
   "requiemunofficial:tooltip.witch_food": "Heksen Dieet",
   "requiemunofficial:tooltip.zombie_food": "Zombie Snack",
-
   "config.requiem.title": "Requiem Configuratie Menu",
   "config.requiem.graphics": "Grafisch",
   "config.requiem.fancy_demon_render": "Fraaie demoon render",
@@ -89,10 +81,8 @@
   "config.requiem.more_info.datapacks": "Data Pakketen",
   "config.requiem.more_info.gamerules": "Spelregels",
   "config.requiem.more_info.official_doc": "de officiele documentatie op de Ladysnake website",
-
   "death.attack.requiem.attrition.hardcore": "%1$s werd tot rust gebracht, voor altijd.",
   "death.attack.requiem.attrition.hardcore.player": "%2$s heeft %1$s tot rust gebracht, voor altijd.",
-
   "gamerule.requiemunofficial:showPossessorNameTag": "(Requiem) Laat bezitters hun naam zien",
   "gamerule.requiemunofficial:showPossessorNameTag.description": "Laat de naam zien van spelers die entiteiten bezitten",
   "gamerule.requiemunofficial:disableCure": "(Requiem) Zet genezing uit",
@@ -102,23 +92,16 @@
   "gamerule.requiemunofficial:startingRemnantType": "(Requiem) Overblijfsel Type",
   "gamerule.requiemunofficial:startingRemnantType.description": "Vervangt de keuze als een speler dood gaat tussen demoon and sterveling",
   "gamerule.requiemunofficial:possessionKeepInventory": "(Requiem) Hou inventaris         nadat bezitting stopt",
-
   "effect.requiem.attrition": "Uitputting",
-
   "enchantment.requiem.humanity": "De Mensheid",
-
   "key.categories.requiemunofficial": "Requiem",
   "key.requiem.dissociation": "[Requiem] Uiteenval",
   "requiemunofficial:shulker.onboard": "Druk %s of %s in om uiteen te vallen",
   "requiemunofficial:dissociate_hint": "Druk %s in om uiteen te vallen",
   "requiemunofficial:possess.incompatible_body": "Dit lichaam is niet verenigbaar met jouw ziel",
-
   "entity.requiem.cured_piglin": "Pigman",
   "entity.requiem.cured_piglin_brute": "Pigman Bruut",
-
   "item.requiem.totem_of_skeletonization": "Totem der Skelettonizatie",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
-
   "origins:layer.requiem.soul_type.name": "Ziel Type",
   "origins:layer.requiem.soul_type.missing_origin.name": "Missend",
   "origins:layer.requiem.soul_type.missing_origin.description": "Je hebt geen Ziel Type.",
@@ -143,6 +126,13 @@
   "origins:power.requiem.banished.name": "Verbannen",
   "origins:power.requiem.banished.description": "Je kunt geen nieuw menselijk lichaam krijgen door andere wezens te genezen.",
   "origins:power.requiem.mortal.name": "Herspawn",
-  "origins:power.requiem.mortal.description": "Wanneer je doodgaat, en als alles goed gaat, zul je respawnen bij je laatste rustplaats met een nieuw lichaam."
+  "origins:power.requiem.mortal.description": "Wanneer je doodgaat, en als alles goed gaat, zul je respawnen bij je laatste rustplaats met een nieuw lichaam.",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Tachylite Slab",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Tachylite Stairs",
+  "origins:power.requiemunofficial.banished.name": "Verbannen",
+  "origins:power.requiemunofficial.banished.description": "Je kunt geen nieuw menselijk lichaam krijgen door andere wezens te genezen.",
+  "origins:power.requiemunofficial.soul_mending.name": "Ziels Herstel",
+  "origins:power.requiemunofficial.soul_mending.description": "Je Ziel langzaam herstelt zichzelf tijdens bezittingen.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }
-

@@ -1,9 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:villagers",
-    "minecraft:fox",
-    "minecraft:cat"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:behavior/regular_sleepers", "required": false}]}

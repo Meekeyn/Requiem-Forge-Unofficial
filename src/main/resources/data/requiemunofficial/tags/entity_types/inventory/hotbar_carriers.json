@@ -1,4 +1,1 @@
-{
-  "replace": false,
-  "values": []
-}
+{"replace": false, "values": [{"id": "#requiem:inventory/hotbar_carriers", "required": false}]}

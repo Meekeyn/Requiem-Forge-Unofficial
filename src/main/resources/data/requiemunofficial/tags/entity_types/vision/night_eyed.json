@@ -1,9 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:undead",
-    "minecraft:glow_squid",
-    "minecraft:bat"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:vision/night_eyed", "required": false}]}

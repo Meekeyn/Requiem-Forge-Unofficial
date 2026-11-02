@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:pork",
-    "#requiemunofficial:food/golden"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:food/piglin_diet", "required": false}]}

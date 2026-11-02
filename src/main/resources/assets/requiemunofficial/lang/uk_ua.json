@@ -17,12 +17,9 @@
   "requiemunofficial:advancements.requiem.piglin_seppukku.description": "Змусь зомбованого пігліна пошкодувати про свої дії",
   "requiemunofficial:advancements.requiem.kung_fu_panda.title": "Кунг-фу Панда",
   "requiemunofficial:advancements.requiem.kung_fu_panda.description": "Будучи пандою, вдар щось дерев’яним мечем",
-
   "requiemunofficial:argument.entity.options.possessor.description": "Сутності, опановані",
-
   "requiemunofficial:remnant_type.requiem.mortal.name": "Смертний",
   "requiemunofficial:remnant_type.requiem.remnant.name": "Залишок",
-
   "requiemunofficial:commands.query.success.other": "%2$s є %1$s",
   "requiemunofficial:commands.query.success.self": "Ти є %s",
   "requiemunofficial:commands.ethereal.set.fail.mortal": "Не вдалося зробити %s ефірним, оскільки він смертний",
@@ -42,7 +39,6 @@
   "requiemunofficial:not_ethereal": "Матеріальний",
   "requiemunofficial:dialogue.not_found": "Невідомий діалог: %s",
   "requiemunofficial:remnant_type.not_found": "Невідомий тип залишку: %s",
-
   "requiemunofficial:commands.possession.start.fail.not_mob": "%s не може бути опанований, оскільки це не моб",
   "requiemunofficial:commands.possession.start.fail.not_incorporeal": "%s не є безтілесним",
   "requiemunofficial:commands.possession.start.fail": "Не вдалося опанувати %s",
@@ -50,60 +46,47 @@
   "requiemunofficial:commands.possession.start.success.self": "Почато опанування %s",
   "requiemunofficial:commands.possession.stop.success.other": "%s припинив опановувати %s",
   "requiemunofficial:commands.possession.stop.success.self": "Опанування припинено для %s",
-
   "requiemunofficial:commands.shell.split.fail.mortal": "Не вдалося розділити %s, оскільки він смертний",
   "requiemunofficial:commands.shell.split.fail.vagrant": "Не вдалося розділити %s, оскільки він уже блукач",
   "requiemunofficial:commands.shell.fail.not_shell": "%s не є оболонкою гравця",
-
   "requiemunofficial:commands.soul.query.has_soul": "%s наразі має душу",
   "requiemunofficial:commands.soul.query.no_soul": "%s наразі не має душі",
   "requiemunofficial:commands.soul.set.fail.not_living": "%s не є живою істотою",
   "requiemunofficial:commands.soul.set.fail.permanently_soulless": "%s не може мати власну душу",
   "requiemunofficial:commands.soul.remove.success": "Душу успішно вилучено з %s",
   "requiemunofficial:commands.soul.restore.success": "Душу успішно повернуто %s",
-
   "requiemunofficial:container.obelisk_rift": "Розлом",
   "requiemunofficial:toast.rift_witnessed": "Розлом помічено!",
-
   "requiemunofficial:block.minecraft.bed.invalid_body": "Ця форма не може спати",
-
   "requiemunofficial:opus.mortal_sentence": "Ad Vitam Mortale",
   "requiemunofficial:opus.remnant_sentence": "Ad Vitam Aeternam",
   "requiemunofficial:opus.wanderer_sentence": "Ad Vitam Vagrate",
-
   "requiemunofficial:dialogue.first_contact.introduction.text": "Ти чуєш голос, що звертається до тебе, але не можеш зрозуміти, звідки він лунає.",
   "requiemunofficial:dialogue.first_contact.introduction.explain": "Що відбувається?",
   "requiemunofficial:dialogue.first_contact.introduction.yes": "Зроби мене демоном уже.",
   "requiemunofficial:dialogue.first_contact.introduction.no": "Я не хочу мати з цим нічого спільного.",
-
   "requiemunofficial:dialogue.first_contact.explanation.text": "Відкинь свою людяність і будь проклятий вічністю. Відмовся — і продовжуй звичайне життя серед інших. Це можливість отримати новий досвід після смерті, але для цього доведеться змінити свої звички.",
   "requiemunofficial:dialogue.first_contact.explanation.ok": "Зрозуміло.",
-
   "requiemunofficial:dialogue.first_contact.interested.text": "Якщо ти обереш цей шлях, тобі доведеться щоразу знаходити нове тіло після смерті. Сили, які ти здобудеш, допоможуть у цьому, а тіла можуть виявитися набагато цікавішими за звичайне людське.",
   "requiemunofficial:dialogue.first_contact.disinterested.text": "Якщо ти не обереш цей шлях, ти пропустиш усе, що пропонує Requiem. Ти відроджуватимешся як зазвичай і зможеш одразу грати людиною після смерті.",
-
   "requiemunofficial:dialogue.first_contact.confirm": "Це саме те, чого я хочу.",
   "requiemunofficial:dialogue.first_contact.doubt": "Хоча... ні.",
   "requiemunofficial:dialogue.first_contact.very_interested.text": "Ти впевнений, що хочеш стати демоном?",
   "requiemunofficial:dialogue.first_contact.very_disinterested.text": "Ти впевнений, що хочеш залишитися людиною?",
   "requiemunofficial:dialogue.first_contact.final_confirm": "Підтвердити",
   "requiemunofficial:dialogue.first_contact.final_doubt": "Назад",
-
   "requiemunofficial:subtitles.block.obelisk.activate": "Обеліск формується",
   "requiemunofficial:subtitles.block.obelisk.ambient": "Обеліск шепоче",
   "requiemunofficial:subtitles.block.obelisk.deactivate": "Обеліск руйнується",
   "requiemunofficial:subtitles.block.runestone.carve": "Рунний камінь вирізано",
   "requiemunofficial:subtitles.block.runestone.clear": "Рунний камінь очищено",
-
   "requiemunofficial:subtitles.effect.become.mortal": "Стаєш смертним",
   "requiemunofficial:subtitles.effect.become.remnant": "Отримання демона",
   "requiemunofficial:subtitles.effect.dissociating": "Гравець відокремлюється",
   "requiemunofficial:subtitles.effect.phasing": "Гравець проходить крізь",
   "requiemunofficial:subtitles.effect.possession.attempt": "Спроба опанування",
   "requiemunofficial:subtitles.effect.time.stop": "ZA WARUDO! TOKI WO TOMARE",
-
   "requiemunofficial:subtitles.effect.reclamation.clear": "Очищення рекламації",
-
   "requiemunofficial:subtitles.entity.mortician.ambient": "Гробар брязкає",
   "requiemunofficial:subtitles.entity.mortician.cast_spell": "Гробар накладає закляття",
   "requiemunofficial:subtitles.entity.mortician.death": "Гробар помирає",
@@ -112,44 +95,34 @@
   "requiemunofficial:subtitles.entity.mortician.prepare_attack": "Гробар готує атаку",
   "requiemunofficial:subtitles.entity.mortician.trade": "Гробар торгує",
   "requiemunofficial:subtitles.entity.mortician.yes": "Гробар погоджується",
-
   "requiemunofficial:subtitles.entity.soul.teleport": "Душа телепортується",
   "requiemunofficial:subtitles.entity.soul.disintegrate": "Душа розчиняється",
-
   "requiemunofficial:subtitles.item.empty_vessel.use": "Судина активується",
   "requiemunofficial:subtitles.item.filled_vessel.use": "Душу звільнено",
   "requiemunofficial:subtitles.item.soul_vessel.use": "Судина душі активується",
-
   "requiemunofficial:tooltip.filled_vessel": "Душа %s",
-
   "block.requiem.tachylite.runestone": "Рунний камінь тахіліту",
   "block.requiem.tachylite.runic.attrition": "Рунний камінь тахіліту виснаження",
   "block.requiem.tachylite.runic.emancipation": "Рунний камінь тахіліту звільнення",
   "block.requiem.tachylite.runic.penance": "Рунний камінь тахіліту спокути",
   "block.requiem.tachylite.runic.reclamation": "Рунний камінь тахіліту відновлення",
   "block.requiem.tachylite.runic.rift": "Розлом душ",
-
   "block.requiem.tachylite.derelict": "Занедбаний тахіліт",
   "block.requiem.tachylite.chiseled": "Різьблений тахіліт",
   "block.requiem.tachylite.chiseled_pillar": "Різьблена колона тахіліту",
   "block.requiem.tachylite.chiseled_slab": "Різьблена плита тахіліту",
   "block.requiem.tachylite.chiseled_stairs": "Різьблені сходи тахіліту",
-
   "block.requiem.tachylite.polished": "Полірований тахіліт",
   "block.requiem.tachylite.polished_pillar": "Полірована колона тахіліту",
-
   "block.requiem.tachylite.scraped": "Очищений тахіліт",
   "block.requiem.tachylite.tachylite": "Тахіліт",
   "block.requiem.tachylite.tachylite_slab": "Плита тахіліту",
   "block.requiem.tachylite.tachylite_stairs": "Сходи тахіліту",
-
   "entity.requiem.cured_piglin": "Пігмен",
   "entity.requiem.mortician": "Гробар",
   "entity.requiem.cured_piglin_brute": "Пігмен-берсерк",
   "entity.requiem.player_shell": "Оболонка гравця",
-
   "item.requiem.totem_of_skeletonization": "Тотем скелетизації",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
   "item.requiem.empty_soul_vessel": "Порожня судина душі",
   "item.requiem.creative_soul_vessel": "Креативна судина душі",
   "item.requiem.filled_soul_vessel": "Заповнена судина душі",
@@ -175,7 +148,6 @@
   "requiemunofficial:tooltip.witch_brew_base": "Основа відьомського варива",
   "requiemunofficial:tooltip.witch_food": "Раціон відьми",
   "requiemunofficial:tooltip.zombie_food": "Закуска зомбі",
-
   "config.requiem.title": "Меню налаштувань Requiem",
   "config.requiem.graphics": "Графіка",
   "config.requiem.fancy_demon_render": "Покращене відображення демона",
@@ -184,11 +156,9 @@
   "config.requiem.more_info.datapacks": "паки даних",
   "config.requiem.more_info.gamerules": "ігрові правила",
   "config.requiem.more_info.official_doc": "офіційній документації на сайті Ladysnake",
-
   "death.attack.requiem.attrition.hardcore": "%1$s був відправлений на спочинок назавжди.",
   "death.attack.requiem.attrition.hardcore.player": "%2$s відправив %1$s на спочинок назавжди.",
   "death.attack.requiem.mortal_dysmorphia": "Душа %1$s не належала тілу %2$s.",
-
   "gamerule.requiemunofficial:showPossessorNameTag": "(Requiem) Показувати імена поневолювачів",
   "gamerule.requiemunofficial:showPossessorNameTag.description": "Показувати імена гравців, які опановують сутності",
   "gamerule.requiemunofficial:disableCure": "(Requiem) Вимкнути лікування",
@@ -209,21 +179,17 @@
   "gamerule.requiemunofficial:possessionDetection.disabled": "вимкнено",
   "gamerule.requiemunofficial:possessionDetection.normal": "звичайно",
   "gamerule.requiemunofficial:possessionDetection.hard": "складно",
-
   "effect.requiem.attrition": "Виснаження",
   "effect.requiem.emancipation": "Звільнення",
   "effect.requiem.penance": "Спокута",
   "effect.requiem.reclamation": "Відновлення",
-
   "enchantment.requiem.humanity": "Людяність",
-
   "key.categories.requiemunofficial": "Requiem",
   "key.requiem.dissociation": "[Requiem] Відокремлення",
   "requiemunofficial:shulker.onboard": "Натисни %s або %s, щоб відокремитися",
   "requiemunofficial:dissociate_hint": "Натисни %s, щоб відокремитися",
   "requiemunofficial:possess.incompatible_body": "Це тіло несумісне з твоєю душею",
   "requiemunofficial:merge_hint": "Натисни %s, щоб повернутися",
-
   "item.requiem.ichor_vessel_attrition": "Іхорна судина виснаження",
   "item.requiem.ichor_vessel_emancipation": "Іхорна судина звільнення",
   "item.requiem.ichor_vessel_penance": "Іхорна судина спокути",
@@ -233,7 +199,6 @@
   "message.requiemunofficial.remnant_vessel.no_change": "Посудина не впливає на поточний стан вашої душі.",
   "message.requiemunofficial.remnant_vessel.became_remnant": "Ваша душа стала залишком.",
   "message.requiemunofficial.remnant_vessel.became_mortal": "Ваша душа знову стала смертною.",
-
   "origins:layer.requiem.soul_type.name": "Тип душі",
   "origins:layer.requiem.soul_type.missing_origin.name": "Відсутній",
   "origins:layer.requiem.soul_type.missing_origin.description": "У тебе немає типу душі.",
@@ -259,11 +224,16 @@
   "origins:power.requiem.banished.description": "Ти не можеш отримати нове людське тіло, лікуючи інших істот.",
   "origins:power.requiem.mortal.name": "Відродження",
   "origins:power.requiem.mortal.description": "Коли ти помираєш, і якщо все минає добре, ти опиняєшся в останньому місці спочинку з новим тілом.",
-
   "stat.requiem.interact_with_rift": "[Requiem] Взаємодії з розломом обеліска",
-
   "requiem.message.peaceful_despawn": "Цей носій не належить такому мирному світові",
-
   "ritual.requiem.ritual.decay_zombie": "Згнилий зомбі",
-  "ritual.requiem.ritual.decay_skeleton": "Згнилий скелет"
+  "ritual.requiem.ritual.decay_skeleton": "Згнилий скелет",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Плита тахіліту",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Сходи тахіліту",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Сила душі",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Захист душі"
 }

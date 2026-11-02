@@ -6,6 +6,7 @@
   "refmap": "requiemunofficial.refmap.json",
   "mixins": [
     "AbstractHorseMixin",
+    "AbstractPiglinMixin",
     "BlockStateBaseMixin",
     "BlazeAccessor",
     "EntityAccessor",
@@ -16,6 +17,8 @@
     "EntitySelectorMixin",
     "FoodDataMixin",
     "FoxMixin",
+    "HoglinMixin",
+    "InventoryMixin",
     "GuardianAccessor",
     "ItemStackMixin",
     "LecternBlockEntityMixin",
@@ -35,13 +38,15 @@
     "PlayerMixin",
     "RavagerMixin",
     "ShulkerAccessor",
+    "SkeletonMixin",
     "SlotMixin",
     "TargetingConditionsMixin",
     "TridentItemMixin",
     "VillagerMixin",
     "WalkAnimationStateAccessor",
     "WeightedPressurePlateBlockMixin",
-    "WitchMixin"
+    "WitchMixin",
+    "ZombieMixin"
   ],
   "client": [
     "AbstractClientPlayerMixin",

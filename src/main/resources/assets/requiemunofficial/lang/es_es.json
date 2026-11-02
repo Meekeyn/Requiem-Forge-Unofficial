@@ -184,7 +184,6 @@
   "entity.requiem.mortician": "Marcenojo",
   "entity.requiem.player_shell": "Cáscara de jugador",
   "item.requiem.totem_of_skeletonization": "Tótem de esqueletización",
-  "item.requiem.opus_daemonium": "Opus Daemonium",
   "item.requiem.empty_soul_vessel": "Vasija de alma vacía",
   "item.requiem.creative_soul_vessel": "Vasija de alma creativa",
   "item.requiem.filled_soul_vessel": "Vasija de alma llena",
@@ -230,5 +229,13 @@
   "stat.requiem.interact_with_rift": "[Requiem] Interacciones con grieta del obelisco",
   "requiem.message.peaceful_despawn": "Este huésped puede no pertenecer a un mundo tan pacífico",
   "ritual.requiem.ritual.decay_zombie": "Zombi en descomposición",
-  "ritual.requiem.ritual.decay_skeleton": "Esqueleto en descomposición"
+  "ritual.requiem.ritual.decay_skeleton": "Esqueleto en descomposición",
+  "block.requiemunofficial.tachylite.tachylite_slab": "Loseta de tachilita",
+  "block.requiemunofficial.tachylite.tachylite_stairs": "Escaleras de tachilita",
+  "origins:power.requiemunofficial.banished.name": "Banished",
+  "origins:power.requiemunofficial.banished.description": "You cannot get a new human body by curing other creatures.",
+  "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
+  "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
+  "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
 }

@@ -14,6 +14,12 @@ import net.minecraft.world.entity.monster.ZombieVillager;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffers;
+import net.minecraft.world.entity.MobType;
+import net.minecraftforge.event.entity.living.LivingConversionEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.init.ModEntities;
@@ -21,6 +27,7 @@ import ua.meekeyn.requiemunofficial.common.advancement.ModCriteria;
 
 import java.util.UUID;
 
+@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class TransformationManager {
 
     private static final String ORIGINAL_BODY_TYPE = "RequiemOriginalBodyType";
@@ -77,6 +84,37 @@ public final class TransformationManager {
             return null;
         }
         return replace(level, mob, curedType, true);
+    }
+
+    /**
+     * Переносить одержимість з тіла, яке ванільно перетворюється (Mob#convertTo: зомбі -> утопленик,
+     * кадавр -> зомбі, скелет -> зимогор, піглін -> зомбіпіглін, хоглін -> зоглін тощо), на результат.
+     * Викликається до source.discard(), тож власник ще знаходить старе тіло.
+     */
+    public static boolean transferPossessionOnConversion(LivingEntity source, LivingEntity outcome) {
+        if (outcome == null || outcome == source || !outcome.isAlive()
+                || !(source.level() instanceof ServerLevel level)) {
+            return false;
+        }
+        UUID possessorId = PossessionManager.getPossessorId(source);
+        if (possessorId == null) {
+            return false;
+        }
+        ServerPlayer possessor = PossessionManager.getActivePossessor(level, possessorId);
+        if (possessor == null || !PossessionManager.transferPossession(possessor, source, outcome)) {
+            return false;
+        }
+        boolean cure = source.getMobType() == MobType.UNDEAD && outcome.getMobType() != MobType.UNDEAD;
+        ModCriteria.TRANSFORMED_POSSESSED_ENTITY.trigger(possessor, source, outcome, cure);
+        return true;
+    }
+
+    /** Запасний шлях для перетворень, що обходять Mob#convertTo, але публікують Forge-подію. */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onLivingConverted(LivingConversionEvent.Post event) {
+        if (!event.getEntity().level().isClientSide()) {
+            transferPossessionOnConversion(event.getEntity(), event.getOutcome());
+        }
     }
 
     private static EntityType<? extends Mob> getSkeletonType(EntityType<?> sourceType) {
@@ -159,6 +197,8 @@ public final class TransformationManager {
         if (!level.addFreshEntity(replacement)) {
             return null;
         }
+        // Збережений інвентар порожнього тіла не повинен зникати разом із source.discard().
+        ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager.copyStoredInventory(source, replacement);
 
         UUID possessorId = PossessionManager.getPossessorId(source);
         if (possessorId != null) {

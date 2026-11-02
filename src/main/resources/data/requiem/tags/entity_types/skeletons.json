@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#requiemunofficial:humanoid_skeletons",
+    "minecraft:skeleton_horse"
+  ]
+}
+

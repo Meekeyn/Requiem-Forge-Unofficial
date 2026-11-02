@@ -30,6 +30,8 @@ public class RequiemUnofficial {
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RequiemConfig.SPEC);
         ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, RequiemClientConfig.SPEC);
+        net.minecraftforge.common.crafting.CraftingHelper.register(
+                ua.meekeyn.requiemunofficial.common.recipe.ConfigRecipeCondition.Serializer.INSTANCE);
 
         ModItems.register(modEventBus);
         ModEnchantments.register(modEventBus);
@@ -43,13 +45,14 @@ public class RequiemUnofficial {
         ModCreativeTabs.register(modEventBus);
         ModStructures.register(modEventBus);
         ModMenuTypes.register(modEventBus);
+        ua.meekeyn.requiemunofficial.common.loot.RequiemLootConditions.register(modEventBus);
         ModGameRules.init();
         ModGameRules.register(modEventBus);
         ModCriteria.init();
         modEventBus.addListener(ModCapabilities::register);
 
         ModNetwork.register();
-        modEventBus.addListener(ModEntityAttributes::register);
+        ModEntityAttributes.init(modEventBus);
         DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientSetup.init(modEventBus));
     }
 

@@ -48,6 +48,9 @@ public final class ClientPossessionVision {
     private static UUID lastPossessedHostId;
     private static ResourceLocation lastPossessedShader;
     private static int missingHostTicks;
+    /** Шейдер, який має діяти зараз; кадровий контроль повертає його, якщо ваніль його скинула. */
+    private static ResourceLocation desiredShader;
+    private static net.minecraft.world.level.GameType lastGameMode;
     private static UUID entryFlashHostId;
     private static int entryFlashTicks;
 
@@ -63,8 +66,18 @@ public final class ClientPossessionVision {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
             resetPossessionState();
+            desiredShader = null;
+            lastGameMode = null;
             clearShader(minecraft);
             return;
+        }
+
+        net.minecraft.world.level.GameType gameMode = minecraft.gameMode == null ? null : minecraft.gameMode.getPlayerMode();
+        if (gameMode != lastGameMode) {
+            // Зміна режиму гри перемикає камеру й скидає пост-ефект ваніллю: перезавантажуємо шейдер примусово.
+            lastGameMode = gameMode;
+            appliedShader = null;
+            appliedEffect = null;
         }
 
         UUID possessedHostId = minecraft.player.getCapability(ModCapabilities.PLAYER_SOUL)
@@ -108,7 +121,27 @@ public final class ClientPossessionVision {
             resetPossessionState();
         }
 
+        desiredShader = shader;
         applyShader(minecraft, shader);
+    }
+
+    /**
+     * Ваніль скидає пост-ефект при будь-якій зміні камери (режим гри, F5, телепорт, перехід між тілами), причому
+     * між двома тіками. Щокадрова перевірка гарантує, що шейдер зору тіла не зникне ні за яких сценаріїв.
+     */
+    @SubscribeEvent
+    public static void onRenderTick(TickEvent.RenderTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
+        Minecraft minecraft = Minecraft.getInstance();
+        if (minecraft.player == null || minecraft.level == null || minecraft.isPaused()) {
+            return;
+        }
+        ResourceLocation wanted = desiredShader;
+        if (wanted != null && (!wanted.equals(appliedShader) || minecraft.gameRenderer.currentEffect() != appliedEffect)) {
+            applyShader(minecraft, wanted);
+        }
     }
 
     private static void resetPossessionState() {

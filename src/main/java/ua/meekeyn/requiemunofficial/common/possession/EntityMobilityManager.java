@@ -5,6 +5,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraftforge.event.AddReloadListenerEvent;
@@ -14,6 +16,8 @@ import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
 import java.io.BufferedReader;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.List;
@@ -28,6 +32,7 @@ import net.minecraft.world.entity.animal.WaterAnimal;
 public final class EntityMobilityManager implements ResourceManagerReloadListener {
 
     private static final ResourceLocation RESOURCE = ModIds.id("entity_mobility.json");
+    private static final ResourceLocation LEGACY_RESOURCE = new ResourceLocation("requiem", "entity_mobility.json");
     private static volatile Map<ResourceLocation, MobilityProfile> profiles = Map.of();
     private static volatile Map<ResourceLocation, MobilityProfile> clientProfiles = Map.of();
     private static final List<Function<LivingEntity, MobilityProfile>> resolvers = new CopyOnWriteArrayList<>();
@@ -43,13 +48,20 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
     @Override
     public void onResourceManagerReload(ResourceManager resourceManager) {
         Map<ResourceLocation, MobilityProfile> loaded = new HashMap<>();
-        resourceManager.getResource(RESOURCE).ifPresent(resource -> {
+        // Як в оригіналі: читаємо всі паки (обидва простори імен) і зливаємо записи по сутностях,
+        // пізніші (пріоритетніші) паки перекривають окремі записи.
+        List<String> packOrder = resourceManager.listPacks().map(PackResources::packId).toList();
+        List<Resource> stack = new ArrayList<>(resourceManager.getResourceStack(LEGACY_RESOURCE));
+        stack.addAll(resourceManager.getResourceStack(RESOURCE));
+        // Стабільне сортування: у межах одного паку requiemunofficial: застосовується після requiem:.
+        stack.sort(Comparator.comparingInt(resource -> packOrder.indexOf(resource.sourcePackId())));
+        for (Resource resource : stack) {
             try (BufferedReader reader = resource.openAsReader()) {
                 loaded.putAll(parse(JsonParser.parseReader(reader).getAsJsonObject()));
             } catch (Exception exception) {
-                RequiemUnofficial.LOGGER.error("Failed to load {}", RESOURCE, exception);
+                RequiemUnofficial.LOGGER.error("Failed to load entity_mobility.json from pack {}", resource.sourcePackId(), exception);
             }
-        });
+        }
         profiles = Map.copyOf(loaded);
         RequiemUnofficial.LOGGER.info("Loaded {} possession mobility profiles", profiles.size());
     }

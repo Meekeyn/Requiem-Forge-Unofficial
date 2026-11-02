@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "minecraft:axolotl",
-    "minecraft:chicken",
-    "minecraft:parrot"
-  ]
-}
+{"replace": false, "values": [{"id": "#requiem:vision/tetrachromats", "required": false}]}

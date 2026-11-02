@@ -1,8 +1,1 @@
-{
-  "replace": false,
-  "values": [
-    "#requiemunofficial:piglins",
-    "#requiemunofficial:humans"
-  ]
-}
-
+{"replace": false, "values": [{"id": "#requiem:behavior/regular_eaters", "required": false}]}

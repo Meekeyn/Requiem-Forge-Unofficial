@@ -47,6 +47,8 @@ public final class ModTags {
             TagKey.create(Registries.ENTITY_TYPE, ModIds.id("transformation/replaceable_skeletons"));
     public static final TagKey<EntityType<?>> HUMANOID_ZOMBIES =
             TagKey.create(Registries.ENTITY_TYPE, ModIds.id("humanoid_zombies"));
+    public static final TagKey<EntityType<?>> CURABLE_UNDEAD =
+            TagKey.create(Registries.ENTITY_TYPE, ModIds.id("curable_undead"));
     public static final TagKey<EntityType<?>> HUMANOID_SKELETONS =
             TagKey.create(Registries.ENTITY_TYPE, ModIds.id("humanoid_skeletons"));
     public static final TagKey<EntityType<?>> SKELETONS =

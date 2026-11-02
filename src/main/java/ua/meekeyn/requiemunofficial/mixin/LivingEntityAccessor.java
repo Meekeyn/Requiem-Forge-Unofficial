@@ -18,6 +18,9 @@ public interface LivingEntityAccessor {
     void requiemunofficial$setUseItem(ItemStack stack);
 
     @Accessor("useItemRemaining")
+    int requiemunofficial$getUseItemRemaining();
+
+    @Accessor("useItemRemaining")
     void requiemunofficial$setUseItemRemaining(int ticks);
 
     @Invoker("setLivingEntityFlag")

@@ -79,11 +79,14 @@ public final class PossessionDetectionManager {
         if (mode == PossessionDetection.DISABLED) {
             return DetectionResult.UNDETECTED;
         }
-        if (reason == DetectionReason.ATTACKED
-                || mode == PossessionDetection.HARD) {
+        if (mode == PossessionDetection.HARD) {
             return DetectionResult.CROWD_DETECTED;
         }
-        return DetectionResult.UNDETECTED;
+        // NORMAL mode: DETECTED for BUMP and ATTACKING, CROWD_DETECTED for ATTACKED
+        if (reason == DetectionReason.ATTACKED) {
+            return DetectionResult.CROWD_DETECTED;
+        }
+        return DetectionResult.DETECTED;
     }
 
     private static void inciteCrowd(LivingEntity sensed, Mob sensor) {
