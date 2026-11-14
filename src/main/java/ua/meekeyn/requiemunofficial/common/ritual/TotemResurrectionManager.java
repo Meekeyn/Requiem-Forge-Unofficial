@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.ritual;
 
+import net.minecraft.core.Holder;
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,10 +22,10 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -35,7 +37,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class TotemResurrectionManager implements ResourceManagerReloadListener {
 
     private static final String DIRECTORY = "requiem_resurrections";
@@ -191,8 +193,8 @@ public final class TotemResurrectionManager implements ResourceManagerReloadList
         EntityMatcher possessedMatcher = possessed == null
                 ? null
                 : EntityMatcher.parse(string(possessed, "type"));
-        MobEffect possessedEffect = parseEffect(possessed);
-        MobEffect playerEffect = parseEffect(root.getAsJsonObject("player"));
+        Holder<MobEffect> possessedEffect = parseEffect(possessed);
+        Holder<MobEffect> playerEffect = parseEffect(root.getAsJsonObject("player"));
         int priority = root.has("priority") ? root.get("priority").getAsInt() : 0;
 
         @SuppressWarnings("unchecked")
@@ -207,13 +209,13 @@ public final class TotemResurrectionManager implements ResourceManagerReloadList
         );
     }
 
-    private static MobEffect parseEffect(JsonObject owner) {
+    private static Holder<MobEffect> parseEffect(JsonObject owner) {
         JsonObject effects = owner == null ? null : owner.getAsJsonObject("effects");
         if (effects == null || effects.entrySet().isEmpty()) {
             return null;
         }
         ResourceLocation id = ResourceLocation.tryParse(effects.entrySet().iterator().next().getKey());
-        return id == null ? null : BuiltInRegistries.MOB_EFFECT.get(id);
+        return id == null ? null : BuiltInRegistries.MOB_EFFECT.getHolder(id).orElse(null);
     }
 
     private static String string(JsonObject object, String key) {
@@ -225,8 +227,8 @@ public final class TotemResurrectionManager implements ResourceManagerReloadList
             ItemMatcher item,
             EntityType<? extends Mob> result,
             EntityMatcher possessed,
-            MobEffect possessedEffect,
-            MobEffect playerEffect
+            Holder<MobEffect> possessedEffect,
+            Holder<MobEffect> playerEffect
     ) {
         public boolean matches(ServerPlayer player, LivingEntity host, ItemStack stack) {
             if (!item.matches(stack)) {

@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
+import net.minecraft.core.Holder;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -8,10 +10,10 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.entity.PlayerShellEntity;
 import ua.meekeyn.requiemunofficial.common.effect.AttritionMobEffect;
@@ -25,7 +27,7 @@ import ua.meekeyn.requiemunofficial.common.ritual.DeathResurrectionManager;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class SoulLifecycleManager {
 
     private SoulLifecycleManager() {
@@ -177,15 +179,15 @@ public final class SoulLifecycleManager {
         // FORGE_ADAPTATION: original Requiem exposes SoulboundStackCheckCallback.
         // The Forge port has no callback bus, so Stage 8 uses a minimal NBT marker.
         return !stack.isEmpty()
-                && stack.hasTag()
-                && stack.getTag().getBoolean("RequiemSoulbound");
+                && ua.meekeyn.requiemunofficial.common.util.ItemNbt.hasTag(stack)
+                && ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack).getBoolean("RequiemSoulbound");
     }
 
-    public static boolean isSoulboundEffect(MobEffect effect) {
-        return effect == ModEffects.ATTRITION.get()
-                || effect == ModEffects.EMANCIPATION.get()
-                || effect == ModEffects.PENANCE.get()
-                || effect == ModEffects.RECLAMATION.get();
+    public static boolean isSoulboundEffect(Holder<MobEffect> effect) {
+        return effect.is(ModEffects.ATTRITION)
+                || effect.is(ModEffects.EMANCIPATION)
+                || effect.is(ModEffects.PENANCE)
+                || effect.is(ModEffects.RECLAMATION);
     }
 
     public static boolean shouldKeepEffectThroughSoulRespawn(ServerPlayer player, MobEffectInstance effect) {
@@ -206,7 +208,7 @@ public final class SoulLifecycleManager {
                 || !shell.isAlive()) {
             return false;
         }
-        if (PenanceMobEffect.blocksMerge(player.getEffect(ModEffects.PENANCE.get()))) {
+        if (PenanceMobEffect.blocksMerge(player.getEffect(ModEffects.PENANCE))) {
             return false;
         }
 
@@ -226,7 +228,7 @@ public final class SoulLifecycleManager {
         if (SoulManager.getState(player) != SoulState.VAGRANT || !shell.isAlive()) {
             return false;
         }
-        if (PenanceMobEffect.blocksMerge(player.getEffect(ModEffects.PENANCE.get()))) {
+        if (PenanceMobEffect.blocksMerge(player.getEffect(ModEffects.PENANCE))) {
             return false;
         }
 
@@ -273,7 +275,7 @@ public final class SoulLifecycleManager {
     }
 
     private static boolean hasLiveConnection(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 
     private static void transferSoulboundOrKeptStacks(PlayerShellEntity shell, ServerPlayer player) {
@@ -285,7 +287,7 @@ public final class SoulLifecycleManager {
     }
 
     private static void retainSoulboundEffects(ServerPlayer player) {
-        for (MobEffect effect : player.getActiveEffectsMap().keySet().toArray(MobEffect[]::new)) {
+        for (Holder<MobEffect> effect : player.getActiveEffectsMap().keySet().toArray(Holder[]::new)) {
             if (!isSoulboundEffect(effect)) {
                 if (hasLiveConnection(player)) {
                     player.removeEffect(effect);
@@ -297,14 +299,14 @@ public final class SoulLifecycleManager {
     }
 
     public static void clearReclamation(ServerPlayer soul) {
-        if (soul.hasEffect(ModEffects.RECLAMATION.get())) {
+        if (soul.hasEffect(ModEffects.RECLAMATION)) {
             soul.level().playSound(null, soul.getX(), soul.getY(), soul.getZ(),
                     ua.meekeyn.requiemunofficial.common.init.ModSounds.EFFECT_RECLAMATION_CLEAR.get(),
                     net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.8F);
             if (hasLiveConnection(soul)) {
-                soul.removeEffect(ModEffects.RECLAMATION.get());
+                soul.removeEffect(ModEffects.RECLAMATION);
             } else {
-                soul.getActiveEffectsMap().remove(ModEffects.RECLAMATION.get());
+                soul.getActiveEffectsMap().remove(ModEffects.RECLAMATION);
             }
         }
     }

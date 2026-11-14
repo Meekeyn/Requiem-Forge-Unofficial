@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.entity;
 
+import java.util.Optional;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtUtils;
@@ -123,11 +125,11 @@ public class MorticianEntity extends WanderingTrader {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        entityData.define(OBELISK_PROJECTION, false);
-        entityData.define(FADING_TICKS, 0);
-        entityData.define(SPELL, (byte) 0);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(OBELISK_PROJECTION, false);
+        builder.define(FADING_TICKS, 0);
+        builder.define(SPELL, (byte) 0);
     }
 
     public void setSpellcasting(boolean spellcasting) {
@@ -243,28 +245,33 @@ public class MorticianEntity extends WanderingTrader {
         }
     }
 
+    private static net.minecraft.world.item.trading.ItemCost cost(ItemStack stack) {
+        if (stack.getComponentsPatch().isEmpty()) {
+            return new net.minecraft.world.item.trading.ItemCost(stack.getItem(), stack.getCount());
+        }
+        return new net.minecraft.world.item.trading.ItemCost(stack.getItemHolder(), stack.getCount(),
+                net.minecraft.core.component.DataComponentPredicate.allOf(stack.getComponents()), stack);
+    }
+
     private static void populateMorticianOffers(MerchantOffers offers) {
         offers.clear();
 
         offers.add(new MerchantOffer(
-                new ItemStack(Items.GOLD_INGOT, 32),
-                new ItemStack(Items.NETHERITE_INGOT),
+                cost(new ItemStack(Items.GOLD_INGOT, 32)), Optional.of(cost(new ItemStack(Items.NETHERITE_INGOT))),
                 new ItemStack(ModItems.SEALED_REMNANT_VESSEL.get()),
                 MAX_TRADE_USES,
                 10,
                 0.05F
         ));
         offers.add(new MerchantOffer(
-                new ItemStack(ModItems.SHATTERED_SOUL_VESSEL.get()),
-                new ItemStack(Items.GOLD_INGOT),
+                cost(new ItemStack(ModItems.SHATTERED_SOUL_VESSEL.get())), Optional.of(cost(new ItemStack(Items.GOLD_INGOT))),
                 new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get()),
                 MAX_TRADE_USES,
                 2,
                 0.05F
         ));
         offers.add(new MerchantOffer(
-                HumanityEnchantedBookItem.create(1),
-                new ItemStack(Items.GOLD_INGOT, 20),
+                cost(HumanityEnchantedBookItem.create(1)), Optional.of(cost(new ItemStack(Items.GOLD_INGOT, 20))),
                 HumanityEnchantedBookItem.create(2),
                 5,
                 1,
@@ -298,8 +305,7 @@ public class MorticianEntity extends WanderingTrader {
         ItemStack filledVessel = new ItemStack(ModItems.FILLED_SOUL_VESSEL.get());
         SoulVesselItem.setSoulData(filledVessel, soulType, soulKind, 1);
         return new MerchantOffer(
-                filledVessel,
-                new ItemStack(Items.GOLD_INGOT, 5),
+                cost(filledVessel), Optional.of(cost(new ItemStack(Items.GOLD_INGOT, 5))),
                 new ItemStack(result),
                 MAX_TRADE_USES,
                 5,
@@ -493,7 +499,7 @@ public class MorticianEntity extends WanderingTrader {
 
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
-        if (hand == InteractionHand.MAIN_HAND && isAlive() && !isBaby()) {
+        if (hand == InteractionHand.MAIN_HAND && isAlive() && !isBaby() && !level().isClientSide) {
             prepareOffersFor(player);
             if (player instanceof ServerPlayer serverPlayer && serverPlayer.connection == null) {
                 return InteractionResult.SUCCESS;
@@ -510,8 +516,7 @@ public class MorticianEntity extends WanderingTrader {
         MerchantOffer first = offers.get(0);
         if (SoulManager.getState(player) == SoulState.REMNANT) {
             first = new MerchantOffer(
-                    new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get()),
-                    new ItemStack(Items.NETHERITE_INGOT),
+                cost(new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get())), Optional.of(cost(new ItemStack(Items.NETHERITE_INGOT))),
                     new ItemStack(ModItems.SEALED_REMNANT_VESSEL.get()),
                     VagrantRules.isRestricted(player) ? 0 : 1,
                     1,
@@ -519,8 +524,7 @@ public class MorticianEntity extends WanderingTrader {
             );
         } else if (VagrantRules.isRestricted(player)) {
             first = new MerchantOffer(
-                    first.getBaseCostA(),
-                    first.getCostB(),
+                cost(first.getBaseCostA()), Optional.of(cost(first.getCostB())),
                     first.getResult(),
                     0,
                     first.getXp(),
@@ -557,7 +561,7 @@ public class MorticianEntity extends WanderingTrader {
         }
         return net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(stack.getItem())
                 + "x" + stack.getCount()
-                + (stack.hasTag() ? stack.getTag().toString() : "");
+                + (ua.meekeyn.requiemunofficial.common.util.ItemNbt.hasTag(stack) ? ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack).toString() : "");
     }
 
     @Override

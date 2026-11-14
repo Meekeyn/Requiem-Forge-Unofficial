@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.effect;
 
+import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -15,7 +16,7 @@ public final class StickyEffectReapplicationManager {
     private StickyEffectReapplicationManager() {
     }
 
-    public static void definitivelyClear(LivingEntity entity, MobEffect effect, Runnable removal) {
+    public static void definitivelyClear(LivingEntity entity, Holder<MobEffect> effect, Runnable removal) {
         Key key = new Key(entity.getUUID(), effect);
         Set<Key> clears = DEFINITIVE_CLEARS.get();
         clears.add(key);
@@ -41,9 +42,9 @@ public final class StickyEffectReapplicationManager {
     }
 
     private static boolean hasLiveConnection(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 
-    private record Key(UUID entityId, MobEffect effect) {
+    private record Key(UUID entityId, Holder<MobEffect> effect) {
     }
 }

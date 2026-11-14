@@ -10,7 +10,7 @@ import net.minecraft.world.entity.monster.Witch;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
+import net.minecraft.world.item.alchemy.PotionContents;
 import net.minecraft.world.item.alchemy.Potions;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -28,22 +28,22 @@ public abstract class WitchMixin {
             method = "performRangedAttack",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/world/item/alchemy/PotionUtils;setPotion(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/alchemy/Potion;)Lnet/minecraft/world/item/ItemStack;"
+                    target = "Lnet/minecraft/world/item/alchemy/PotionContents;createItemStack(Lnet/minecraft/world/item/Item;Lnet/minecraft/core/Holder;)Lnet/minecraft/world/item/ItemStack;"
             )
     )
-    private ItemStack requiemunofficial$preferWeaknessAgainstUndead(ItemStack stack,
-                                                                    Potion potion,
+    private ItemStack requiemunofficial$preferWeaknessAgainstUndead(net.minecraft.world.item.Item item,
+                                                                    net.minecraft.core.Holder<Potion> potion,
                                                                     LivingEntity target,
                                                                     float distanceFactor) {
         if (target.isInvertedHealAndHarm() && !target.hasEffect(MobEffects.WEAKNESS)) {
-            return PotionUtils.setPotion(stack, Potions.WEAKNESS);
+            return PotionContents.createItemStack(item, Potions.WEAKNESS);
         }
-        return PotionUtils.setPotion(stack, potion);
+        return PotionContents.createItemStack(item, potion);
     }
 
     // Witch "Drinking speed penalty" (vanilla Witch.SPEED_MODIFIER_DRINKING_UUID, private).
-    private static final UUID REQUIEMUNOFFICIAL$DRINKING_SPEED_MODIFIER =
-            UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
+    private static final net.minecraft.resources.ResourceLocation REQUIEMUNOFFICIAL$DRINKING_SPEED_MODIFIER =
+            net.minecraft.resources.ResourceLocation.withDefaultNamespace("drinking");
 
     // A possessed witch is driven by the player: it must not start drinking potions on its own
     // (heal/water breathing/fire resistance/swiftness). Vanilla's drink start also applies the

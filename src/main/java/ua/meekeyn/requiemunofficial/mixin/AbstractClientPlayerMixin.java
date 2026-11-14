@@ -18,8 +18,8 @@ import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 public abstract class AbstractClientPlayerMixin {
 
     @Redirect(method = "getFieldOfViewModifier", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/player/AbstractClientPlayer;getAttributeValue(Lnet/minecraft/world/entity/ai/attributes/Attribute;)D"))
-    private double requiemunofficial$possessionBodyFovSpeed(AbstractClientPlayer entity, Attribute attribute) {
+            target = "Lnet/minecraft/client/player/AbstractClientPlayer;getAttributeValue(Lnet/minecraft/core/Holder;)D"))
+    private double requiemunofficial$possessionBodyFovSpeed(AbstractClientPlayer entity, net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute) {
         double bodySpeed = entity.getAttributeValue(attribute);
         return PossessionManager.beta16BodyFovMovementSpeed(entity, bodySpeed);
     }

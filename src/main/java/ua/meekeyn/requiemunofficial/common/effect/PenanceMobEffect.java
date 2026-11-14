@@ -41,8 +41,8 @@ public class PenanceMobEffect extends MobEffect implements StickyMobEffect {
     private static final String PENANCE_TIME_TAG = "requiemunofficial:penance_time";
 
     @Override
-    public void addAttributeModifiers(LivingEntity entity, AttributeMap attributes, int amplifier) {
-        super.addAttributeModifiers(entity, attributes, amplifier);
+    public void onEffectAdded(LivingEntity entity, int amplifier) {
+        super.onEffectAdded(entity, amplifier);
         // beta.16 onApplied: якщо попередження вже минуло (рівень підвищили), карає одразу.
         if (entity instanceof ServerPlayer player && getPenanceTime(player) >= PENANCE_WARNING_TIME) {
             applyPenance(player, amplifier);
@@ -77,7 +77,7 @@ public class PenanceMobEffect extends MobEffect implements StickyMobEffect {
 
     /** beta.16 PenanceComponent#serverTick: лічильник попередження, після нього — покарання щотіку. */
     public static void tickPlayer(ServerPlayer player) {
-        MobEffectInstance penance = player.getEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE.get());
+        MobEffectInstance penance = player.getEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE);
         net.minecraft.nbt.CompoundTag data = player.getPersistentData();
         if (penance != null && shouldSplitFromCurrentBody(player, penance.getAmplifier())) {
             int time = getPenanceTime(player) + 1;

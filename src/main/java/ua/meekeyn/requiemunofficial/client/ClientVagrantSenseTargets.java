@@ -1,12 +1,13 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.network.VagrantSenseTargetsPacket;
 
@@ -22,7 +23,7 @@ import java.util.Set;
  * server every tick, which is why setting {@code glowing} client side never worked, and it would
  * also clobber legitimate glowing effects such as the spectral arrow.
  */
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientVagrantSenseTargets {
     private static final Set<Integer> senseTargets = new HashSet<>();
 
@@ -55,8 +56,8 @@ public final class ClientVagrantSenseTargets {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || senseTargets.isEmpty()) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (senseTargets.isEmpty()) {
             return;
         }
 

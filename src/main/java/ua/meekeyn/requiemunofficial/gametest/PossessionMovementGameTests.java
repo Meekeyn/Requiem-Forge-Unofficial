@@ -12,8 +12,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.network.PossessionInputPacket;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
@@ -176,7 +176,7 @@ public final class PossessionMovementGameTests {
 
     @GameTest(template = "empty", batch = "possession_movement")
     public static void alexFlightRestoresBothOriginalStates(GameTestHelper helper) throws Exception {
-        ResourceLocation id = new ResourceLocation("alexsmobs", "crow");
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("alexsmobs", "crow");
         if (!BuiltInRegistries.ENTITY_TYPE.containsKey(id)) {
             helper.succeed();
             return;
@@ -282,7 +282,7 @@ public final class PossessionMovementGameTests {
         place(helper, body, false);
         ServerPlayer player = possess(helper, body);
         input(player, 1.0F, true);
-        PossessionManager.onPossessorChangedDimension(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
+        PossessionManager.onPossessorChangedDimension(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
                 player, net.minecraft.world.level.Level.NETHER, player.level().dimension()));
         PossessionManager.preparePossessedHostForAiStep(body);
         helper.assertTrue(body.zza == 0.0F && body.getDeltaMovement().y <= 0.0D,
@@ -290,7 +290,7 @@ public final class PossessionMovementGameTests {
         var destination = helper.getLevel().getServer().getLevel(net.minecraft.world.level.Level.NETHER);
         helper.assertTrue(destination != null, "Test server must provide the destination dimension");
         player.setServerLevel(destination);
-        PossessionManager.onPossessorChangedDimension(new net.minecraftforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
+        PossessionManager.onPossessorChangedDimension(new net.neoforged.neoforge.event.entity.player.PlayerEvent.PlayerChangedDimensionEvent(
                 player, helper.getLevel().dimension(), destination.dimension()));
         helper.assertTrue(SoulManager.getPossessedEntityId(player) == null && PossessionManager.getPossessorId(body) == null,
                 "Cross-dimension transition must release the old body");
@@ -594,9 +594,9 @@ public final class PossessionMovementGameTests {
         int travels;
         int jumps;
         CountingPlayer(GameTestHelper helper) {
-            super(helper.getLevel().getServer(), helper.getLevel(), new GameProfile(UUID.randomUUID(), "movement-test"));
+            super(helper.getLevel().getServer(), helper.getLevel(), new GameProfile(UUID.randomUUID(), "movement-test"), net.minecraft.server.level.ClientInformation.createDefault());
         }
-        @Override public int awardRecipes(java.util.Collection<net.minecraft.world.item.crafting.Recipe<?>> recipes) { return 0; }
+        @Override public int awardRecipes(java.util.Collection<net.minecraft.world.item.crafting.RecipeHolder<?>> recipes) { return 0; }
         void updateFluids() { updateInWaterStateAndDoFluidPushing(); }
         @Override public void travel(Vec3 input) { travels++; super.travel(input); }
         @Override public void jumpFromGround() { jumps++; super.jumpFromGround(); }
@@ -607,7 +607,7 @@ public final class PossessionMovementGameTests {
         private int jumps;
 
         @Override
-        protected void jumpFromGround() {
+        public void jumpFromGround() {
             jumps++;
             super.jumpFromGround();
         }

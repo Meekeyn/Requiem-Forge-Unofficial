@@ -13,7 +13,7 @@ public final class PlayerRiftTracker {
     }
 
     public static boolean addKnownRift(ServerPlayer player, ObeliskRecordData.ObeliskRecord record) {
-        return player.getCapability(ModCapabilities.PLAYER_SOUL)
+        return ModCapabilities.soul(player)
                 .map(soul -> soul.addKnownRift(record.recordId()))
                 .orElse(false);
     }
@@ -21,7 +21,7 @@ public final class PlayerRiftTracker {
     public static Set<ObeliskRecordData.ObeliskDescriptor> fetchKnownObelisks(ServerPlayer player) {
         ObeliskRecordData data = ObeliskRecordData.get(player.getServer());
         Set<ObeliskRecordData.ObeliskDescriptor> descriptors = new LinkedHashSet<>();
-        player.getCapability(ModCapabilities.PLAYER_SOUL).ifPresent(soul -> {
+        ModCapabilities.soul(player).ifPresent(soul -> {
             for (UUID recordId : soul.getKnownRifts()) {
                 if (!data.validateLoadedDestination(player.getServer(), recordId)) {
                     soul.removeKnownRift(recordId);

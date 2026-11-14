@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.block;
 
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -9,13 +10,13 @@ import java.util.function.Supplier;
 public class ReclamationRunestoneBlock extends RunestoneBlock {
 
     public ReclamationRunestoneBlock(Properties properties, String runeType, int maxLevel,
-                                     Supplier<? extends MobEffect> effectSupplier) {
+                                     Supplier<? extends Holder<MobEffect>> effectSupplier) {
         super(properties, runeType, maxLevel, effectSupplier);
     }
 
     @Override
     public void applyEffect(ServerPlayer player, int runeLevel, int obeliskWidth) {
-        MobEffect effect = getEffect();
+        Holder<MobEffect> effect = getEffect();
         if (effect == null) {
             return;
         }

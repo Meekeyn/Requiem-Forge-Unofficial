@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
@@ -7,11 +9,10 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderGuiEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderGuiEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect;
 import ua.meekeyn.requiemunofficial.common.init.ModEffects;
@@ -22,10 +23,10 @@ import ua.meekeyn.requiemunofficial.common.soul.SoulState;
  * beta.16 PenanceComponent#clientTick + RequiemFx#renderPenanceOverlay: кольорова «нудота» на екрані,
  * що наростає за 30 с попередження перед покаранням. Лічильник рахується на клієнті тими ж правилами, що й на сервері.
  */
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPenanceOverlay {
 
-    private static final ResourceLocation PENANCE_OVERLAY = new ResourceLocation("textures/misc/nausea.png");
+    private static final ResourceLocation PENANCE_OVERLAY = ResourceLocation.parse("textures/misc/nausea.png");
 
     private static int timeWithPenance = -1;
     private static float lastStrength;
@@ -35,10 +36,7 @@ public final class ClientPenanceOverlay {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         lastStrength = nextStrength;
         if (minecraft.player == null || minecraft.isPaused()) {
@@ -49,7 +47,7 @@ public final class ClientPenanceOverlay {
             return;
         }
 
-        MobEffectInstance penance = minecraft.player.getEffect(ModEffects.PENANCE.get());
+        MobEffectInstance penance = minecraft.player.getEffect(ModEffects.PENANCE);
         if (penance != null && PenanceMobEffect.shouldSplitFromCurrentBody(minecraft.player, penance.getAmplifier())) {
             timeWithPenance = Math.min(PenanceMobEffect.PENANCE_WARNING_TIME, timeWithPenance + 1);
         } else {
@@ -67,11 +65,11 @@ public final class ClientPenanceOverlay {
 
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Pre event) {
-        float intensity = Mth.lerp(event.getPartialTick(), lastStrength, nextStrength);
+        float intensity = Mth.lerp(event.getPartialTick().getGameTimeDeltaPartialTick(false), lastStrength, nextStrength);
         if (intensity <= 0.0F) {
             return;
         }
-        render(event.getGuiGraphics(), ModEffects.PENANCE.get().getColor(), intensity);
+        render(event.getGuiGraphics(), ModEffects.PENANCE.value().getColor(), intensity);
     }
 
     private static void render(GuiGraphics graphics, int rgb, float intensity) {

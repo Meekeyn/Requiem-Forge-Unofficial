@@ -10,8 +10,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.EntitySoulManager;
@@ -104,7 +104,7 @@ public final class ZombiePlayerBodyGameTests {
         helper.getLevel().addFreshEntity(host);
         EntitySoulManager.removeSoul(host);
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
-                new GameProfile(UUID.randomUUID(), "zombie-player-body"));
+                new GameProfile(UUID.randomUUID(), "zombie-player-body"), net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         helper.assertTrue(PossessionManager.tryPossess(player, host), "Zombie possession must succeed");
         Fixture f = new Fixture(player, host, host.position());

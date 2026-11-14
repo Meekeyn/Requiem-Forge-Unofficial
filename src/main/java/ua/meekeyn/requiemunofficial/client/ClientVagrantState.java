@@ -1,15 +1,16 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.diagnostic.VagrantDiagnostics;
 import ua.meekeyn.requiemunofficial.common.network.ModNetwork;
@@ -20,7 +21,7 @@ import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientVagrantState {
 
     private static UUID appliedPlayerId;
@@ -34,7 +35,16 @@ public final class ClientVagrantState {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
+    public static void onClientTickPre(ClientTickEvent.Pre event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        LocalPlayer player = minecraft.player;
+        if (player != null) {
+            primeVagrantPhasePhysics(minecraft, player);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         LocalPlayer player = minecraft.player;
         if (player == null) {
@@ -44,15 +54,6 @@ public final class ClientVagrantState {
             phaseChargeTicks = 0;
             leafPhaseChargeTicks = 0;
             leafPhaseGraceTicks = 0;
-            return;
-        }
-
-        if (event.phase == TickEvent.Phase.START) {
-            primeVagrantPhasePhysics(minecraft, player);
-            return;
-        }
-
-        if (event.phase != TickEvent.Phase.END) {
             return;
         }
 
@@ -248,7 +249,7 @@ public final class ClientVagrantState {
     }
 
     private static void sendVagrantInput(Minecraft minecraft, boolean phaseAttempt) {
-        ModNetwork.CHANNEL.sendToServer(new VagrantInputPacket(
+        ModNetwork.sendToServer(new VagrantInputPacket(
                 minecraft.options.keyJump.isDown(),
                 minecraft.options.keyShift.isDown(),
                 phaseAttempt

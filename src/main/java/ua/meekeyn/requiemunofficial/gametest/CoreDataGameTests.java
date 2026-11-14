@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.gametest;
 
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.gametest.framework.GameTest;
@@ -11,8 +12,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.projectile.SmallFireball;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.block.RiftRunestoneBlock;
 import ua.meekeyn.requiemunofficial.common.block.entity.RunestoneBlockEntity;
@@ -51,7 +52,6 @@ import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
 import ua.meekeyn.requiemunofficial.common.soul.VagrantEvents;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
-import ua.meekeyn.requiemunofficial.mixin.EntityAccessor;
 
 import java.util.List;
 import java.util.UUID;
@@ -167,12 +167,12 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mortician-open-test")
-        ), net.minecraft.world.InteractionHand.MAIN_HAND);
+        , net.minecraft.server.level.ClientInformation.createDefault()), net.minecraft.world.InteractionHand.MAIN_HAND);
         mortician.mobInteract(new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mortician-open-test-2")
-        ), net.minecraft.world.InteractionHand.MAIN_HAND);
+        , net.minecraft.server.level.ClientInformation.createDefault()), net.minecraft.world.InteractionHand.MAIN_HAND);
 
         CompoundTag saved = mortician.saveWithoutId(new CompoundTag());
         MorticianEntity loaded = ModEntities.MORTICIAN.get().create(helper.getLevel());
@@ -353,7 +353,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mortician-anger-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         mortician.hurt(helper.getLevel().damageSources().playerAttack(player), 1.0F);
         CompoundTag saved = mortician.saveWithoutId(new CompoundTag());
@@ -393,8 +393,8 @@ public final class CoreDataGameTests {
         helper.assertTrue(record.dimension().equals(helper.getLevel().dimension().location()),
                 "Descriptor should store dimension");
 
-        CompoundTag saved = ObeliskRecordData.get(helper.getLevel()).save(new CompoundTag());
-        ObeliskRecordData loaded = ObeliskRecordData.load(saved);
+        CompoundTag saved = ObeliskRecordData.get(helper.getLevel()).save(new CompoundTag(), helper.getLevel().registryAccess());
+        ObeliskRecordData loaded = ObeliskRecordData.load(saved, helper.getLevel().registryAccess());
         helper.assertTrue(loaded.getRecord(record.recordId()).isPresent(),
                 "Descriptor record should survive SavedData serialization");
         helper.succeed();
@@ -439,7 +439,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "known-rift-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         helper.assertTrue(PlayerRiftTracker.addKnownRift(player, record),
                 "Player should learn a witnessed rift record");
@@ -463,7 +463,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "selected-rift-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         PlayerRiftTracker.addKnownRift(player, source.getOrCreateObeliskRecord());
         PlayerRiftTracker.addKnownRift(player, targetRecord);
@@ -517,16 +517,21 @@ public final class CoreDataGameTests {
     }
 
     private static boolean hasStoredHumanityLevel(ItemStack stack, int expectedLevel) {
-        String humanityId = BuiltInRegistries.ENCHANTMENT.getKey(ModEnchantments.HUMANITY.get()).toString();
-        net.minecraft.nbt.ListTag enchantments = net.minecraft.world.item.EnchantedBookItem.getEnchantments(stack);
-        for (int i = 0; i < enchantments.size(); i++) {
-            CompoundTag enchantment = enchantments.getCompound(i);
-            if (humanityId.equals(enchantment.getString("id"))
-                    && enchantment.getInt("lvl") == expectedLevel) {
-                return true;
-            }
-        }
-        return false;
+        var stored = stack.getOrDefault(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS,
+                net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        return stored.getLevel(ModEnchantments.humanity()) == expectedLevel;
+    }
+
+    private static int runCommand(net.minecraft.server.MinecraftServer server,
+                                  net.minecraft.commands.CommandSourceStack source, String command) {
+        int[] result = {0};
+        server.getCommands().performPrefixedCommand(source.withCallback((success, value) -> result[0] = value), command);
+        return result[0];
+    }
+
+    private static net.minecraft.core.Holder<net.minecraft.world.item.enchantment.Enchantment> enchantment(
+            GameTestHelper helper, net.minecraft.resources.ResourceKey<net.minecraft.world.item.enchantment.Enchantment> key) {
+        return helper.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT).getOrThrow(key);
     }
 
     @GameTest(template = "empty")
@@ -548,13 +553,13 @@ public final class CoreDataGameTests {
     public static void requiemAdvancementsAndCriteriaAreLoaded(GameTestHelper helper) {
         for (ResourceLocation criterionId : REQUIRED_REQUIEM_CRITERIA) {
             helper.assertTrue(
-                    net.minecraft.advancements.CriteriaTriggers.getCriterion(criterionId) != null,
+                    BuiltInRegistries.TRIGGER_TYPES.get(criterionId) != null,
                     "Missing criterion " + criterionId
             );
         }
         for (ResourceLocation advancementId : REQUIRED_REQUIEM_ADVANCEMENTS) {
             helper.assertTrue(
-                    helper.getLevel().getServer().getAdvancements().getAdvancement(advancementId) != null,
+                    helper.getLevel().getServer().getAdvancements().get(advancementId) != null,
                     "Missing advancement " + advancementId
             );
         }
@@ -582,10 +587,10 @@ public final class CoreDataGameTests {
     public static void soulVesselDataRoundTrips(GameTestHelper helper) {
         ItemStack vessel = new ItemStack(ModItems.FILLED_SOUL_VESSEL.get());
         SoulVesselItem.setSoulData(vessel, "test_soul", 7);
-        vessel.getOrCreateTag().remove("SoulKind");
-        vessel.getOrCreateTag().remove("SoulEnergy");
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.removeKey(vessel, "SoulKind");
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.removeKey(vessel, "SoulEnergy");
 
-        ItemStack loaded = ItemStack.of(vessel.save(new CompoundTag()));
+        ItemStack loaded = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(ua.meekeyn.requiemunofficial.common.util.ItemNbt.write(vessel));
         helper.assertTrue(SoulVesselItem.hasSoulData(loaded), "Soul data should be present");
         helper.assertTrue("test_soul".equals(SoulVesselItem.getSoulType(loaded)), "Soul type should persist");
         helper.assertTrue(SoulVesselItem.getSoulAmount(loaded) == SoulVesselItem.CAPACITY, "Soul amount should persist (clamped to vessel capacity)");
@@ -624,25 +629,22 @@ public final class CoreDataGameTests {
     @GameTest(template = "empty")
     public static void humanityBookCarriesHumanityEnchantment(GameTestHelper helper) {
         ItemStack book = HumanityEnchantedBookItem.create(2);
-        String humanityId = BuiltInRegistries.ENCHANTMENT.getKey(ModEnchantments.HUMANITY.get()).toString();
-        int level = 0;
-        net.minecraft.nbt.ListTag enchantments = net.minecraft.world.item.EnchantedBookItem.getEnchantments(book);
-        for (int i = 0; i < enchantments.size(); i++) {
-            CompoundTag enchantment = enchantments.getCompound(i);
-            if (humanityId.equals(enchantment.getString("id"))) {
-                level = enchantment.getInt("lvl");
-            }
-        }
+        int level = book.getOrDefault(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS,
+                net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY).getLevel(ModEnchantments.humanity(helper.getLevel().registryAccess()));
         helper.assertTrue(level == 2, "Humanity book should carry the registered Humanity enchantment");
-        helper.assertTrue(ModEnchantments.HUMANITY.get().getMaxLevel() == 2,
+        var humanity = ModEnchantments.humanity(helper.getLevel().registryAccess()).value();
+        helper.assertTrue(humanity.getMaxLevel() == 2,
                 "Humanity enchantment should match the original max level");
-        helper.assertTrue(ModEnchantments.HUMANITY.get().isTreasureOnly(),
+        helper.assertTrue(helper.getLevel().registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+                        .get(net.minecraft.tags.EnchantmentTags.IN_ENCHANTING_TABLE)
+                        .map(set -> set.stream().noneMatch(h -> h.is(ModEnchantments.HUMANITY)))
+                        .orElse(true),
                 "Humanity enchantment should be treasure-only like the original");
 
         net.minecraft.world.entity.monster.Zombie host =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         ItemStack sword = new ItemStack(Items.IRON_SWORD);
-        sword.enchant(ModEnchantments.HUMANITY.get(), 2);
+        sword.enchant(ModEnchantments.humanity(helper.getLevel().registryAccess()), 2);
         host.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, sword);
         helper.assertTrue(
                 PossessedItemManager.getHumanityLevel(host) == 2,
@@ -697,7 +699,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "remnant-vessel-cost-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         ua.meekeyn.requiemunofficial.common.soul.SoulManager.setState(player, SoulState.MORTAL);
         ItemStack sealed = new ItemStack(ModItems.SEALED_REMNANT_VESSEL.get());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, sealed);
@@ -720,7 +722,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "pure-vessel-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie host =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         host.setPos(1.0D, 2.0D, 1.0D);
@@ -752,7 +754,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "timed-capture-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -766,9 +768,9 @@ public final class CoreDataGameTests {
                 net.minecraft.world.InteractionHand.MAIN_HAND
         );
         helper.assertTrue(result.consumesAction(), "Soul capture should enter active use");
-        helper.assertTrue(empty.getTagElement("RequiemSoulCapture") != null,
+        helper.assertTrue(ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(empty, "RequiemSoulCapture") != null,
                 "Soul capture should store active capture data on the vessel");
-        helper.assertTrue(empty.getUseDuration() >= 96,
+        helper.assertTrue(empty.getUseDuration(null) >= 96,
                 "Soul capture should require a timed channel instead of instant capture");
         helper.assertTrue(EntitySoulManager.hasSoul(cow),
                 "Starting capture should not remove the target soul immediately");
@@ -781,7 +783,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "creative-vessel-time")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -794,7 +796,7 @@ public final class CoreDataGameTests {
                 net.minecraft.world.InteractionHand.MAIN_HAND
         );
         helper.assertTrue(result.consumesAction(), "Creative vessel should start soul capture");
-        helper.assertTrue(creative.getUseDuration() == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
+        helper.assertTrue(creative.getUseDuration(null) == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
                 "Creative vessel capture should last exactly 10 ticks");
         helper.succeed();
     }
@@ -805,7 +807,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-time")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -821,7 +823,7 @@ public final class CoreDataGameTests {
         );
 
         helper.assertTrue(result.consumesAction(), "Main hand empty vessel should start soul capture");
-        helper.assertTrue(empty.getUseDuration() == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
+        helper.assertTrue(empty.getUseDuration(null) == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
                 "Offhand creative vessel should accelerate the main hand vessel to 10 ticks");
         helper.assertTrue(player.getOffhandItem().is(ModItems.CREATIVE_SOUL_VESSEL.get()),
                 "Offhand creative vessel should stay in the offhand");
@@ -833,7 +835,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-pass")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -851,7 +853,7 @@ public final class CoreDataGameTests {
                 creative, player, cow, net.minecraft.world.InteractionHand.OFF_HAND);
         helper.assertTrue(!offResult.consumesAction(),
                 "Offhand creative vessel must not start its own capture next to a main hand vessel");
-        helper.assertTrue(creative.getTagElement("RequiemSoulCapture") == null,
+        helper.assertTrue(ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(creative, "RequiemSoulCapture") == null,
                 "Offhand creative vessel must stay untouched");
         helper.assertTrue(EntitySoulManager.hasSoul(cow), "The target soul must not be touched");
         helper.succeed();
@@ -862,7 +864,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-result")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -876,7 +878,7 @@ public final class CoreDataGameTests {
 
         helper.assertTrue(result.is(ModItems.FILLED_SOUL_VESSEL.get()),
                 "Accelerated main hand vessel should become filled");
-        helper.assertTrue(player.getOffhandItem() == creative && creative.getTagElement("RequiemSoulCapture") == null,
+        helper.assertTrue(player.getOffhandItem() == creative && ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(creative, "RequiemSoulCapture") == null,
                 "Creative offhand vessel must remain untouched");
         helper.assertTrue(player.getInventory().countItem(ModItems.FILLED_SOUL_VESSEL.get()) == 0,
                 "Capture must not add a second filled vessel to inventory");
@@ -890,7 +892,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dual-vessel-strong")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Ravager ravager =
                 new net.minecraft.world.entity.monster.Ravager(EntityType.RAVAGER, helper.getLevel());
         helper.getLevel().addFreshEntity(ravager);
@@ -904,7 +906,7 @@ public final class CoreDataGameTests {
             var started = SoulVesselItem.beginCaptureForTest(
                     vessel, player, ravager, net.minecraft.world.InteractionHand.MAIN_HAND);
             helper.assertTrue(started.consumesAction(), "Main hand vessel should start capturing the ravager");
-            helper.assertTrue(vessel.getUseDuration() == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
+            helper.assertTrue(vessel.getUseDuration(null) == SoulVesselItem.CREATIVE_CAPTURE_TIME_TICKS,
                     "Offhand creative vessel should use the creative 10 tick capture time");
             ItemStack result = vessel.finishUsingItem(helper.getLevel(), player);
             helper.assertTrue(result.is(ModItems.FILLED_SOUL_VESSEL.get()),
@@ -912,7 +914,7 @@ public final class CoreDataGameTests {
             helper.assertTrue(player.getOffhandItem() == creative
                             && creative.is(ModItems.CREATIVE_SOUL_VESSEL.get())
                             && creative.getCount() == 1
-                            && creative.getTagElement("RequiemSoulCapture") == null,
+                            && ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(creative, "RequiemSoulCapture") == null,
                     "Creative offhand vessel must not be consumed or modified");
         }
         helper.assertTrue(player.getInventory().countItem(ModItems.SHATTERED_SOUL_VESSEL.get()) == 0,
@@ -925,7 +927,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "creative-vessel-result")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -947,7 +949,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "neutral-capture-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Wolf wolf =
                 new net.minecraft.world.entity.animal.Wolf(EntityType.WOLF, helper.getLevel());
         helper.getLevel().addFreshEntity(wolf);
@@ -968,7 +970,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vessel-pass-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         helper.getLevel().addFreshEntity(cow);
@@ -979,7 +981,7 @@ public final class CoreDataGameTests {
                 net.minecraft.world.InteractionHand.MAIN_HAND);
         helper.assertTrue(result == net.minecraft.world.InteractionResult.PASS,
                 "Vessel should allow possession when the target has no capturable soul");
-        helper.assertTrue(vessel.getTagElement("RequiemSoulCapture") == null,
+        helper.assertTrue(ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(vessel, "RequiemSoulCapture") == null,
                 "Passing vessel must not start a capture");
         helper.succeed();
     }
@@ -990,13 +992,13 @@ public final class CoreDataGameTests {
         IchorVesselItem emancipation = (IchorVesselItem) ModItems.ICHOR_VESSEL_EMANCIPATION.get();
         IchorVesselItem penance = (IchorVesselItem) ModItems.ICHOR_VESSEL_PENANCE.get();
         IchorVesselItem reclamation = (IchorVesselItem) ModItems.ICHOR_VESSEL_RECLAMATION.get();
-        helper.assertTrue(attrition.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION.get(),
+        helper.assertTrue(attrition.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION,
                 "Attrition vessel should apply attrition");
-        helper.assertTrue(emancipation.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get(),
+        helper.assertTrue(emancipation.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION,
                 "Emancipation vessel should apply emancipation");
-        helper.assertTrue(penance.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE.get(),
+        helper.assertTrue(penance.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE,
                 "Penance vessel should apply penance");
-        helper.assertTrue(reclamation.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.RECLAMATION.get(),
+        helper.assertTrue(reclamation.getEffect() == ua.meekeyn.requiemunofficial.common.init.ModEffects.RECLAMATION,
                 "Reclamation vessel should apply reclamation");
 
         BlockPos pos = helper.absolutePos(new BlockPos(1, 1, 1));
@@ -1005,7 +1007,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "rune-vessel-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.setItemInHand(
                 net.minecraft.world.InteractionHand.MAIN_HAND,
                 new ItemStack(ModItems.ICHOR_VESSEL_ATTRITION.get())
@@ -1017,12 +1019,7 @@ public final class CoreDataGameTests {
                 false
         );
 
-        helper.getLevel().getBlockState(pos).use(
-                helper.getLevel(),
-                player,
-                net.minecraft.world.InteractionHand.MAIN_HAND,
-                hit
-        );
+        helper.getLevel().getBlockState(pos).useItemOn(player.getMainHandItem(), helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
         helper.assertTrue(
                 helper.getLevel().getBlockState(pos).is(ModBlocks.RUNIC_TACHYLITE_ATTRITION.get()),
                 "Attrition vessel should carve an inert runestone"
@@ -1032,12 +1029,7 @@ public final class CoreDataGameTests {
                 "Carving should return an empty vessel"
         );
 
-        helper.getLevel().getBlockState(pos).use(
-                helper.getLevel(),
-                player,
-                net.minecraft.world.InteractionHand.MAIN_HAND,
-                hit
-        );
+        helper.getLevel().getBlockState(pos).useItemOn(player.getMainHandItem(), helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND, hit);
         helper.assertTrue(
                 helper.getLevel().getBlockState(pos).is(ModBlocks.TACHYLITE_RUNESTONE.get()),
                 "Empty vessel should clear a runic runestone"
@@ -1054,16 +1046,16 @@ public final class CoreDataGameTests {
         net.minecraft.world.entity.monster.Zombie target =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         target.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION.get(),
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION,
                 200,
                 2
         ));
 
-        ua.meekeyn.requiemunofficial.common.init.ModEffects.RECLAMATION.get()
+        ua.meekeyn.requiemunofficial.common.init.ModEffects.RECLAMATION.value()
                 .applyEffectTick(target, 1);
 
         net.minecraft.world.effect.MobEffectInstance attrition =
-                target.getEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION.get());
+                target.getEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.ATTRITION);
         helper.assertTrue(attrition == null || attrition.getAmplifier() == 0,
                 "Reclamation II should reduce Attrition III by two levels");
         helper.succeed();
@@ -1074,7 +1066,7 @@ public final class CoreDataGameTests {
         helper.assertTrue(
                 !ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.blocksPossession(
                         new net.minecraft.world.effect.MobEffectInstance(
-                                ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE.get(),
+                                ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE,
                                 200,
                                 1
                         )
@@ -1084,7 +1076,7 @@ public final class CoreDataGameTests {
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.blocksPossession(
                         new net.minecraft.world.effect.MobEffectInstance(
-                                ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE.get(),
+                                ua.meekeyn.requiemunofficial.common.init.ModEffects.PENANCE,
                                 200,
                                 2
                         )
@@ -1099,7 +1091,7 @@ public final class CoreDataGameTests {
         ItemStack vessel = new ItemStack(ModItems.FILLED_SOUL_VESSEL.get());
         SoulVesselItem.setSoulData(vessel, "minecraft:wither", SoulKind.AGGREGATE, 20);
 
-        ItemStack loaded = ItemStack.of(vessel.save(new CompoundTag()));
+        ItemStack loaded = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(ua.meekeyn.requiemunofficial.common.util.ItemNbt.write(vessel));
         helper.assertTrue(SoulVesselItem.getSoulAmount(loaded) == SoulVesselItem.CAPACITY,
                 "Soul amount should be limited by vessel capacity");
         helper.assertTrue("aggregate".equals(SoulVesselItem.getSoulKind(loaded)), "Soul kind should persist");
@@ -1118,7 +1110,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "filled-vessel-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         BlockPos playerPos = helper.absolutePos(new BlockPos(1, 2, 1));
         player.moveTo(playerPos.getX() + 0.5D, playerPos.getY(), playerPos.getZ() + 0.5D, 0.0F, 0.0F);
         ItemStack filled = new ItemStack(ModItems.FILLED_SOUL_VESSEL.get());
@@ -1167,7 +1159,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "filled-vessel-single-release")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         net.minecraft.world.entity.monster.Zombie host =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
@@ -1227,7 +1219,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "filled-vessel-restore-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -1285,8 +1277,8 @@ public final class CoreDataGameTests {
         BodyRecordData.BodyRecord record = BodyRecordData.get(helper.getLevel()).getOrCreateRecord(cow);
         BodyRecordData.get(helper.getLevel()).markReleasedSoulPending(record.recordId());
 
-        CompoundTag saved = BodyRecordData.get(helper.getLevel()).save(new CompoundTag());
-        BodyRecordData loaded = BodyRecordData.load(saved);
+        CompoundTag saved = BodyRecordData.get(helper.getLevel()).save(new CompoundTag(), helper.getLevel().registryAccess());
+        BodyRecordData loaded = BodyRecordData.load(saved, helper.getLevel().registryAccess());
         BodyRecordData.BodyRecord loadedRecord = loaded.getRecord(record.recordId()).orElse(null);
 
         helper.assertTrue(loadedRecord != null, "Serialized body record should load");
@@ -1357,7 +1349,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "duplicate-release-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
@@ -1395,7 +1387,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "invalid-record-vessel-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
@@ -1447,7 +1439,7 @@ public final class CoreDataGameTests {
         original.startRitual(RitualType.DECAY_ZOMBIE.id(), 120L, playerId, targetId);
 
         RunestoneBlockEntity loaded = new RunestoneBlockEntity(BlockPos.ZERO, state);
-        loaded.load(original.saveWithFullMetadata());
+        loaded.loadWithComponents(original.saveWithFullMetadata(helper.getLevel().registryAccess()), helper.getLevel().registryAccess());
 
         helper.assertTrue(loaded.hasPendingRitual(), "Pending ritual should persist");
         helper.assertTrue(
@@ -1478,7 +1470,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "rift-vagrant-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         SoulManager.setState(player, SoulState.MORTAL);
         helper.assertTrue(!RiftRunestoneBlock.canUseRift(player, runestone),
@@ -1585,7 +1577,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "pending-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.animal.Cow cow =
@@ -1615,7 +1607,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-abilities-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.getAbilities().mayfly = false;
         player.getAbilities().flying = false;
         SoulManager.setState(player, SoulState.VAGRANT);
@@ -1645,7 +1637,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stuck-vagrant-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.getAbilities().mayfly = true;
         player.getAbilities().flying = true;
         player.setInvisible(true);
@@ -1668,7 +1660,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "spectator-nophysics-test")
-        ) {
+        , net.minecraft.server.level.ClientInformation.createDefault()) {
             @Override
             public boolean isSpectator() {
                 return true;
@@ -1690,7 +1682,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-collision-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         VagrantEvents.updateVagrantStateForTest(player);
         player.getPersistentData().putInt(VagrantRules.PHASE_CHARGE_TICKS, VagrantRules.PHASE_REQUIRED_TICKS);
@@ -1771,7 +1763,7 @@ public final class CoreDataGameTests {
         EntitySoulManager.removeSoul(cow);
 
         cow.setDeltaMovement(0.35D, 0.0D, 0.0D);
-        EntitySoulManager.onLivingTick(new net.minecraftforge.event.entity.living.LivingEvent.LivingTickEvent(cow));
+        EntitySoulManager.onLivingTick(new net.neoforged.neoforge.event.tick.EntityTickEvent.Pre(cow));
         helper.assertTrue(cow.getDeltaMovement().x > 0.3D,
                 "Inert soulless bodies must not erase horizontal external impulses");
         helper.assertTrue(!cow.noPhysics, "Inert soulless bodies must keep block collision physics");
@@ -1791,7 +1783,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-phase-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         player.setYRot(-90.0F);
         player.setYHeadRot(-90.0F);
@@ -1804,14 +1796,8 @@ public final class CoreDataGameTests {
         VagrantEvents.refreshAfterSoulStateChange(player);
         VagrantEvents.setVagrantInput(player, false, false, true);
         for (int i = 0; i < VagrantRules.LEAF_PHASE_REQUIRED_TICKS; i++) {
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    player
-            ));
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.END,
-                    player
-            ));
+            VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
+            VagrantEvents.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Post(player));
         }
 
         helper.assertTrue(VagrantRules.isLeafPhaseCharged(player), "Leaves should charge phasing after 15 ticks");
@@ -1825,7 +1811,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-neighbor-collision-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, VagrantRules.LEAF_PHASE_REQUIRED_TICKS);
@@ -1889,7 +1875,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-phase-speed-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         VagrantEvents.refreshAfterSoulStateChange(player);
@@ -1897,27 +1883,15 @@ public final class CoreDataGameTests {
         player.horizontalCollision = true;
 
         for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS - 1; i++) {
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    player
-            ));
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.END,
-                    player
-            ));
+            VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
+            VagrantEvents.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Post(player));
             player.horizontalCollision = true;
         }
         helper.assertTrue(!player.noPhysics,
                 "Vagrant phasing should not enable noPhysics before the original 60 tick charge");
 
-        VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.START,
-                player
-        ));
-        VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.END,
-                player
-        ));
+        VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
+        VagrantEvents.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Post(player));
 
         helper.assertTrue(!player.noPhysics, "Vagrant phasing should keep noPhysics disabled so filtered collisions run");
         helper.assertTrue(VagrantRules.shouldSuppressBlockCollision(player),
@@ -1933,7 +1907,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-phase-lower-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.setPosRaw(1.0D, 2.0D, 1.0D);
         double startY = player.getY();
 
@@ -1954,7 +1928,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-phase-clear-lower-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.setPosRaw(1.0D, 2.0D, 1.0D);
         double startY = player.getY();
 
@@ -1974,7 +1948,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-leaf-phase-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(1, 3, 2)),
                 net.minecraft.world.level.block.Blocks.OAK_LEAVES.defaultBlockState(), 3);
@@ -1982,18 +1956,12 @@ public final class CoreDataGameTests {
         VagrantEvents.setVagrantInput(player, false, false, true);
 
         for (int i = 0; i < VagrantRules.LEAF_PHASE_REQUIRED_TICKS - 1; i++) {
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    player
-            ));
+            VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
         }
         helper.assertTrue(!VagrantRules.isLeafPhaseCharged(player),
                 "Touching leaves should not charge vagrant phasing before 15 ticks");
 
-        VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.START,
-                player
-        ));
+        VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
         helper.assertTrue(VagrantRules.isLeafPhaseCharged(player),
                 "Touching leaves should charge vagrant phasing after 15 ticks");
         helper.assertTrue(!VagrantRules.isPhaseCharged(player),
@@ -2226,17 +2194,14 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-up-phase-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         up.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, -70.0F);
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(1, 4, 1)),
                 net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
         SoulManager.setState(up, SoulState.VAGRANT);
         VagrantEvents.setVagrantInput(up, true, false, true);
         for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS; i++) {
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    up
-            ));
+            VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(up));
         }
         helper.assertTrue(up.getDeltaMovement().y > 0.0D,
                 "Jump plus upward look should enter phasing upward");
@@ -2245,7 +2210,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-down-phase-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         down.moveTo(helper.absolutePos(new BlockPos(4, 3, 1)), 0.0F, 70.0F);
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(4, 2, 1)),
                 net.minecraft.world.level.block.Blocks.STONE.defaultBlockState(), 3);
@@ -2253,10 +2218,7 @@ public final class CoreDataGameTests {
         VagrantEvents.setVagrantInput(down, false, true, true);
         down.setShiftKeyDown(true);
         for (int i = 0; i < VagrantRules.PHASE_REQUIRED_TICKS; i++) {
-            VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    down
-            ));
+            VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(down));
         }
         helper.assertTrue(down.getDeltaMovement().y < 0.0D,
                 "Shift plus downward look should enter phasing downward");
@@ -2314,7 +2276,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "villager-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.npc.Villager villager =
@@ -2360,7 +2322,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-zombie-collision-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -2382,7 +2344,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "host-death-release-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         BlockPos hostPos = helper.absolutePos(new BlockPos(3, 2, 3));
@@ -2425,7 +2387,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "host-death-keepxp-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
@@ -2454,7 +2416,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stored-inventory-death-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         // Піглін: руки + броня + 8 слотів інвентаря, тож слот 1 зберігається в NBT тіла.
         net.minecraft.world.entity.monster.piglin.Piglin skeleton =
                 new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
@@ -2526,7 +2488,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "repossess-inventory-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Skeleton skeleton =
                 new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
         BlockPos hostPos = helper.absolutePos(new BlockPos(3, 2, 3));
@@ -2570,7 +2532,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "inside-death-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Skeleton skeleton =
                 new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
         skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
@@ -2652,7 +2614,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "emancipation-release-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
         GameTestSupport.attachConnection(helper, player);
 
@@ -2670,7 +2632,7 @@ public final class CoreDataGameTests {
 
         // Give Emancipation effect
         player.addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get(), 200, 0));
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION, 200, 0));
 
         // Test canDissociateFrom directly (the method that checks Emancipation)
         helper.assertTrue(
@@ -2690,7 +2652,7 @@ public final class CoreDataGameTests {
     private static boolean isCanDissociateFrom(net.minecraft.server.level.ServerPlayer player,
                                                net.minecraft.world.entity.LivingEntity host) {
         return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
-                || player.hasEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get());
+                || player.hasEffect(ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION);
     }
 
     /**
@@ -2705,7 +2667,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "unconditional-release-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
         GameTestSupport.attachConnection(helper, player);
 
@@ -2723,7 +2685,7 @@ public final class CoreDataGameTests {
 
         // Ensure no Emancipation effect
         helper.assertTrue(!player.hasEffect(
-                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get()),
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION),
                 "Player must not have Emancipation effect");
 
         // Simulate UNCONDITIONAL_RELEASE action
@@ -2747,7 +2709,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "double-v-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
         GameTestSupport.attachConnection(helper, player);
 
@@ -2800,7 +2762,7 @@ public final class CoreDataGameTests {
                     helper.getLevel().getServer(),
                     helper.getLevel(),
                     new com.mojang.authlib.GameProfile(UUID.randomUUID(), "dead-action-test")
-            );
+            , net.minecraft.server.level.ClientInformation.createDefault());
             player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
             GameTestSupport.attachConnection(helper, player);
             net.minecraft.world.entity.monster.Skeleton skeleton =
@@ -2835,7 +2797,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blocked-release-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
         GameTestSupport.attachConnection(helper, player);
 
@@ -2853,7 +2815,7 @@ public final class CoreDataGameTests {
 
         // Ensure no Emancipation effect
         helper.assertTrue(!player.hasEffect(
-                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get()),
+                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION),
                 "Player must not have Emancipation effect");
 
         // Simulate RELEASE action (dissociation key)
@@ -2872,7 +2834,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "host-hand-sync-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
@@ -2906,7 +2868,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "host-movement-geometry-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         BlockPos start = helper.absolutePos(new BlockPos(1, 2, 1));
@@ -2948,7 +2910,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stale-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.npc.Villager villager =
@@ -2960,10 +2922,7 @@ public final class CoreDataGameTests {
         helper.assertTrue(PossessionManager.tryPossess(player, villager), "Setup possession should succeed");
         SoulManager.setState(player, SoulState.MORTAL);
 
-        PossessionManager.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.END,
-                player
-        ));
+        PossessionManager.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Post(player));
 
         helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
                 "Non-vagrant players should not keep a possessed host id");
@@ -2978,7 +2937,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "remnant-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.REMNANT);
 
         net.minecraft.world.entity.animal.Cow cow =
@@ -3003,7 +2962,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "release-split-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
 
@@ -3018,7 +2977,7 @@ public final class CoreDataGameTests {
                 "Release action without Emancipation must not leave an abandoned shell");
 
         addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.EMANCIPATION.get(), 200, 0));
+                ModEffects.EMANCIPATION, 200, 0));
 
         PossessionManager.handleAction(
                 player,
@@ -3042,10 +3001,10 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "own-body-exit-config-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
-        helper.assertTrue(!player.hasEffect(ModEffects.EMANCIPATION.get()),
+        helper.assertTrue(!player.hasEffect(ModEffects.EMANCIPATION),
                 "Player must not have Emancipation effect");
 
         ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.set(true);
@@ -3071,15 +3030,15 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "death-shell-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         player.experienceLevel = 7;
         player.totalExperience = 91;
         player.experienceProgress = 0.5F;
 
-        net.minecraftforge.event.entity.living.LivingDeathEvent event =
-                new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        net.neoforged.neoforge.event.entity.living.LivingDeathEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         );
@@ -3103,12 +3062,12 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mortal-death-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.MORTAL);
         ua.meekeyn.requiemunofficial.common.soul.InitialSoulChoiceManager.markChosenForTest(player);
 
-        net.minecraftforge.event.entity.living.LivingDeathEvent event =
-                new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        net.neoforged.neoforge.event.entity.living.LivingDeathEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         );
@@ -3127,8 +3086,8 @@ public final class CoreDataGameTests {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-suspend-test");
         SoulManager.setState(player, SoulState.MORTAL);
 
-        net.minecraftforge.event.entity.living.LivingDeathEvent event =
-                new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        net.neoforged.neoforge.event.entity.living.LivingDeathEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                         player,
                         player.damageSources().generic()
                 );
@@ -3147,19 +3106,16 @@ public final class CoreDataGameTests {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-repeat-damage-test");
         SoulManager.setState(player, SoulState.MORTAL);
 
-        SoulLifecycleManager.onLivingDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        SoulLifecycleManager.onLivingDeath(new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         ));
-        net.minecraftforge.event.entity.living.LivingHurtEvent hurtEvent =
-                new net.minecraftforge.event.entity.living.LivingHurtEvent(
-                        player,
-                        player.damageSources().magic(),
-                        10.0F
-                );
+        net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent hurtEvent =
+                new net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent(
+                        player, new net.neoforged.neoforge.common.damagesource.DamageContainer(player.damageSources().magic(), 10.0F));
         DeathSuspensionManager.onLivingHurt(hurtEvent);
-        net.minecraftforge.event.entity.living.LivingDeathEvent secondDeath =
-                new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        net.neoforged.neoforge.event.entity.living.LivingDeathEvent secondDeath =
+                new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                         player,
                         player.damageSources().magic()
                 );
@@ -3176,24 +3132,18 @@ public final class CoreDataGameTests {
     public static void deathSuspensionCountdownOpensChoiceOnce(GameTestHelper helper) {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-countdown-test");
         SoulManager.setState(player, SoulState.MORTAL);
-        SoulLifecycleManager.onLivingDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        SoulLifecycleManager.onLivingDeath(new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         ));
 
         for (int i = 0; i < 25; i++) {
-            DeathSuspensionManager.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                    net.minecraftforge.event.TickEvent.Phase.START,
-                    player
-            ));
+            DeathSuspensionManager.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
         }
         helper.assertTrue(DeathSuspensionManager.hasOpenedChoiceForTest(player),
                 "Choice should be marked opened after the 20 tick delay");
         int countdown = DeathSuspensionManager.countdownForTest(player);
-        DeathSuspensionManager.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.START,
-                player
-        ));
+        DeathSuspensionManager.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
         helper.assertTrue(DeathSuspensionManager.countdownForTest(player) == countdown,
                 "Already opened choice should not restart or reopen");
         helper.succeed();
@@ -3203,7 +3153,7 @@ public final class CoreDataGameTests {
     public static void mortalChoiceCompletesSuspension(GameTestHelper helper) {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-mortal-test");
         SoulManager.setState(player, SoulState.MORTAL);
-        SoulLifecycleManager.onLivingDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        SoulLifecycleManager.onLivingDeath(new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         ));
@@ -3223,7 +3173,7 @@ public final class CoreDataGameTests {
     public static void remnantChoiceCompletesSuspensionWithoutImmediateVagrant(GameTestHelper helper) {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-remnant-test");
         SoulManager.setState(player, SoulState.MORTAL);
-        SoulLifecycleManager.onLivingDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        SoulLifecycleManager.onLivingDeath(new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         ));
@@ -3245,15 +3195,15 @@ public final class CoreDataGameTests {
     public static void completedInitialChoicePreventsFutureSuspension(GameTestHelper helper) {
         TestServerPlayer player = new TestServerPlayer(helper, "choice-done-test");
         SoulManager.setState(player, SoulState.MORTAL);
-        SoulLifecycleManager.onLivingDeath(new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        SoulLifecycleManager.onLivingDeath(new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                 player,
                 player.damageSources().generic()
         ));
         ua.meekeyn.requiemunofficial.common.soul.InitialSoulChoiceManager.choose(player, SoulState.MORTAL);
         player.requiemTestDied = false;
 
-        net.minecraftforge.event.entity.living.LivingDeathEvent secondDeath =
-                new net.minecraftforge.event.entity.living.LivingDeathEvent(
+        net.neoforged.neoforge.event.entity.living.LivingDeathEvent secondDeath =
+                new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                         player,
                         player.damageSources().generic()
                 );
@@ -3280,8 +3230,8 @@ public final class CoreDataGameTests {
             TestServerPlayer player = new TestServerPlayer(helper, "choice-forced-remnant-test");
             SoulManager.setState(player, SoulState.MORTAL);
 
-            net.minecraftforge.event.entity.living.LivingDeathEvent event =
-                    new net.minecraftforge.event.entity.living.LivingDeathEvent(
+            net.neoforged.neoforge.event.entity.living.LivingDeathEvent event =
+                    new net.neoforged.neoforge.event.entity.living.LivingDeathEvent(
                             player,
                             player.damageSources().generic()
                     );
@@ -3305,8 +3255,8 @@ public final class CoreDataGameTests {
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
 
-        net.minecraftforge.event.entity.living.LivingExperienceDropEvent event =
-                new net.minecraftforge.event.entity.living.LivingExperienceDropEvent(cow, null, 5);
+        net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingExperienceDropEvent(cow, null, 5);
         HumanityKillManager.onExperienceDrop(event);
 
         helper.assertTrue(event.getDroppedExperience() == 5,
@@ -3321,7 +3271,8 @@ public final class CoreDataGameTests {
             super(
                     helper.getLevel().getServer(),
                     helper.getLevel(),
-                    new com.mojang.authlib.GameProfile(UUID.randomUUID(), name)
+                    new com.mojang.authlib.GameProfile(UUID.randomUUID(), name),
+                    net.minecraft.server.level.ClientInformation.createDefault()
             );
         }
 
@@ -3346,7 +3297,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-visual-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         SoulManager.setState(player, SoulState.VAGRANT);
         VagrantEvents.updateVagrantStateForTest(player);
@@ -3366,7 +3317,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-interaction-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3388,7 +3339,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-move-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3425,7 +3376,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-zero-input-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Husk husk =
                 new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
         husk.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3480,7 +3431,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-jump-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3518,7 +3469,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-look-control-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3567,7 +3518,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-no-flight-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -3608,7 +3559,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-ledge-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 6, 1)), 0.0F, 0.0F);
@@ -3651,7 +3602,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-gravity-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Fox fox =
                 new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
         net.minecraft.world.entity.npc.Villager villager =
@@ -3699,7 +3650,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-item-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         GameTestSupport.attachConnection(helper, player);
         net.minecraft.world.entity.animal.Fox fox =
                 new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
@@ -3733,7 +3684,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-offhand-item-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         GameTestSupport.attachConnection(helper, player);
         net.minecraft.world.entity.animal.Fox fox =
                 new net.minecraft.world.entity.animal.Fox(EntityType.FOX, helper.getLevel());
@@ -3771,7 +3722,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "shell-no-orb-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
 
         SoulLifecycleManager.createShell(player);
@@ -3810,7 +3761,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "survival-possess-event")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -3820,8 +3771,8 @@ public final class CoreDataGameTests {
         helper.getLevel().addFreshEntity(cow);
         EntitySoulManager.removeSoul(cow);
 
-        net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract event =
-                new net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract(
+        net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract event =
+                new net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract(
                         player,
                         net.minecraft.world.InteractionHand.MAIN_HAND,
                         cow
@@ -3839,7 +3790,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "creative-item-priority")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.getAbilities().instabuild = true;
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -3849,8 +3800,8 @@ public final class CoreDataGameTests {
         ItemStack creative = new ItemStack(ModItems.CREATIVE_SOUL_VESSEL.get());
         player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, creative);
 
-        net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract event =
-                new net.minecraftforge.event.entity.player.PlayerInteractEvent.EntityInteract(
+        net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract event =
+                new net.neoforged.neoforge.event.entity.player.PlayerInteractEvent.EntityInteract(
                         player,
                         net.minecraft.world.InteractionHand.MAIN_HAND,
                         cow
@@ -3858,7 +3809,7 @@ public final class CoreDataGameTests {
         PossessionManager.onEntityInteract(event);
 
         helper.assertTrue(event.isCanceled(), "Creative item interaction should consume the entity use");
-        helper.assertTrue(creative.getTagElement("RequiemSoulCapture") != null,
+        helper.assertTrue(ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(creative, "RequiemSoulCapture") != null,
                 "Creative vessel should receive the active capture data");
         helper.assertTrue(!PossessionManager.hasPendingPossessionForTest(player),
                 "Possession should not start on top of a handled creative item use");
@@ -3871,7 +3822,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-armor-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.monster.Zombie zombie =
@@ -3893,7 +3844,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-armor-mirror-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
@@ -3920,7 +3871,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-hand-sync-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Skeleton skeleton =
                 new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
@@ -3956,7 +3907,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-jump-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Husk husk =
                 new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
@@ -3980,7 +3931,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-input-jump-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Husk husk =
                 new net.minecraft.world.entity.monster.Husk(EntityType.HUSK, helper.getLevel());
@@ -4004,23 +3955,21 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-step-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(zombie);
         EntitySoulManager.removeSoul(zombie);
-        ua.meekeyn.requiemunofficial.mixin.EntityAccessor accessor =
-                (ua.meekeyn.requiemunofficial.mixin.EntityAccessor) zombie;
-        accessor.requiemunofficial$setMaxUpStep(0.1F);
+        ua.meekeyn.requiemunofficial.common.possession.StepHeight.set(zombie, 0.1F);
 
         helper.assertTrue(PossessionManager.tryPossess(player, zombie), "Possession should start");
-        helper.assertTrue(Math.abs(accessor.requiemunofficial$getMaxUpStep() - 0.6F) < 0.0001F,
+        helper.assertTrue(Math.abs(ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(zombie) - 0.6F) < 0.0001F,
                 "Possession should temporarily raise walking host maxUpStep to the beta-compatible minimum");
 
         PossessionManager.release(player, zombie);
-        helper.assertTrue(Math.abs(accessor.requiemunofficial$getMaxUpStep() - 0.1F) < 0.0001F,
+        helper.assertTrue(Math.abs(ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(zombie) - 0.1F) < 0.0001F,
                 "Releasing possession should restore the host's original maxUpStep");
         helper.succeed();
     }
@@ -4031,7 +3980,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "shell-drop-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         player.getInventory().items.set(4, new ItemStack(Items.DIAMOND, 3));
@@ -4058,7 +4007,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blaze-charge-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.monster.Blaze blaze =
@@ -4085,7 +4034,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blaze-travel-authority-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Blaze blaze =
                 new net.minecraft.world.entity.monster.Blaze(EntityType.BLAZE, helper.getLevel());
@@ -4121,7 +4070,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blaze-release-inertia-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Blaze blaze =
                 new net.minecraft.world.entity.monster.Blaze(EntityType.BLAZE, helper.getLevel());
@@ -4172,7 +4121,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-shift-pose-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Skeleton skeleton =
                 new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
@@ -4200,8 +4149,8 @@ public final class CoreDataGameTests {
         helper.assertTrue(skeleton.getPose() == skeletonPose,
                 "Skeleton shift flag should not switch the mob into CROUCHING pose");
         net.minecraft.world.entity.EntityDimensions shiftedSkeletonDimensions = skeleton.getDimensions(skeleton.getPose());
-        helper.assertTrue(shiftedSkeletonDimensions.width == skeletonDimensions.width
-                        && shiftedSkeletonDimensions.height == skeletonDimensions.height,
+        helper.assertTrue(shiftedSkeletonDimensions.width() == skeletonDimensions.width()
+                        && shiftedSkeletonDimensions.height() == skeletonDimensions.height(),
                 "Skeleton shift flag should not change dimensions");
         helper.assertTrue(skeleton.getEyeHeight() == skeletonEyeHeight,
                 "Skeleton shift flag should not change eye height");
@@ -4234,8 +4183,8 @@ public final class CoreDataGameTests {
         helper.assertTrue(blaze.getPose() == blazePose,
                 "Blaze shift flag should not switch the mob into CROUCHING pose");
         net.minecraft.world.entity.EntityDimensions shiftedBlazeDimensions = blaze.getDimensions(blaze.getPose());
-        helper.assertTrue(shiftedBlazeDimensions.width == blazeDimensions.width
-                        && shiftedBlazeDimensions.height == blazeDimensions.height,
+        helper.assertTrue(shiftedBlazeDimensions.width() == blazeDimensions.width()
+                        && shiftedBlazeDimensions.height() == blazeDimensions.height(),
                 "Blaze shift flag should not change dimensions");
         helper.assertTrue(blaze.getEyeHeight() == blazeEyeHeight,
                 "Blaze shift flag should not change eye height");
@@ -4248,7 +4197,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-authority-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4258,7 +4207,7 @@ public final class CoreDataGameTests {
         helper.getLevel().addFreshEntity(skeleton);
         EntitySoulManager.removeSoul(skeleton);
 
-        float originalStep = ((EntityAccessor) player).requiemunofficial$getMaxUpStep();
+        float originalStep = ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(player);
         helper.assertTrue(PossessionManager.tryPossess(player, skeleton), "Skeleton possession should start");
         helper.assertTrue(player.getCamera() == player, "Beta16 skeleton possession must keep player camera authority");
         helper.assertTrue(!player.noPhysics, "Beta16 skeleton possession must keep player collision enabled");
@@ -4287,7 +4236,7 @@ public final class CoreDataGameTests {
         PossessionManager.release(player, skeleton);
         helper.assertTrue(!PossessionManager.isUsingBeta16PlayerBody(player),
                 "Beta16 body state should clear on release");
-        helper.assertTrue(((EntityAccessor) player).requiemunofficial$getMaxUpStep() == originalStep,
+        helper.assertTrue(ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(player) == originalStep,
                 "Player step height should be restored after release");
         helper.succeed();
     }
@@ -4298,7 +4247,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-pick-owner-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4306,7 +4255,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-pick-other-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         other.moveTo(helper.absolutePos(new BlockPos(1, 2, 3)), 0.0F, 0.0F);
 
         net.minecraft.world.entity.monster.Skeleton skeleton =
@@ -4333,7 +4282,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-synced-id-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4360,7 +4309,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "finite-input-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4397,7 +4346,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-custom-attack-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4430,7 +4379,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-speed-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4464,7 +4413,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-repeat-speed-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4502,7 +4451,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-fall-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4516,8 +4465,8 @@ public final class CoreDataGameTests {
         float skeletonHealth = skeleton.getHealth();
         helper.assertTrue(PossessionManager.tryPossess(player, skeleton), "Skeleton possession should start");
 
-        net.minecraftforge.event.entity.living.LivingFallEvent event =
-                new net.minecraftforge.event.entity.living.LivingFallEvent(player, 6.0F, 1.0F);
+        net.neoforged.neoforge.event.entity.living.LivingFallEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingFallEvent(player, 6.0F, 1.0F);
         PossessionManager.onBeta16PlayerBodyFall(event);
 
         helper.assertTrue(event.isCanceled(), "Player fall event should be canceled while the skeleton body owns health");
@@ -4533,7 +4482,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-knockback-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         player.setOnGround(true);
         SoulManager.setState(player, SoulState.VAGRANT);
@@ -4548,8 +4497,8 @@ public final class CoreDataGameTests {
         player.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
         skeleton.setDeltaMovement(net.minecraft.world.phys.Vec3.ZERO);
 
-        net.minecraftforge.event.entity.living.LivingKnockBackEvent event =
-                new net.minecraftforge.event.entity.living.LivingKnockBackEvent(skeleton, 0.4F, 1.0D, 0.0D);
+        net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent event =
+                new net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent(skeleton, 0.4F, 1.0D, 0.0D);
         PossessionManager.onBeta16PlayerBodyKnockback(event);
 
         helper.assertTrue(event.isCanceled(), "Host knockback should be redirected to the player body");
@@ -4566,7 +4515,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-skeleton-size-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -4583,15 +4532,15 @@ public final class CoreDataGameTests {
         float skeletonEyeHeight = skeleton.getEyeHeight(pose);
 
         helper.assertTrue(PossessionManager.tryPossess(player, skeleton), "Skeleton possession should start");
-        helper.assertTrue(player.getDimensions(pose).width == skeletonDimensions.width
-                        && player.getDimensions(pose).height == skeletonDimensions.height,
+        helper.assertTrue(player.getDimensions(pose).width() == skeletonDimensions.width()
+                        && player.getDimensions(pose).height() == skeletonDimensions.height(),
                 "Player dimensions should delegate to the skeleton host");
         helper.assertTrue(player.getEyeHeight(pose) == skeletonEyeHeight,
                 "Player eye height should delegate to the skeleton host");
 
         PossessionManager.release(player, skeleton);
-        helper.assertTrue(player.getDimensions(pose).width == originalDimensions.width
-                        && player.getDimensions(pose).height == originalDimensions.height,
+        helper.assertTrue(player.getDimensions(pose).width() == originalDimensions.width()
+                        && player.getDimensions(pose).height() == originalDimensions.height(),
                 "Player dimensions should restore after release");
         helper.assertTrue(player.getEyeHeight(pose) == originalEyeHeight,
                 "Player eye height should restore after release");
@@ -4604,9 +4553,9 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "identity-shell-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
-        player.getCapability(ua.meekeyn.requiemunofficial.common.soul.ModCapabilities.PLAYER_SOUL)
+        ua.meekeyn.requiemunofficial.common.soul.ModCapabilities.soul(player)
                 .ifPresent(soul -> soul.setState(SoulState.VAGRANT));
         player.getInventory().add(new ItemStack(Items.DIAMOND, 5));
 
@@ -4632,11 +4581,11 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage8-soulbound-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         ItemStack soulbound = new ItemStack(Items.AMETHYST_SHARD);
-        soulbound.getOrCreateTag().putBoolean("RequiemSoulbound", true);
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(soulbound, tag -> tag.putBoolean("RequiemSoulbound", true));
         player.getInventory().items.set(5, soulbound.copy());
         player.getInventory().items.set(6, new ItemStack(Items.DIRT, 12));
 
@@ -4670,12 +4619,12 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage8-equipment-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         player.getInventory().armor.set(3, new ItemStack(Items.IRON_HELMET));
         ItemStack offhand = new ItemStack(Items.TORCH);
-        offhand.getOrCreateTag().putBoolean("RequiemSoulbound", true);
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(offhand, tag -> tag.putBoolean("RequiemSoulbound", true));
         player.getInventory().offhand.set(0, offhand.copy());
 
         helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
@@ -4711,7 +4660,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage8-keepinv-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         player.getInventory().items.set(4, new ItemStack(Items.DIAMOND, 3));
@@ -4745,11 +4694,11 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage8-effects-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
         addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.ATTRITION.get(),
+                ModEffects.ATTRITION,
                 200,
                 1
         ));
@@ -4762,18 +4711,18 @@ public final class CoreDataGameTests {
         helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
-        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION.get()),
+        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION),
                 "Soulbound attrition should stay with the soul");
         helper.assertTrue(!player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED),
                 "Normal body effect should leave the soul");
-        helper.assertTrue(!shell.hasEffect(ModEffects.ATTRITION.get()),
+        helper.assertTrue(!shell.hasEffect(ModEffects.ATTRITION),
                 "Soulbound attrition should not be copied to the shell");
         helper.assertTrue(shell.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED),
                 "Normal body effect should be stored on the shell");
 
         helper.assertTrue(SoulLifecycleManager.tryReclaimShell(player, shell),
                 "Reclaim should restore body effects");
-        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION.get()),
+        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION),
                 "Soulbound effect should survive reclaim");
         helper.assertTrue(player.hasEffect(net.minecraft.world.effect.MobEffects.MOVEMENT_SPEED),
                 "Body effect should restore on reclaim");
@@ -4786,16 +4735,16 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-sticky-remove")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
-        addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(ModEffects.ATTRITION.get(), 80, 0));
+        addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(ModEffects.ATTRITION, 80, 0));
 
         net.minecraft.world.effect.MobEffectInstance removed =
-                player.getActiveEffectsMap().remove(ModEffects.ATTRITION.get());
+                player.getActiveEffectsMap().remove(ModEffects.ATTRITION);
         ua.meekeyn.requiemunofficial.common.effect.StickyEffectReapplicationManager
                 .onEffectRemoved(player, removed);
 
-        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION.get()),
+        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION),
                 "Sticky attrition should reapply after ordinary removal on a vagrant soul");
         helper.succeed();
     }
@@ -4806,10 +4755,10 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-freeze")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.effect.MobEffectInstance attrition =
-                new net.minecraft.world.effect.MobEffectInstance(ModEffects.ATTRITION.get(), 80, 0);
+                new net.minecraft.world.effect.MobEffectInstance(ModEffects.ATTRITION, 80, 0);
 
         attrition.tick(player, () -> {
         });
@@ -4825,17 +4774,17 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-reclamation-clear")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.REMNANT);
         addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.RECLAMATION.get(),
+                ModEffects.RECLAMATION,
                 200,
                 0
         ));
 
         helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should succeed");
 
-        helper.assertTrue(!player.hasEffect(ModEffects.RECLAMATION.get()),
+        helper.assertTrue(!player.hasEffect(ModEffects.RECLAMATION),
                 "Reclamation should be cleared during dissociation/split cleanup");
         helper.succeed();
     }
@@ -4846,13 +4795,13 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-penance-merge")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.REMNANT);
         helper.assertTrue(SoulLifecycleManager.splitPlayer(player), "Split should create a reclaimable shell");
         PlayerShellEntity shell = SoulLifecycleManager.findShell(player);
         helper.assertTrue(shell != null, "Split should create a shell");
         addEffectForFakePlayer(player, new net.minecraft.world.effect.MobEffectInstance(
-                ModEffects.PENANCE.get(),
+                ModEffects.PENANCE,
                 200,
                 ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.PLAYER_BAN_THRESHOLD
         ));
@@ -4861,7 +4810,7 @@ public final class CoreDataGameTests {
                 "Penance II should deny shell merge/reclaim");
         helper.assertTrue(
                 ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.blocksCure(
-                        player.getEffect(ModEffects.PENANCE.get())
+                        player.getEffect(ModEffects.PENANCE)
                 ),
                 "Any Penance should deny possessed-body cure");
         helper.succeed();
@@ -4873,7 +4822,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-attrition-update")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         int riftDuration = RiftTeleportManager.getAttritionLength(
                 new BlockPos(0, 64, 0),
                 new BlockPos(1000, 64, 0)
@@ -4882,7 +4831,7 @@ public final class CoreDataGameTests {
         ua.meekeyn.requiemunofficial.common.effect.AttritionMobEffect.apply(player, 1, riftDuration);
         ua.meekeyn.requiemunofficial.common.effect.AttritionMobEffect.apply(player, 1, 20);
 
-        net.minecraft.world.effect.MobEffectInstance attrition = player.getEffect(ModEffects.ATTRITION.get());
+        net.minecraft.world.effect.MobEffectInstance attrition = player.getEffect(ModEffects.ATTRITION);
         helper.assertTrue(attrition != null && attrition.getAmplifier() == 1,
                 "A second Attrition application should increase amplifier by one");
         helper.assertTrue(attrition != null && attrition.getDuration() >= riftDuration,
@@ -4896,10 +4845,11 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage19-attrition-attribute")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.setHealth(player.getMaxHealth());
 
-        ModEffects.ATTRITION.get().addAttributeModifiers(player, player.getAttributes(), 0);
+        ua.meekeyn.requiemunofficial.gametest.GameTestSupport.attachConnection(helper, player);
+        player.addEffect(new net.minecraft.world.effect.MobEffectInstance(ModEffects.ATTRITION, 200, 0));
 
         helper.assertTrue(player.getMaxHealth() < 20.0F,
                 "Attrition should reduce max health through its original attribute modifier");
@@ -4914,7 +4864,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-fall-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         SoulManager.setState(player, SoulState.REMNANT);
         player.fallDistance = 12.0F;
@@ -4937,14 +4887,14 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "plate-regular-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(regular, SoulState.MORTAL);
 
         net.minecraft.server.level.ServerPlayer vagrant = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "plate-vagrant-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(vagrant, SoulState.VAGRANT);
 
         helper.assertTrue(
@@ -4968,7 +4918,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vagrant-collision-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
 
@@ -4989,12 +4939,12 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "target-mortal-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.server.level.ServerPlayer vagrant = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "target-vagrant-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
 
         SoulManager.setState(mortal, SoulState.MORTAL);
         SoulManager.setState(vagrant, SoulState.VAGRANT);
@@ -5027,7 +4977,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "anatomy-panda-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Panda panda =
                 new net.minecraft.world.entity.animal.Panda(EntityType.PANDA, helper.getLevel());
         player.getInventory().items.set(player.getInventory().selected, new ItemStack(Items.STICK));
@@ -5049,7 +4999,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "anatomy-zombie-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         armoredPlayer.getInventory().armor.set(3, new ItemStack(Items.IRON_HELMET));
@@ -5076,7 +5026,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "identical-equipment-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
@@ -5116,7 +5066,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mirror-cycle-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
@@ -5125,13 +5075,12 @@ public final class CoreDataGameTests {
 
         ItemStack bow = new ItemStack(Items.BOW);
         bow.setDamageValue(17);
-        bow.enchant(net.minecraft.world.item.enchantment.Enchantments.POWER_ARROWS, 2);
-        CompoundTag bowTag = bow.getOrCreateTag();
-        bowTag.putString("requiem_test_payload", "mainhand");
+        bow.enchant(enchantment(helper, net.minecraft.world.item.enchantment.Enchantments.POWER), 2);
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(bow, bowTag -> bowTag.putString("requiem_test_payload", "mainhand"));
         ItemStack offhand = new ItemStack(Items.SHIELD);
         offhand.setDamageValue(9);
         ItemStack helmet = new ItemStack(Items.IRON_HELMET);
-        helmet.enchant(net.minecraft.world.item.enchantment.Enchantments.UNBREAKING, 1);
+        helmet.enchant(enchantment(helper, net.minecraft.world.item.enchantment.Enchantments.UNBREAKING), 1);
         ItemStack chest = new ItemStack(Items.IRON_CHESTPLATE);
         chest.setDamageValue(3);
         player.getInventory().items.set(0, bow);
@@ -5156,8 +5105,8 @@ public final class CoreDataGameTests {
                         && zombie.getMainHandItem().is(Items.BOW)
                         && zombie.getMainHandItem().getDamageValue() == 17
                         && zombie.getMainHandItem().getEnchantmentLevel(
-                        net.minecraft.world.item.enchantment.Enchantments.POWER_ARROWS) == 2
-                        && "mainhand".equals(zombie.getMainHandItem().getTag().getString("requiem_test_payload")),
+                        enchantment(helper, net.minecraft.world.item.enchantment.Enchantments.POWER)) == 2
+                        && "mainhand".equals(ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(zombie.getMainHandItem()).getString("requiem_test_payload")),
                 "Authoritative mainhand stack should move once with NBT, damage and enchantments intact");
         helper.succeed();
     }
@@ -5168,7 +5117,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "mirror-mutation-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie zombie =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
@@ -5182,15 +5131,15 @@ public final class CoreDataGameTests {
                 .syncPlayerEquipmentToHost(player, zombie);
         ItemStack mirror = zombie.getMainHandItem();
         mirror.setDamageValue(23);
-        mirror.getOrCreateTag().putString("foreign_mod_payload", "changed-host-mirror");
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(mirror, tag -> tag.putString("foreign_mod_payload", "changed-host-mirror"));
 
         ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager
                 .syncPlayerEquipmentToHost(player, zombie);
 
         helper.assertTrue(player.getMainHandItem().is(Items.BOW)
                         && player.getMainHandItem().getDamageValue() == 4
-                        && (player.getMainHandItem().getTag() == null
-                        || !player.getMainHandItem().getTag().contains("foreign_mod_payload")),
+                        && (ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(player.getMainHandItem()) == null
+                        || !ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(player.getMainHandItem()).contains("foreign_mod_payload")),
                 "Runtime visual mirror damage/NBT changes must not overwrite the player's real bow");
         helper.assertTrue(zombie.getMainHandItem().is(Items.BOW)
                         && zombie.getMainHandItem().getDamageValue() == 4,
@@ -5323,7 +5272,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "slot-anatomy-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.Cow cow =
                 new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         cow.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -5408,7 +5357,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "loadout-zombie-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         zombie.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(zombie);
         SoulManager.setState(player, SoulState.VAGRANT);
@@ -5656,7 +5605,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-death-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
@@ -5687,7 +5636,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-duplicate-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
@@ -5710,12 +5659,12 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-inventory-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         sealPlayerCellInDarkness(helper, new BlockPos(1, 2, 1));
         SoulManager.setState(player, SoulState.REMNANT);
         ItemStack soulbound = new ItemStack(Items.AMETHYST_SHARD);
-        soulbound.getOrCreateTag().putBoolean("RequiemSoulbound", true);
+        ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(soulbound, tag -> tag.putBoolean("RequiemSoulbound", true));
         player.getInventory().items.set(3, soulbound);
         player.getInventory().items.set(4, new ItemStack(Items.DIRT, 4));
         net.minecraft.world.entity.monster.Zombie zombie =
@@ -5742,7 +5691,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-host-totem-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Zombie host =
@@ -5773,7 +5722,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "stage9-attrition-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Zombie host =
@@ -5784,7 +5733,7 @@ public final class CoreDataGameTests {
 
         PossessionManager.applyHostDeathAttrition(player);
 
-        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION.get()),
+        helper.assertTrue(player.hasEffect(ModEffects.ATTRITION),
                 "Possessed host death should apply attrition to the possessor");
         helper.succeed();
     }
@@ -5797,7 +5746,7 @@ public final class CoreDataGameTests {
 
         helper.assertTrue(
                 PossessionManager.isInAttackCone(
-                        new net.minecraft.world.phys.Vec3(0.0D, target.getEyeY(), 0.0D),
+                        new net.minecraft.world.phys.Vec3(0.0D, target.getBoundingBox().getCenter().y, 0.0D),
                         new net.minecraft.world.phys.Vec3(0.0D, 0.0D, 1.0D),
                         target,
                         4.5D
@@ -5806,7 +5755,7 @@ public final class CoreDataGameTests {
         );
         helper.assertTrue(
                 !PossessionManager.isInAttackCone(
-                        new net.minecraft.world.phys.Vec3(0.0D, target.getEyeY(), 0.0D),
+                        new net.minecraft.world.phys.Vec3(0.0D, target.getBoundingBox().getCenter().y, 0.0D),
                         new net.minecraft.world.phys.Vec3(0.0D, 0.0D, -1.0D),
                         target,
                         4.5D
@@ -5822,7 +5771,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "golem-attack-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.animal.IronGolem host =
                 new net.minecraft.world.entity.animal.IronGolem(EntityType.IRON_GOLEM, helper.getLevel());
         net.minecraft.world.entity.monster.Zombie target =
@@ -5953,7 +5902,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "vessel-anchor-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.Zombie host =
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         host.moveTo(2.5D, 3.0D, 4.5D);
@@ -6028,7 +5977,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "inventory-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         // Піглін: руки + 8 слотів інвентарю, тож слот 5 мусить переїхати в тіло.
         net.minecraft.world.entity.monster.piglin.Piglin host =
                 new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
@@ -6070,7 +6019,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "creative-host-protection-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.getAbilities().instabuild = true;
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -6100,7 +6049,7 @@ public final class CoreDataGameTests {
         );
         helper.assertTrue(host != null, "Possessed skeleton host should exist");
 
-        int result = helper.getLevel().getServer().getCommands().performPrefixedCommand(
+        int result = runCommand(helper.getLevel().getServer(), 
                 helper.getLevel().getServer().createCommandSourceStack()
                         .withLevel(helper.getLevel())
                         .withEntity(player)
@@ -6124,7 +6073,7 @@ public final class CoreDataGameTests {
         );
         helper.assertTrue(host != null, "Possessed skeleton host should exist");
 
-        int give = helper.getLevel().getServer().getCommands().performPrefixedCommand(
+        int give = runCommand(helper.getLevel().getServer(), 
                 helper.getLevel().getServer().createCommandSourceStack()
                         .withLevel(helper.getLevel())
                         .withEntity(player)
@@ -6138,7 +6087,7 @@ public final class CoreDataGameTests {
         helper.assertTrue(!player.hasEffect(net.minecraft.world.effect.MobEffects.GLOWING),
                 "Glowing must not be applied to the player body");
 
-        int clear = helper.getLevel().getServer().getCommands().performPrefixedCommand(
+        int clear = runCommand(helper.getLevel().getServer(), 
                 helper.getLevel().getServer().createCommandSourceStack()
                         .withLevel(helper.getLevel())
                         .withEntity(player)
@@ -6192,7 +6141,7 @@ public final class CoreDataGameTests {
                 "Host Slowness should reduce Player Body movement speed");
 
         PossessionManager.release(player, host);
-        helper.assertTrue(playerSpeed.getModifier(UUID.fromString("f25420ed-4041-4cc6-87fa-6e5272dddb2b")) == null,
+        helper.assertTrue(playerSpeed.getModifier(ua.meekeyn.requiemunofficial.common.util.ModIds.id("beta16_player_speed")) == null,
                 "Beta16 speed modifier should be removed on release");
         helper.succeed();
     }
@@ -6279,7 +6228,7 @@ public final class CoreDataGameTests {
                 "Blaze Player Body speed should use the flight mobility scale");
 
         PossessionManager.controlHostForTest(player, host);
-        helper.assertTrue(playerSpeed.getModifier(UUID.fromString("f25420ed-4041-4cc6-87fa-6e5272dddb2b")) != null,
+        helper.assertTrue(playerSpeed.getModifier(ua.meekeyn.requiemunofficial.common.util.ModIds.id("beta16_player_speed")) != null,
                 "Beta16 speed modifier should remain a single replaceable modifier");
 
         PossessionManager.release(player, host);
@@ -6294,7 +6243,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-fov-speed-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -6350,7 +6299,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "beta16-sprint-once-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -6442,8 +6391,8 @@ public final class CoreDataGameTests {
     @GameTest(template = "empty", timeoutTicks = 180, batch = "blaze_projectile_regression")
     public static void beta16BlazeFireballDamagesAndIgnitesTarget(GameTestHelper helper) {
         helper.getLevel().getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
-                new net.minecraft.world.phys.AABB(helper.absolutePos(new BlockPos(0, 3, 0)),
-                        helper.absolutePos(new BlockPos(4, 7, 4))))
+                new net.minecraft.world.phys.AABB(net.minecraft.world.phys.Vec3.atLowerCornerOf(helper.absolutePos(new BlockPos(0, 3, 0))),
+                        net.minecraft.world.phys.Vec3.atLowerCornerOf(helper.absolutePos(new BlockPos(4, 7, 4)))))
                 .forEach(net.minecraft.world.entity.Entity::discard);
         // Траса лишається в межах власної клітинки empty: сусідні конструкції (вода/лава) не чіпаємо і не зачіпаємося.
         for (int x = 0; x <= 3; x++) {
@@ -6646,7 +6595,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-stone-bypass-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         helper.getLevel().setBlock(helper.absolutePos(new BlockPos(1, 2, 1)),
@@ -6728,7 +6677,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blaze-target-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         net.minecraft.world.entity.monster.Blaze host =
@@ -6754,7 +6703,7 @@ public final class CoreDataGameTests {
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(), helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "existing-hostility")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         net.minecraft.world.entity.monster.Blaze host =
                 new net.minecraft.world.entity.monster.Blaze(EntityType.BLAZE, helper.getLevel());
@@ -6784,7 +6733,7 @@ public final class CoreDataGameTests {
                 new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         helper.getLevel().addFreshEntity(zombie);
         net.minecraft.world.entity.projectile.Arrow arrow =
-                new net.minecraft.world.entity.projectile.Arrow(helper.getLevel(), host);
+                new net.minecraft.world.entity.projectile.Arrow(helper.getLevel(), host, new ItemStack(Items.ARROW), null);
         ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection oldDetection =
                 helper.getLevel().getGameRules().getRule(
                         ua.meekeyn.requiemunofficial.common.init.ModGameRules.POSSESSION_DETECTION).get();
@@ -6795,7 +6744,7 @@ public final class CoreDataGameTests {
         try {
             var source = helper.getLevel().damageSources().arrow(arrow, host);
             ua.meekeyn.requiemunofficial.common.possession.PossessionDetectionManager.onLivingAttack(
-                    new net.minecraftforge.event.entity.living.LivingAttackEvent(zombie, source, 2.0F));
+                    new net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent(zombie, new net.neoforged.neoforge.common.damagesource.DamageContainer(source, 2.0F)));
             helper.assertTrue(zombie.getTarget() == host,
                     "Projectile victim should target the possessed shooter");
             helper.assertTrue(!PossessionManager.shouldCancelTargetForTest(zombie, host),
@@ -6819,7 +6768,7 @@ public final class CoreDataGameTests {
         float playerHealth = player.getHealth();
         float hostHealth = host.getHealth();
 
-        int result = helper.getLevel().getServer().getCommands().performPrefixedCommand(
+        int result = runCommand(helper.getLevel().getServer(), 
                 helper.getLevel().getServer().createCommandSourceStack()
                         .withLevel(helper.getLevel())
                         .withEntity(player)
@@ -6864,7 +6813,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "possessed-hunger-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         net.minecraft.world.entity.monster.piglin.Piglin host =
                 new net.minecraft.world.entity.monster.piglin.Piglin(EntityType.PIGLIN, helper.getLevel());
         helper.getLevel().addFreshEntity(host);
@@ -6898,7 +6847,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-grace-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         helper.setBlock(new BlockPos(2, 2, 1), net.minecraft.world.level.block.Blocks.OAK_LEAVES);
@@ -6932,7 +6881,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "leaf-only-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         player.getPersistentData().putInt(VagrantRules.LEAF_PHASE_CHARGE_TICKS, VagrantRules.LEAF_PHASE_REQUIRED_TICKS);
@@ -6962,7 +6911,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "sense-target-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -6997,7 +6946,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), "sense-zombie-skeleton-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 
@@ -7083,7 +7032,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), name)
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(localPos), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
         VagrantEvents.refreshAfterSoulStateChange(player);
@@ -7106,14 +7055,8 @@ public final class CoreDataGameTests {
     }
 
     private static void tickVagrantPlayer(net.minecraft.server.level.ServerPlayer player) {
-        VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.START,
-                player
-        ));
-        VagrantEvents.onPlayerTick(new net.minecraftforge.event.TickEvent.PlayerTickEvent(
-                net.minecraftforge.event.TickEvent.Phase.END,
-                player
-        ));
+        VagrantEvents.onPlayerTickPre(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Pre(player));
+        VagrantEvents.onPlayerTick(new net.neoforged.neoforge.event.tick.PlayerTickEvent.Post(player));
     }
 
     private static RunestoneBlockEntity createPoweredRift(GameTestHelper helper, BlockPos absolutePos) {
@@ -7137,7 +7080,7 @@ public final class CoreDataGameTests {
     @GameTest(template = "empty")
     public static void possessedAnimalUsesSameDisguiseAndRetaliationRules(GameTestHelper helper) {
         var player = new net.minecraft.server.level.ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
-                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "animal-disguise"));
+                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "animal-disguise"), net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         var host = new net.minecraft.world.entity.animal.Cow(EntityType.COW, helper.getLevel());
         host.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
@@ -7190,7 +7133,7 @@ public final class CoreDataGameTests {
         var victim = new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         victim.moveTo(host.getX() + 4.0D, host.getY(), host.getZ(), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(victim);
-        var arrow = new net.minecraft.world.entity.projectile.Arrow(helper.getLevel(), player);
+        var arrow = new net.minecraft.world.entity.projectile.Arrow(helper.getLevel(), player, new ItemStack(Items.ARROW), null);
         arrow.setPos(victim.getX() - 2.0D, victim.getY() + 0.8D, victim.getZ());
         arrow.setDeltaMovement(3.0D, 0.0D, 0.0D);
         helper.getLevel().addFreshEntity(arrow);
@@ -7209,7 +7152,7 @@ public final class CoreDataGameTests {
         var victim = new net.minecraft.world.entity.monster.Zombie(EntityType.ZOMBIE, helper.getLevel());
         victim.moveTo(host.getX() + 2.0D, host.getY(), host.getZ(), 0.0F, 0.0F);
         helper.getLevel().addFreshEntity(victim);
-        var fireball = new SmallFireball(helper.getLevel(), host, 1.0D, 0.0D, 0.0D);
+        var fireball = new SmallFireball(helper.getLevel(), host, new net.minecraft.world.phys.Vec3(1.0D, 0.0D, 0.0D));
         fireball.setPos(victim.getX() - 1.0D, victim.getY() + 0.8D, victim.getZ());
         fireball.setDeltaMovement(2.0D, 0.0D, 0.0D);
         helper.getLevel().addFreshEntity(fireball);
@@ -7227,7 +7170,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), name)
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         player.getInventory().armor.set(3, new ItemStack(Items.IRON_HELMET));
         SoulManager.setState(player, SoulState.VAGRANT);
@@ -7249,7 +7192,7 @@ public final class CoreDataGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(UUID.randomUUID(), name)
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(1, 4, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.VAGRANT);
 

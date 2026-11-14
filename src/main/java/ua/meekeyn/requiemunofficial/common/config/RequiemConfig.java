@@ -1,24 +1,24 @@
 package ua.meekeyn.requiemunofficial.common.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class RequiemConfig {
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
-    public static final ForgeConfigSpec.DoubleValue SOUL_CAPTURE_CHANCE;
-    public static final ForgeConfigSpec.IntValue RIFT_TELEPORT_ENERGY_COST;
-    public static final ForgeConfigSpec.IntValue RUNE_EFFECT_BASE_DURATION_TICKS;
-    public static final ForgeConfigSpec.IntValue RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS;
-    public static final ForgeConfigSpec.IntValue RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS;
-    public static final ForgeConfigSpec.BooleanValue ALLOW_UNCONDITIONAL_POSSESSION_EXIT;
-    public static final ForgeConfigSpec.BooleanValue ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION;
-    public static final ForgeConfigSpec.BooleanValue OBELISK_REQUIRE_SOUL_BLOCKS;
-    public static final ForgeConfigSpec.BooleanValue OBELISK_STORED_ENERGY_BONUS;
-    public static final ForgeConfigSpec.BooleanValue RUNE_CRAFTING_RECIPES;
-    public static final ForgeConfigSpec.BooleanValue ICHOR_VESSEL_USE_CONDITIONS;
+    public static final ModConfigSpec.DoubleValue SOUL_CAPTURE_CHANCE;
+    public static final ModConfigSpec.IntValue RIFT_TELEPORT_ENERGY_COST;
+    public static final ModConfigSpec.IntValue RUNE_EFFECT_BASE_DURATION_TICKS;
+    public static final ModConfigSpec.IntValue RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS;
+    public static final ModConfigSpec.IntValue RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS;
+    public static final ModConfigSpec.BooleanValue ALLOW_UNCONDITIONAL_POSSESSION_EXIT;
+    public static final ModConfigSpec.BooleanValue ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION;
+    public static final ModConfigSpec.BooleanValue OBELISK_REQUIRE_SOUL_BLOCKS;
+    public static final ModConfigSpec.BooleanValue OBELISK_STORED_ENERGY_BONUS;
+    public static final ModConfigSpec.BooleanValue RUNE_CRAFTING_RECIPES;
+    public static final ModConfigSpec.BooleanValue ICHOR_VESSEL_USE_CONDITIONS;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         // Усі налаштування тут — port-only (в оригиналі beta.16 їх немає), тому тримаємо їх
         // під єдиною секцією requiemunofficial.

@@ -4,7 +4,7 @@
   ],
   "passes": [
     {
-      "name": "wobble",
+      "name": "requiemunofficial:wobble",
       "intarget": "minecraft:main",
       "outtarget": "swap"
     },

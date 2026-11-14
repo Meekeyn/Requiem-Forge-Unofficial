@@ -1,70 +1,77 @@
 package ua.meekeyn.requiemunofficial.common.advancement;
 
-import com.google.gson.JsonObject;
-import net.minecraft.advancements.CriteriaTriggers;
-import net.minecraft.advancements.critereon.AbstractCriterionTriggerInstance;
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import net.minecraft.advancements.CriterionTrigger;
 import net.minecraft.advancements.critereon.ContextAwarePredicate;
-import net.minecraft.advancements.critereon.DeserializationContext;
 import net.minecraft.advancements.critereon.EntityPredicate;
-import net.minecraft.advancements.critereon.SerializationContext;
 import net.minecraft.advancements.critereon.SimpleCriterionTrigger;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.storage.loot.LootContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
-import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
-import javax.annotation.Nullable;
+import java.util.Optional;
 
 public final class ModCriteria {
 
-    public static final ChoiceTrigger MADE_REMNANT_CHOICE =
-            new ChoiceTrigger(ModIds.id("made_remnant_choice"));
-    public static final EntityTrigger PLAYER_POSSESSED_ENTITY =
-            new EntityTrigger(ModIds.id("player_possessed_entity"), "entity");
-    public static final DeathTrigger ENTITY_DIED_AFTER_POSSESSION =
-            new DeathTrigger(ModIds.id("entity_died_after_possession"));
-    public static final HitTrigger POSSESSED_HIT_ENTITY =
-            new HitTrigger(ModIds.id("possessed_hit_entity"));
-    public static final TransformationTrigger TRANSFORMED_POSSESSED_ENTITY =
-            new TransformationTrigger(ModIds.id("transformed_possessed_entity"));
-    public static final EntityTrigger PLAYER_RESURRECTED_AS_ENTITY =
-            new EntityTrigger(ModIds.id("player_resurrected_as_entity"), "body");
+    private static final DeferredRegister<CriterionTrigger<?>> TRIGGERS =
+            DeferredRegister.create(Registries.TRIGGER_TYPE, RequiemUnofficial.MODID);
+
+    public static final ChoiceTrigger MADE_REMNANT_CHOICE = new ChoiceTrigger();
+    public static final EntityTrigger PLAYER_POSSESSED_ENTITY = new EntityTrigger("entity");
+    public static final DeathTrigger ENTITY_DIED_AFTER_POSSESSION = new DeathTrigger();
+    public static final HitTrigger POSSESSED_HIT_ENTITY = new HitTrigger();
+    public static final TransformationTrigger TRANSFORMED_POSSESSED_ENTITY = new TransformationTrigger();
+    public static final EntityTrigger PLAYER_RESURRECTED_AS_ENTITY = new EntityTrigger("body");
+
+    static {
+        TRIGGERS.register("made_remnant_choice", () -> MADE_REMNANT_CHOICE);
+        TRIGGERS.register("player_possessed_entity", () -> PLAYER_POSSESSED_ENTITY);
+        TRIGGERS.register("entity_died_after_possession", () -> ENTITY_DIED_AFTER_POSSESSION);
+        TRIGGERS.register("possessed_hit_entity", () -> POSSESSED_HIT_ENTITY);
+        TRIGGERS.register("transformed_possessed_entity", () -> TRANSFORMED_POSSESSED_ENTITY);
+        TRIGGERS.register("player_resurrected_as_entity", () -> PLAYER_RESURRECTED_AS_ENTITY);
+    }
 
     private ModCriteria() {
     }
 
-    public static void init() {
-        CriteriaTriggers.register(MADE_REMNANT_CHOICE);
-        CriteriaTriggers.register(PLAYER_POSSESSED_ENTITY);
-        CriteriaTriggers.register(ENTITY_DIED_AFTER_POSSESSION);
-        CriteriaTriggers.register(POSSESSED_HIT_ENTITY);
-        CriteriaTriggers.register(TRANSFORMED_POSSESSED_ENTITY);
-        CriteriaTriggers.register(PLAYER_RESURRECTED_AS_ENTITY);
+    public static void register(IEventBus modEventBus) {
+        TRIGGERS.register(modEventBus);
     }
 
     private static boolean canTrigger(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 
-    public static final class ChoiceTrigger extends SimpleCriterionTrigger<ChoiceInstance> {
-        private final ResourceLocation id;
+    private static boolean matches(Optional<ContextAwarePredicate> predicate, LootContext context) {
+        return predicate.isEmpty() || predicate.get().matches(context);
+    }
 
-        private ChoiceTrigger(ResourceLocation id) {
-            this.id = id;
+    // ---- made_remnant_choice ----
+
+    public static final class ChoiceTrigger extends SimpleCriterionTrigger<ChoiceTrigger.Instance> {
+        public record Instance(Optional<ContextAwarePredicate> player, String remnantType)
+                implements SimpleCriterionTrigger.SimpleInstance {
+            public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                    Codec.STRING.optionalFieldOf("remnant_type", "").forGetter(Instance::remnantType)
+            ).apply(i, Instance::new));
+
+            private boolean matches(String type) {
+                return remnantType.isEmpty() || remnantType.equals(type);
+            }
         }
 
         @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        protected ChoiceInstance createInstance(JsonObject json, ContextAwarePredicate player,
-                                                DeserializationContext context) {
-            String remnantType = json.has("remnant_type") ? json.get("remnant_type").getAsString() : "";
-            return new ChoiceInstance(id, player, remnantType);
+        public Codec<Instance> codec() {
+            return Instance.CODEC;
         }
 
         public void trigger(ServerPlayer player, SoulState choice) {
@@ -78,265 +85,130 @@ public final class ModCriteria {
         }
     }
 
-    public static final class ChoiceInstance extends AbstractCriterionTriggerInstance {
-        private final String remnantType;
+    // ---- player_possessed_entity / player_resurrected_as_entity ----
 
-        private ChoiceInstance(ResourceLocation id, ContextAwarePredicate player, String remnantType) {
-            super(id, player);
-            this.remnantType = remnantType;
+    public static class EntityTrigger extends SimpleCriterionTrigger<EntityTrigger.Instance> {
+        public record Instance(Optional<ContextAwarePredicate> player, Optional<ContextAwarePredicate> entity)
+                implements SimpleCriterionTrigger.SimpleInstance {
         }
 
-        private boolean matches(String type) {
-            return remnantType.isEmpty() || remnantType.equals(type);
-        }
+        private final Codec<Instance> codec;
 
-        @Override
-        public JsonObject serializeToJson(SerializationContext context) {
-            JsonObject json = super.serializeToJson(context);
-            if (!remnantType.isEmpty()) {
-                json.addProperty("remnant_type", remnantType);
-            }
-            return json;
-        }
-    }
-
-    public static class EntityTrigger extends SimpleCriterionTrigger<EntityInstance> {
-        private final ResourceLocation id;
-        private final String field;
-
-        private EntityTrigger(ResourceLocation id, String field) {
-            this.id = id;
-            this.field = field;
+        private EntityTrigger(String field) {
+            this.codec = RecordCodecBuilder.create(i -> i.group(
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf(field).forGetter(Instance::entity)
+            ).apply(i, Instance::new));
         }
 
         @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        protected EntityInstance createInstance(JsonObject json, ContextAwarePredicate player,
-                                                DeserializationContext context) {
-            return new EntityInstance(id, player, field, EntityPredicate.fromJson(json, field, context));
+        public Codec<Instance> codec() {
+            return codec;
         }
 
         public void trigger(ServerPlayer player, Entity entity) {
             if (!canTrigger(player)) {
                 return;
             }
-            var entityContext = EntityPredicate.createContext(player, entity);
-            trigger(player, instance -> instance.matches(entityContext));
+            LootContext entityContext = EntityPredicate.createContext(player, entity);
+            trigger(player, instance -> ModCriteria.matches(instance.entity(), entityContext));
         }
     }
 
-    public static final class EntityInstance extends AbstractCriterionTriggerInstance {
-        private final String field;
-        private final ContextAwarePredicate entity;
+    // ---- entity_died_after_possession ----
 
-        private EntityInstance(ResourceLocation id, ContextAwarePredicate player, String field,
-                               ContextAwarePredicate entity) {
-            super(id, player);
-            this.field = field;
-            this.entity = entity;
-        }
+    public static final class DeathTrigger extends SimpleCriterionTrigger<DeathTrigger.Instance> {
+        public record Instance(Optional<ContextAwarePredicate> player, Optional<ContextAwarePredicate> entity,
+                               Optional<Boolean> seppukku) implements SimpleCriterionTrigger.SimpleInstance {
+            public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("entity").forGetter(Instance::entity),
+                    Codec.BOOL.optionalFieldOf("seppukku").forGetter(Instance::seppukku)
+            ).apply(i, Instance::new));
 
-        private boolean matches(net.minecraft.world.level.storage.loot.LootContext context) {
-            return entity.matches(context);
-        }
-
-        @Override
-        public JsonObject serializeToJson(SerializationContext context) {
-            JsonObject json = super.serializeToJson(context);
-            json.add(field, entity.toJson(context));
-            return json;
-        }
-    }
-
-    public static final class DeathTrigger extends SimpleCriterionTrigger<DeathInstance> {
-        private final ResourceLocation id;
-
-        private DeathTrigger(ResourceLocation id) {
-            this.id = id;
+            private boolean matches(LootContext context, boolean actualSeppukku) {
+                return ModCriteria.matches(entity, context)
+                        && (seppukku.isEmpty() || seppukku.get() == actualSeppukku);
+            }
         }
 
         @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        protected DeathInstance createInstance(JsonObject json, ContextAwarePredicate player,
-                                               DeserializationContext context) {
-            Boolean seppukku = json.has("seppukku") ? json.get("seppukku").getAsBoolean() : null;
-            return new DeathInstance(
-                    id,
-                    player,
-                    EntityPredicate.fromJson(json, "entity", context),
-                    seppukku
-            );
+        public Codec<Instance> codec() {
+            return Instance.CODEC;
         }
 
         public void trigger(ServerPlayer player, LivingEntity entity, boolean seppukku) {
             if (!canTrigger(player)) {
                 return;
             }
-            var entityContext = EntityPredicate.createContext(player, entity);
+            LootContext entityContext = EntityPredicate.createContext(player, entity);
             trigger(player, instance -> instance.matches(entityContext, seppukku));
         }
     }
 
-    public static final class DeathInstance extends AbstractCriterionTriggerInstance {
-        private final ContextAwarePredicate entity;
-        private final @Nullable Boolean seppukku;
+    // ---- possessed_hit_entity ----
 
-        private DeathInstance(ResourceLocation id, ContextAwarePredicate player,
-                              ContextAwarePredicate entity, @Nullable Boolean seppukku) {
-            super(id, player);
-            this.entity = entity;
-            this.seppukku = seppukku;
-        }
+    public static final class HitTrigger extends SimpleCriterionTrigger<HitTrigger.Instance> {
+        public record Instance(Optional<ContextAwarePredicate> player, Optional<ContextAwarePredicate> possessed,
+                               Optional<ContextAwarePredicate> target) implements SimpleCriterionTrigger.SimpleInstance {
+            public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("possessed").forGetter(Instance::possessed),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("entity").forGetter(Instance::target)
+            ).apply(i, Instance::new));
 
-        private boolean matches(net.minecraft.world.level.storage.loot.LootContext context,
-                                boolean actualSeppukku) {
-            return entity.matches(context) && (seppukku == null || seppukku == actualSeppukku);
-        }
-
-        @Override
-        public JsonObject serializeToJson(SerializationContext context) {
-            JsonObject json = super.serializeToJson(context);
-            json.add("entity", entity.toJson(context));
-            if (seppukku != null) {
-                json.addProperty("seppukku", seppukku);
+            private boolean matches(LootContext possessedContext, LootContext targetContext) {
+                return ModCriteria.matches(possessed, possessedContext) && ModCriteria.matches(target, targetContext);
             }
-            return json;
-        }
-    }
-
-    public static final class HitTrigger extends SimpleCriterionTrigger<HitInstance> {
-        private final ResourceLocation id;
-
-        private HitTrigger(ResourceLocation id) {
-            this.id = id;
         }
 
         @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        protected HitInstance createInstance(JsonObject json, ContextAwarePredicate player,
-                                             DeserializationContext context) {
-            return new HitInstance(
-                    id,
-                    player,
-                    EntityPredicate.fromJson(json, "possessed", context),
-                    EntityPredicate.fromJson(json, "entity", context)
-            );
+        public Codec<Instance> codec() {
+            return Instance.CODEC;
         }
 
         public void trigger(ServerPlayer player, LivingEntity possessed, LivingEntity target) {
             if (!canTrigger(player)) {
                 return;
             }
-            var possessedContext = EntityPredicate.createContext(player, possessed);
-            var targetContext = EntityPredicate.createContext(player, target);
+            LootContext possessedContext = EntityPredicate.createContext(player, possessed);
+            LootContext targetContext = EntityPredicate.createContext(player, target);
             trigger(player, instance -> instance.matches(possessedContext, targetContext));
         }
     }
 
-    public static final class HitInstance extends AbstractCriterionTriggerInstance {
-        private final ContextAwarePredicate possessed;
-        private final ContextAwarePredicate target;
+    // ---- transformed_possessed_entity ----
 
-        private HitInstance(ResourceLocation id, ContextAwarePredicate player,
-                            ContextAwarePredicate possessed, ContextAwarePredicate target) {
-            super(id, player);
-            this.possessed = possessed;
-            this.target = target;
-        }
+    public static final class TransformationTrigger extends SimpleCriterionTrigger<TransformationTrigger.Instance> {
+        public record Instance(Optional<ContextAwarePredicate> player, Optional<ContextAwarePredicate> before,
+                               Optional<ContextAwarePredicate> after, Optional<Boolean> cure)
+                implements SimpleCriterionTrigger.SimpleInstance {
+            public static final Codec<Instance> CODEC = RecordCodecBuilder.create(i -> i.group(
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("player").forGetter(Instance::player),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("before").forGetter(Instance::before),
+                    EntityPredicate.ADVANCEMENT_CODEC.optionalFieldOf("after").forGetter(Instance::after),
+                    Codec.BOOL.optionalFieldOf("cure").forGetter(Instance::cure)
+            ).apply(i, Instance::new));
 
-        private boolean matches(net.minecraft.world.level.storage.loot.LootContext possessedContext,
-                                net.minecraft.world.level.storage.loot.LootContext targetContext) {
-            return possessed.matches(possessedContext) && target.matches(targetContext);
-        }
-
-        @Override
-        public JsonObject serializeToJson(SerializationContext context) {
-            JsonObject json = super.serializeToJson(context);
-            json.add("possessed", possessed.toJson(context));
-            json.add("entity", target.toJson(context));
-            return json;
-        }
-    }
-
-    public static final class TransformationTrigger
-            extends SimpleCriterionTrigger<TransformationInstance> {
-        private final ResourceLocation id;
-
-        private TransformationTrigger(ResourceLocation id) {
-            this.id = id;
+            private boolean matches(LootContext beforeContext, LootContext afterContext, boolean actualCure) {
+                return ModCriteria.matches(before, beforeContext)
+                        && ModCriteria.matches(after, afterContext)
+                        && (cure.isEmpty() || cure.get() == actualCure);
+            }
         }
 
         @Override
-        public ResourceLocation getId() {
-            return id;
-        }
-
-        @Override
-        protected TransformationInstance createInstance(JsonObject json, ContextAwarePredicate player,
-                                                         DeserializationContext context) {
-            Boolean cure = json.has("cure") ? json.get("cure").getAsBoolean() : null;
-            return new TransformationInstance(
-                    id,
-                    player,
-                    EntityPredicate.fromJson(json, "before", context),
-                    EntityPredicate.fromJson(json, "after", context),
-                    cure
-            );
+        public Codec<Instance> codec() {
+            return Instance.CODEC;
         }
 
         public void trigger(ServerPlayer player, LivingEntity before, LivingEntity after, boolean cure) {
             if (!canTrigger(player)) {
                 return;
             }
-            var beforeContext = EntityPredicate.createContext(player, before);
-            var afterContext = EntityPredicate.createContext(player, after);
+            LootContext beforeContext = EntityPredicate.createContext(player, before);
+            LootContext afterContext = EntityPredicate.createContext(player, after);
             trigger(player, instance -> instance.matches(beforeContext, afterContext, cure));
-        }
-    }
-
-    public static final class TransformationInstance extends AbstractCriterionTriggerInstance {
-        private final ContextAwarePredicate before;
-        private final ContextAwarePredicate after;
-        private final @Nullable Boolean cure;
-
-        private TransformationInstance(ResourceLocation id, ContextAwarePredicate player,
-                                       ContextAwarePredicate before, ContextAwarePredicate after,
-                                       @Nullable Boolean cure) {
-            super(id, player);
-            this.before = before;
-            this.after = after;
-            this.cure = cure;
-        }
-
-        private boolean matches(net.minecraft.world.level.storage.loot.LootContext beforeContext,
-                                net.minecraft.world.level.storage.loot.LootContext afterContext,
-                                boolean actualCure) {
-            return before.matches(beforeContext)
-                    && after.matches(afterContext)
-                    && (cure == null || cure == actualCure);
-        }
-
-        @Override
-        public JsonObject serializeToJson(SerializationContext context) {
-            JsonObject json = super.serializeToJson(context);
-            json.add("before", before.toJson(context));
-            json.add("after", after.toJson(context));
-            if (cure != null) {
-                json.addProperty("cure", cure);
-            }
-            return json;
         }
     }
 }

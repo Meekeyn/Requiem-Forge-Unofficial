@@ -15,8 +15,8 @@ import net.minecraft.world.entity.npc.VillagerProfession;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.transformation.TransformationManager;
 import ua.meekeyn.requiemunofficial.common.init.ModEntities;
@@ -119,9 +119,7 @@ public final class TransformationGameTests {
                         .setLevel(3)
         );
         zombieVillager.setVillagerXp(85);
-        CompoundTag offers = new CompoundTag();
-        offers.put("Recipes", new net.minecraft.nbt.ListTag());
-        zombieVillager.setTradeOffers(offers);
+        zombieVillager.setTradeOffers(new net.minecraft.world.item.trading.MerchantOffers());
 
         Mob replacement = TransformationManager.cureUndead(zombieVillager);
         helper.assertTrue(replacement != null && replacement.getType() == ModEntities.CURED_VILLAGER.get(),
@@ -211,7 +209,7 @@ public final class TransformationGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new com.mojang.authlib.GameProfile(java.util.UUID.randomUUID(), "transform-possession-test")
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
 
         Mob zombie = spawn(helper, EntityType.ZOMBIE);

@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.ritual;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -20,12 +21,12 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -38,7 +39,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class DeathResurrectionManager implements ResourceManagerReloadListener {
 
     private static final String DIRECTORY = "requiem_resurrections";
@@ -177,7 +178,7 @@ public final class DeathResurrectionManager implements ResourceManagerReloadList
     }
 
     private static boolean hasLiveConnection(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
@@ -346,7 +347,7 @@ public final class DeathResurrectionManager implements ResourceManagerReloadList
             if (maxLight != null && player.level().getMaxLocalRawBrightness(player.blockPosition()) > maxLight) {
                 return false;
             }
-            return !headInSand || player.getEyeInFluidType() == net.minecraftforge.common.ForgeMod.EMPTY_TYPE.get()
+            return !headInSand || player.getEyeInFluidType() == net.neoforged.neoforge.common.NeoForgeMod.EMPTY_TYPE.value()
                     && player.level().getBlockState(player.blockPosition().above()).is(Blocks.SAND);
         }
     }

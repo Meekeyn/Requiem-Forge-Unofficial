@@ -1,16 +1,17 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderHandEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderHandEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessionHandTransform {
     private ClientPossessionHandTransform() {
     }

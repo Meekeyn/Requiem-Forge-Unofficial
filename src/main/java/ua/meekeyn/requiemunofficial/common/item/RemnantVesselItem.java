@@ -99,7 +99,7 @@ public class RemnantVesselItem extends Item {
     }
 
     private static void sendMessage(ServerPlayer player, Component message) {
-        if (player.connection != null && player.connection.connection != null) {
+        if (player.connection != null && player.connection.getConnection() != null) {
             player.sendSystemMessage(message);
         }
     }
@@ -152,9 +152,9 @@ public class RemnantVesselItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level,
+    public void appendHoverText(ItemStack stack, net.minecraft.world.item.Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
         tooltip.add(Component.translatable(tooltipKey).withStyle(tooltipColor));
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
     }
 }

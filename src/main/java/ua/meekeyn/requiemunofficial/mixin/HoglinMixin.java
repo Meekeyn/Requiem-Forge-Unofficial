@@ -5,7 +5,6 @@ import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.monster.hoglin.Hoglin;
-import net.minecraftforge.event.ForgeEventFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -21,9 +20,6 @@ public abstract class HoglinMixin implements PossessedConversionHost {
 
     @Shadow
     public abstract boolean isConverting();
-
-    @Shadow
-    protected abstract void playSoundEvent(SoundEvent sound);
 
     @Shadow
     private void finishConversion(ServerLevel level) {
@@ -46,9 +42,9 @@ public abstract class HoglinMixin implements PossessedConversionHost {
         ++this.timeInOverworld;
         if (this.timeInOverworld > 300
                 && self.level() instanceof ServerLevel level
-                && ForgeEventFactory.canLivingConvert(self, EntityType.ZOGLIN,
+                && net.neoforged.neoforge.event.EventHooks.canLivingConvert(self, EntityType.ZOGLIN,
                         timer -> this.timeInOverworld = timer)) {
-            this.playSoundEvent(SoundEvents.HOGLIN_CONVERTED_TO_ZOMBIFIED);
+            self.playSound(SoundEvents.HOGLIN_CONVERTED_TO_ZOMBIFIED, 1.0F, 1.0F);
             this.finishConversion(level);
         }
     }

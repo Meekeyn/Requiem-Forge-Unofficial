@@ -48,30 +48,19 @@ public abstract class PlayerMixin {
         LivingEntity host = requiemunofficial$getPossessedHost(player);
         if (host != null && host.getType().is(ModTags.ARROW_GENERATORS)) {
             if (weapon.getItem() instanceof ProjectileWeaponItem) {
-                weapon.getOrCreateTag().putBoolean(PossessionProjectileHooks.INFINITY_SHOT_TAG, true);
+                ua.meekeyn.requiemunofficial.common.util.ItemNbt.edit(weapon, tag -> tag.putBoolean(PossessionProjectileHooks.INFINITY_SHOT_TAG, true));
             }
             cir.setReturnValue(new ItemStack(Items.ARROW));
         }
     }
 
-    @Inject(method = "getDimensions", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "getDefaultDimensions", at = @At("HEAD"), cancellable = true)
     private void requiemunofficial$usePossessedHostDimensions(Pose pose,
                                                                CallbackInfoReturnable<EntityDimensions> cir) {
         Player player = (Player) (Object) this;
         LivingEntity host = PossessionManager.getBeta16PlayerBodyHost(player);
         if (host != null) {
             cir.setReturnValue(host.getDimensions(pose));
-        }
-    }
-
-    @Inject(method = "getStandingEyeHeight", at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$usePossessedHostEyeHeight(Pose pose,
-                                                             EntityDimensions dimensions,
-                                                             CallbackInfoReturnable<Float> cir) {
-        Player player = (Player) (Object) this;
-        LivingEntity host = PossessionManager.getBeta16PlayerBodyHost(player);
-        if (host != null) {
-            cir.setReturnValue(host.getEyeHeight(pose));
         }
     }
 

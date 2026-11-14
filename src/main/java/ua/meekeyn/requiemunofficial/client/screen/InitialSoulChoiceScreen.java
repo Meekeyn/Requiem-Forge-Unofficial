@@ -71,7 +71,7 @@ public final class InitialSoulChoiceScreen extends Screen {
     }
 
     private void choose(SoulState state) {
-        ModNetwork.CHANNEL.sendToServer(new InitialSoulChoicePacket(state));
+        ModNetwork.sendToServer(new InitialSoulChoicePacket(state));
         onClose();
     }
 
@@ -81,7 +81,7 @@ public final class InitialSoulChoiceScreen extends Screen {
             return;
         }
 
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTicks);
         int left = 10;
         int wrapWidth = Math.min(300, this.width - 20);
         graphics.drawWordWrap(

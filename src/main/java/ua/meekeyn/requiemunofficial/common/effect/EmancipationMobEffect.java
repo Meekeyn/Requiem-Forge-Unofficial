@@ -18,15 +18,16 @@ public class EmancipationMobEffect extends MobEffect implements StickyMobEffect 
     }
 
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration % 20 == 0;
     }
 
     @Override
-    public void applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         // Emancipation allows dissociation via the release key while possessed.
         // Auto-release on effect tick was removed: the effect should not force
         // exit every second, which would make possession impossible to maintain.
+        return true;
     }
 
     @Override

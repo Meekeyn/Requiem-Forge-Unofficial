@@ -9,10 +9,10 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.block.ReclamationRunestoneBlock;
 import ua.meekeyn.requiemunofficial.common.block.RiftRunestoneBlock;
@@ -21,9 +21,9 @@ import ua.meekeyn.requiemunofficial.common.block.TachyliteBlock;
 
 public final class ModBlocks {
     public static final DeferredRegister<Block> BLOCKS =
-            DeferredRegister.create(ForgeRegistries.BLOCKS, RequiemUnofficial.MODID);
+            DeferredRegister.create(BuiltInRegistries.BLOCK, RequiemUnofficial.MODID);
 
-    public static final RegistryObject<Block> TACHYLITE =
+    public static final DeferredHolder<Block, Block> TACHYLITE =
             BLOCKS.register("tachylite", () -> new TachyliteBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -32,37 +32,37 @@ public final class ModBlocks {
                             .requiresCorrectToolForDrops()
             ));
 
-    public static final RegistryObject<Block> TACHYLITE_SLAB =
+    public static final DeferredHolder<Block, Block> TACHYLITE_SLAB =
             BLOCKS.register("tachylite/tachylite_slab", () -> new SlabBlock(tachyliteProperties()));
 
-    public static final RegistryObject<Block> TACHYLITE_STAIRS =
+    public static final DeferredHolder<Block, Block> TACHYLITE_STAIRS =
             BLOCKS.register("tachylite/tachylite_stairs", () -> new StairBlock(
-                    () -> TACHYLITE.get().defaultBlockState(),
+                    TACHYLITE.get().defaultBlockState(),
                     tachyliteProperties()
             ));
 
-    public static final RegistryObject<Block> CHISELED_TACHYLITE =
+    public static final DeferredHolder<Block, Block> CHISELED_TACHYLITE =
             BLOCKS.register("tachylite/chiseled", () -> new Block(tachyliteProperties()));
 
-    public static final RegistryObject<Block> CHISELED_TACHYLITE_PILLAR =
+    public static final DeferredHolder<Block, Block> CHISELED_TACHYLITE_PILLAR =
             BLOCKS.register("tachylite/chiseled_pillar", () -> new RotatedPillarBlock(tachyliteProperties()));
 
-    public static final RegistryObject<Block> CHISELED_TACHYLITE_SLAB =
+    public static final DeferredHolder<Block, Block> CHISELED_TACHYLITE_SLAB =
             BLOCKS.register("tachylite/chiseled_slab", () -> new SlabBlock(tachyliteProperties()));
 
-    public static final RegistryObject<Block> CHISELED_TACHYLITE_STAIRS =
+    public static final DeferredHolder<Block, Block> CHISELED_TACHYLITE_STAIRS =
             BLOCKS.register("tachylite/chiseled_stairs", () -> new StairBlock(
                     CHISELED_TACHYLITE.get().defaultBlockState(),
                     tachyliteProperties()
             ));
 
-    public static final RegistryObject<Block> SCRAPED_TACHYLITE =
+    public static final DeferredHolder<Block, Block> SCRAPED_TACHYLITE =
             BLOCKS.register("tachylite/scraped", () -> new Block(tachyliteProperties()));
 
-    public static final RegistryObject<Block> DERELICT_TACHYLITE =
+    public static final DeferredHolder<Block, Block> DERELICT_TACHYLITE =
             BLOCKS.register("tachylite/derelict", () -> new Block(tachyliteProperties()));
 
-    public static final RegistryObject<Block> TACHYLITE_RUNESTONE =
+    public static final DeferredHolder<Block, Block> TACHYLITE_RUNESTONE =
             BLOCKS.register("tachylite_runestone", () -> new RunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -73,7 +73,7 @@ public final class ModBlocks {
                     0
             ));
 
-    public static final RegistryObject<Block> RUNIC_TACHYLITE_ATTRITION =
+    public static final DeferredHolder<Block, Block> RUNIC_TACHYLITE_ATTRITION =
             BLOCKS.register("runic_tachylite_attrition", () -> new RunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -85,7 +85,7 @@ public final class ModBlocks {
                     ModEffects.ATTRITION
             ));
 
-    public static final RegistryObject<Block> RUNIC_TACHYLITE_EMANCIPATION =
+    public static final DeferredHolder<Block, Block> RUNIC_TACHYLITE_EMANCIPATION =
             BLOCKS.register("runic_tachylite_emancipation", () -> new RunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -97,7 +97,7 @@ public final class ModBlocks {
                     ModEffects.EMANCIPATION
             ));
 
-    public static final RegistryObject<Block> RUNIC_TACHYLITE_PENANCE =
+    public static final DeferredHolder<Block, Block> RUNIC_TACHYLITE_PENANCE =
             BLOCKS.register("runic_tachylite_penance", () -> new RunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -109,7 +109,7 @@ public final class ModBlocks {
                     ModEffects.PENANCE
             ));
 
-    public static final RegistryObject<Block> RUNIC_TACHYLITE_RECLAMATION =
+    public static final DeferredHolder<Block, Block> RUNIC_TACHYLITE_RECLAMATION =
             BLOCKS.register("runic_tachylite_reclamation", () -> new ReclamationRunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)
@@ -118,10 +118,10 @@ public final class ModBlocks {
                             .requiresCorrectToolForDrops(),
                     "reclamation",
                     1,
-                    ModEffects.RECLAMATION
+                    () -> ModEffects.RECLAMATION
             ));
 
-    public static final RegistryObject<Block> RIFT_RUNE =
+    public static final DeferredHolder<Block, Block> RIFT_RUNE =
             BLOCKS.register("rift_rune", () -> new RiftRunestoneBlock(
                     BlockBehaviour.Properties.of()
                             .mapColor(MapColor.COLOR_BLACK)

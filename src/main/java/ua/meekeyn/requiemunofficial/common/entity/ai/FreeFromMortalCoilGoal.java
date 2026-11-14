@@ -44,7 +44,7 @@ public class FreeFromMortalCoilGoal extends MorticianSpellGoal {
         }
 
         int amplifier = PossessionManager.isPossessing(player) ? 2 : 1;
-        player.addEffect(new MobEffectInstance(ModEffects.PENANCE.get(), PENANCE_TIME, amplifier, false, false, true));
+        player.addEffect(new MobEffectInstance(ModEffects.PENANCE, PENANCE_TIME, amplifier, false, false, true));
         player.knockback(1.0D, Math.sin(mortician.getYRot() * Math.PI / 180.0D),
                 -Math.cos(mortician.getYRot() * Math.PI / 180.0D));
     }

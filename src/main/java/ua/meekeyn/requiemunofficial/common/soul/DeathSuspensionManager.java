@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.advancements.Advancement;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
@@ -8,12 +10,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class DeathSuspensionManager {
     private static final ResourceLocation THE_CHOICE = ModIds.id("adventure/the_choice");
     private static final String TAG = "RequiemDeathSuspension";
@@ -85,7 +86,7 @@ public final class DeathSuspensionManager {
     }
 
     @SubscribeEvent
-    public static void onLivingHurt(LivingHurtEvent event) {
+    public static void onLivingHurt(net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && isSuspended(player)) {
             event.setCanceled(true);
             keepSuspendedPlayerStable(player);
@@ -93,8 +94,8 @@ public final class DeathSuspensionManager {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.START || !(event.player instanceof ServerPlayer player)) {
+    public static void onPlayerTick(PlayerTickEvent.Pre event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
         if (!isSuspended(player)) {
@@ -231,7 +232,7 @@ public final class DeathSuspensionManager {
     }
 
     static boolean advancementChoiceDone(ServerPlayer player) {
-        Advancement advancement = player.getServer().getAdvancements().getAdvancement(THE_CHOICE);
+        net.minecraft.advancements.AdvancementHolder advancement = player.getServer().getAdvancements().get(THE_CHOICE);
         return advancement != null
                 && player.getAdvancements().getOrStartProgress(advancement).isDone();
     }

@@ -25,17 +25,18 @@ public class HumanityEnchantedBookItem extends EnchantedBookItem {
 
     public static ItemStack create(int level) {
         ItemStack stack = new ItemStack(ua.meekeyn.requiemunofficial.common.init.ModItems.HUMANITY_ENCHANTED_BOOK.get());
-        EnchantedBookItem.addEnchantment(
-                stack,
-                new EnchantmentInstance(ModEnchantments.HUMANITY.get(), Math.max(1, Math.min(2, level)))
-        );
+        net.minecraft.world.item.enchantment.ItemEnchantments.Mutable enchantments =
+                new net.minecraft.world.item.enchantment.ItemEnchantments.Mutable(
+                        net.minecraft.world.item.enchantment.ItemEnchantments.EMPTY);
+        enchantments.set(ModEnchantments.humanity(), Math.max(1, Math.min(2, level)));
+        stack.set(net.minecraft.core.component.DataComponents.STORED_ENCHANTMENTS, enchantments.toImmutable());
         return stack;
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level,
+    public void appendHoverText(ItemStack stack, net.minecraft.world.item.Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable("tooltip.requiemunofficial.humanity_enchanted_book")
                 .withStyle(ChatFormatting.AQUA));
     }

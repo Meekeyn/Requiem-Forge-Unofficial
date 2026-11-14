@@ -24,7 +24,8 @@ public final class GameTestSupport {
         new ServerGamePacketListenerImpl(
                 helper.getLevel().getServer(),
                 new Connection(PacketFlow.SERVERBOUND),
-                player
+                player,
+                net.minecraft.server.network.CommonListenerCookie.createInitial(player.getGameProfile(), false)
         );
     }
 }

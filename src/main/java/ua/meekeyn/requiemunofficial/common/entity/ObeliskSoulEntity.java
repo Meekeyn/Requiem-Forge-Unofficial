@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 
 public class ObeliskSoulEntity extends Entity {
 
@@ -53,9 +52,9 @@ public class ObeliskSoulEntity extends Entity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(SOUL_TYPE, "empty");
-        this.entityData.define(SOUL_AMOUNT, 1);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        builder.define(SOUL_TYPE, "empty");
+        builder.define(SOUL_AMOUNT, 1);
     }
 
     @Override
@@ -121,11 +120,6 @@ public class ObeliskSoulEntity extends Entity {
                     0.01D
             );
         }
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 
     private void disintegrate() {

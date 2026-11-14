@@ -14,15 +14,16 @@ public class ReclamationMobEffect extends MobEffect implements StickyMobEffect {
     }
 
     @Override
-    public boolean isDurationEffectTick(int duration, int amplifier) {
+    public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
         return duration == 1;
     }
 
     @Override
-    public void applyEffectTick(LivingEntity entity, int amplifier) {
+    public boolean applyEffectTick(LivingEntity entity, int amplifier) {
         if (!entity.level().isClientSide()) {
             AttritionMobEffect.reduce(entity, amplifier + 1);
         }
+        return true;
     }
 
     @Override

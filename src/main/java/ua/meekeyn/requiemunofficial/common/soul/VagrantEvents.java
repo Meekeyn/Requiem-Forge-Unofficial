@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.InteractionResult;
@@ -9,23 +11,22 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.AABB;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.item.ItemTossEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingFallEvent;
-import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.level.BlockEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.item.ItemTossEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
+import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent.Pre;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.BlockEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.diagnostic.VagrantDiagnostics;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class VagrantEvents {
 
     private static final String FLIGHT_GRANTED = "RequiemVagrantFlight";
@@ -107,9 +108,9 @@ public final class VagrantEvents {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onItemPickup(EntityItemPickupEvent event) {
-        if (VagrantRules.isRestricted(event.getEntity())) {
-            event.setCanceled(true);
+    public static void onItemPickup(net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent.Pre event) {
+        if (VagrantRules.isRestricted(event.getPlayer())) {
+            event.setCanPickup(net.neoforged.neoforge.common.util.TriState.FALSE);
         }
     }
 
@@ -123,7 +124,7 @@ public final class VagrantEvents {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player && shouldSuppressDamageForVagrant(player)) {
             event.setCanceled(true);
         }
@@ -131,11 +132,11 @@ public final class VagrantEvents {
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
-        LivingEntity target = event.getNewTarget();
+        LivingEntity target = event.getNewAboutToBeSetTarget();
         if ((target instanceof ServerPlayer player && VagrantRules.isRestricted(player))
                 || VagrantRules.isEmptyPlayerShell(target)) {
             event.setCanceled(true);
-            event.setNewTarget(null);
+            event.setNewAboutToBeSetTarget(null);
             if (event.getEntity() instanceof Mob mob) {
                 mob.setTarget(null);
             }
@@ -143,22 +144,17 @@ public final class VagrantEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.player.level().isClientSide()
-                || !(event.player instanceof ServerPlayer player)) {
-            return;
-        }
-
-        if (event.phase == TickEvent.Phase.START) {
+    public static void onPlayerTickPre(PlayerTickEvent.Pre event) {
+        if (event.getEntity() instanceof ServerPlayer player && !player.level().isClientSide()) {
             primeVagrantPhasePhysics(player);
-            return;
         }
+    }
 
-        if (event.phase != TickEvent.Phase.END) {
-            return;
+    @SubscribeEvent
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof ServerPlayer player && !player.level().isClientSide()) {
+            updateVagrantState(player);
         }
-
-        updateVagrantState(player);
     }
 
     public static void updateVagrantStateForTest(ServerPlayer player) {
@@ -464,7 +460,7 @@ public final class VagrantEvents {
     }
 
     private static boolean hasLiveConnection(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 
     private static void refreshSoulHunger(ServerPlayer player) {

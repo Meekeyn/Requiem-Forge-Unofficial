@@ -1,14 +1,15 @@
 package ua.meekeyn.requiemunofficial.common.command;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.permission.PermissionAPI;
-import net.minecraftforge.server.permission.events.PermissionGatherEvent;
-import net.minecraftforge.server.permission.exceptions.UnregisteredPermissionException;
-import net.minecraftforge.server.permission.nodes.PermissionNode;
-import net.minecraftforge.server.permission.nodes.PermissionTypes;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.server.permission.PermissionAPI;
+import net.neoforged.neoforge.server.permission.events.PermissionGatherEvent;
+import net.neoforged.neoforge.server.permission.exceptions.UnregisteredPermissionException;
+import net.neoforged.neoforge.server.permission.nodes.PermissionNode;
+import net.neoforged.neoforge.server.permission.nodes.PermissionTypes;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 
 import java.util.ArrayList;
@@ -20,7 +21,7 @@ import java.util.function.Predicate;
  * Вузли прав команд /requiem, 1:1 з beta.16 RequiemCommand.permission(name):
  * повна назва "requiem.command" + name (без крапки після "command"), типовий рівень — 2.
  */
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class ModPermissions {
     // Простір імен як в оригіналі, щоб вузли в LuckPerms тощо збігалися з beta.16.
     private static final String NAMESPACE = "requiem";

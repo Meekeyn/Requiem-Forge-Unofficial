@@ -2,9 +2,9 @@ package ua.meekeyn.requiemunofficial.common.loot;
 
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.storage.loot.predicates.LootItemConditionType;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.registries.DeferredHolder;
 
 /**
  * Типи умов лут-таблиць з оригінального Requiem beta.16 (RequiemLootTables#init).
@@ -18,16 +18,16 @@ public final class RequiemLootConditions {
     public static final DeferredRegister<LootItemConditionType> LOOT_CONDITION_TYPES =
             DeferredRegister.create(Registries.LOOT_CONDITION_TYPE, LEGACY_NAMESPACE);
 
-    public static final RegistryObject<LootItemConditionType> RIFT_MORTICIAN = LOOT_CONDITION_TYPES.register(
-            "rift_mortician", () -> new LootItemConditionType(new RiftMorticianLootCondition.Serializer()));
-    public static final RegistryObject<LootItemConditionType> BOUND_SHELL = LOOT_CONDITION_TYPES.register(
-            "bound_shell", () -> new LootItemConditionType(new BoundShellLootCondition.Serializer()));
-    public static final RegistryObject<LootItemConditionType> HOST = LOOT_CONDITION_TYPES.register(
+    public static final DeferredHolder<LootItemConditionType, LootItemConditionType> RIFT_MORTICIAN = LOOT_CONDITION_TYPES.register(
+            "rift_mortician", () -> new LootItemConditionType(RiftMorticianLootCondition.CODEC));
+    public static final DeferredHolder<LootItemConditionType, LootItemConditionType> BOUND_SHELL = LOOT_CONDITION_TYPES.register(
+            "bound_shell", () -> new LootItemConditionType(BoundShellLootCondition.CODEC));
+    public static final DeferredHolder<LootItemConditionType, LootItemConditionType> HOST = LOOT_CONDITION_TYPES.register(
             "host", () -> new LootItemConditionType(
-                    new HostLootCondition.Serializer(HostLootCondition.CheckedEntity.HOST)));
-    public static final RegistryObject<LootItemConditionType> POSSESSOR = LOOT_CONDITION_TYPES.register(
+                    HostLootCondition.codec(HostLootCondition.CheckedEntity.HOST)));
+    public static final DeferredHolder<LootItemConditionType, LootItemConditionType> POSSESSOR = LOOT_CONDITION_TYPES.register(
             "possessor", () -> new LootItemConditionType(
-                    new HostLootCondition.Serializer(HostLootCondition.CheckedEntity.POSSESSOR)));
+                    HostLootCondition.codec(HostLootCondition.CheckedEntity.POSSESSOR)));
 
     private RequiemLootConditions() {
     }

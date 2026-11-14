@@ -4,7 +4,6 @@ import net.minecraft.tags.EntityTypeTags;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.animal.Chicken;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
@@ -44,8 +43,8 @@ public final class PossessedMountRules {
     public static boolean isSteerableRide(Entity vehicle, LivingEntity rider) {
         if (vehicle instanceof AbstractHorse horse) {
             // Лише нежить на коні-нежиті (скелет -> кінь-скелет, зомбі -> кінь-зомбі).
-            return horse.getMobType() == MobType.UNDEAD
-                    && rider.getMobType() == MobType.UNDEAD
+            return horse.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD)
+                    && rider.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD)
                     && (rider.getType().is(ModTags.HUMANOID_SKELETONS)
                     || rider.getType().is(ModTags.HUMANOID_ZOMBIES));
         }

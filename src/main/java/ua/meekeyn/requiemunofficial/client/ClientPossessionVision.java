@@ -1,5 +1,8 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.RenderFrameEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import net.minecraft.resources.ResourceLocation;
@@ -11,10 +14,9 @@ import net.minecraft.world.entity.animal.Bee;
 import net.minecraft.world.entity.animal.Dolphin;
 import net.minecraft.world.entity.animal.MushroomCow;
 import net.minecraft.world.entity.animal.WaterAnimal;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.ModCapabilities;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
@@ -22,7 +24,7 @@ import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessionVision {
 
     private static final ResourceLocation DICHROMATIC_SHADER = shader("dichromatic");
@@ -32,11 +34,11 @@ public final class ClientPossessionVision {
     private static final ResourceLocation FISH_EYE_SHADER = shader("fish_eye");
     private static final ResourceLocation MOOSHROOM_SHADER = shader("mooshroom");
     private static final ResourceLocation CREEPER_SHADER =
-            new ResourceLocation("minecraft", "shaders/post/creeper.json");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "shaders/post/creeper.json");
     private static final ResourceLocation INVERT_SHADER =
-            new ResourceLocation("minecraft", "shaders/post/invert.json");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "shaders/post/invert.json");
     private static final ResourceLocation SPIDER_SHADER =
-            new ResourceLocation("minecraft", "shaders/post/spider.json");
+            ResourceLocation.fromNamespaceAndPath("minecraft", "shaders/post/spider.json");
     private static final ResourceLocation SPECTRE_SHADER = shader("spectre");
     private static final int MISSING_HOST_GRACE_TICKS = 10;
     /** Длительность синей "вспышки" при входе в новое тело (2 секунды, как в beta.16). */
@@ -58,10 +60,7 @@ public final class ClientPossessionVision {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null) {
@@ -80,8 +79,7 @@ public final class ClientPossessionVision {
             appliedEffect = null;
         }
 
-        UUID possessedHostId = minecraft.player.getCapability(ModCapabilities.PLAYER_SOUL)
-                .resolve()
+        UUID possessedHostId = ModCapabilities.soul(minecraft.player)
                 .map(soul -> soul.getPossessedEntityId())
                 .orElse(null);
         ResourceLocation shader = null;
@@ -130,10 +128,7 @@ public final class ClientPossessionVision {
      * між двома тіками. Щокадрова перевірка гарантує, що шейдер зору тіла не зникне ні за яких сценаріїв.
      */
     @SubscribeEvent
-    public static void onRenderTick(TickEvent.RenderTickEvent event) {
-        if (event.phase != TickEvent.Phase.START) {
-            return;
-        }
+    public static void onRenderTick(RenderFrameEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null || minecraft.level == null || minecraft.isPaused()) {
             return;

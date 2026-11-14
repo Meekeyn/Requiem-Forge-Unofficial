@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_tachylite": {
+      "trigger": "minecraft:inventory_changed",
+      "conditions": {
+        "items": [
+          {
+            "items": [
+              "requiemunofficial:tachylite"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "requirements": [
+    [
+      "has_tachylite"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "requiemunofficial:tachylite/runestone",
+      "requiemunofficial:tachylite/rift",
+      "requiemunofficial:tachylite/attrition",
+      "requiemunofficial:tachylite/emancipation",
+      "requiemunofficial:tachylite/penance",
+      "requiemunofficial:tachylite/reclamation"
+    ]
+  }
+}

@@ -30,7 +30,7 @@ import java.util.Optional;
 import java.util.OptionalInt;
 
 public class DerelictObeliskStructure extends Structure {
-    public static final Codec<DerelictObeliskStructure> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+    public static final com.mojang.serialization.MapCodec<DerelictObeliskStructure> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
             settingsCodec(instance),
             StructureTemplatePool.CODEC.fieldOf("start_pool").forGetter(structure -> structure.startPool)
     ).apply(instance, DerelictObeliskStructure::new));
@@ -64,7 +64,8 @@ public class DerelictObeliskStructure extends Structure {
                     startPos,
                     spawnedStructure.getGroundLevelDelta(),
                     rotation,
-                    spawnedStructure.getBoundingBox(structureManager, startPos, rotation)
+                    spawnedStructure.getBoundingBox(structureManager, startPos, rotation),
+                    net.minecraft.world.level.levelgen.structure.templatesystem.LiquidSettings.APPLY_WATERLOGGING
             );
             BoundingBox boundingBox = piece.getBoundingBox();
             OptionalInt floorY = getFloorHeight(

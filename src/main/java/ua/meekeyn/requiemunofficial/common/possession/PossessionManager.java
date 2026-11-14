@@ -1,5 +1,9 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.network.chat.Component;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -72,22 +76,21 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingFallEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.entity.living.LivingKnockBackEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.entity.EntityTeleportEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.CommandEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.living.LivingFallEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingKnockBackEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.EntityTeleportEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.CommandEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -115,7 +118,6 @@ import ua.meekeyn.requiemunofficial.common.remnant.DroppedVesselTracker;
 import ua.meekeyn.requiemunofficial.common.advancement.ModCriteria;
 import ua.meekeyn.requiemunofficial.common.ritual.DeathResurrectionManager;
 import ua.meekeyn.requiemunofficial.mixin.GuardianAccessor;
-import ua.meekeyn.requiemunofficial.mixin.EntityAccessor;
 import ua.meekeyn.requiemunofficial.mixin.LivingEntityAccessor;
 import ua.meekeyn.requiemunofficial.mixin.ShulkerAccessor;
 import ua.meekeyn.requiemunofficial.mixin.WalkAnimationStateAccessor;
@@ -135,7 +137,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessionManager {
 
     private static final String ORIGINAL_NO_AI = "RequiemOriginalNoAi";
@@ -203,13 +205,10 @@ public final class PossessionManager {
     /** Тіло після входу може з'явитися лише коли довантажиться його чанк: не викидаємо душу одразу. */
     private static final Map<UUID, Integer> RECONNECT_HOST_GRACE = new HashMap<>();
     private static final int RECONNECT_HOST_GRACE_TICKS = 100;
-    private static final UUID AXOLOTL_PLAYING_DEAD_SLOWDOWN =
-            UUID.fromString("5a13c664-7932-4a73-b341-0745cb737754");
-    private static final UUID BETA16_PLAYER_SPEED_MODIFIER =
-            UUID.fromString("f25420ed-4041-4cc6-87fa-6e5272dddb2b");
+    private static final net.minecraft.resources.ResourceLocation AXOLOTL_PLAYING_DEAD_SLOWDOWN = ua.meekeyn.requiemunofficial.common.util.ModIds.id("axolotl_playing_dead_slowdown");
+    private static final net.minecraft.resources.ResourceLocation BETA16_PLAYER_SPEED_MODIFIER = ua.meekeyn.requiemunofficial.common.util.ModIds.id("beta16_player_speed");
     // Vanilla Witch "Drinking speed penalty" (-0.25 ADDITION); must never reach the Player Body.
-    private static final UUID WITCH_DRINKING_SPEED_MODIFIER =
-            UUID.fromString("5CD17E52-A79A-43D3-A529-90FDE04B181E");
+    private static final net.minecraft.resources.ResourceLocation WITCH_DRINKING_SPEED_MODIFIER = net.minecraft.resources.ResourceLocation.withDefaultNamespace("drinking");
     // Ridden spider walk pace: the same humanoid Player Body scale used on foot, applied to the
     // spider's own (non-sprint) movement speed, i.e. 0.3 * 0.4.
     private static final double RIDDEN_SPIDER_WALK_SPEED_SCALE = HUMANOID_PLAYER_BODY_SPEED_SCALE;
@@ -466,7 +465,7 @@ public final class PossessionManager {
             player.level().playSound(
                     null,
                     target.blockPosition(),
-                    SoundEvents.SOUL_ESCAPE,
+                    SoundEvents.SOUL_ESCAPE.value(),
                     SoundSource.PLAYERS,
                     1.4F,
                     0.6F
@@ -633,8 +632,8 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
-    public static void onServerTickFallAssist(TickEvent.ServerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || FALL_ASSISTS.isEmpty()) {
+    public static void onServerTickFallAssist(ServerTickEvent.Post event) {
+        if (FALL_ASSISTS.isEmpty()) {
             return;
         }
         FALL_ASSISTS.values().removeIf(PossessionManager::tickFallAssist);
@@ -668,10 +667,9 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END
-                || event.player.level().isClientSide()
-                || !(event.player instanceof ServerPlayer player)) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity().level().isClientSide()
+                || !(event.getEntity() instanceof ServerPlayer player)) {
             return;
         }
 
@@ -940,7 +938,7 @@ public final class PossessionManager {
     @SubscribeEvent
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity attacker = event.getEntity();
-        LivingEntity target = event.getNewTarget();
+        LivingEntity target = event.getNewAboutToBeSetTarget();
         if (attacker instanceof Monster monster
                 && monster.getPersistentData().getLong(PROVOKED_BY_POSSESSED_HOST_UNTIL) == Long.MAX_VALUE
                 && (target == null || !monster.getPersistentData().hasUUID(PROVOKED_BY_POSSESSED_HOST)
@@ -950,7 +948,7 @@ public final class PossessionManager {
         }
         if (target != null && shouldCancelPossessedTarget(attacker, target)) {
             event.setCanceled(true);
-            event.setNewTarget(null);
+            event.setNewAboutToBeSetTarget(null);
             if (attacker instanceof Mob mob) {
                 mob.setTarget(null);
             }
@@ -958,7 +956,7 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
-    public static void onPossessedPlayerAttacked(LivingAttackEvent event) {
+    public static void onPossessedPlayerAttacked(LivingIncomingDamageEvent event) {
         if (event.getEntity() instanceof ServerPlayer player
                 && SoulManager.getPossessedEntityId(player) != null) {
             event.setCanceled(true);
@@ -1011,7 +1009,7 @@ public final class PossessionManager {
     }
 
     @SubscribeEvent
-    public static void onPossessedHostHurt(LivingHurtEvent event) {
+    public static void onPossessedHostHurt(LivingDamageEvent.Pre event) {
         // Possessed bodies are allowed to die. The possessor is protected by onPossessedPlayerAttacked.
     }
 
@@ -1231,7 +1229,7 @@ public final class PossessionManager {
         if (stored.contains(STORED_DISCONNECT_HOST_DIMENSION)) {
             ServerLevel storedLevel = player.getServer().getLevel(ResourceKey.create(
                     Registries.DIMENSION,
-                    new ResourceLocation(stored.getString(STORED_DISCONNECT_HOST_DIMENSION))
+                    ResourceLocation.parse(stored.getString(STORED_DISCONNECT_HOST_DIMENSION))
             ));
             if (storedLevel != null) {
                 level = storedLevel;
@@ -1239,7 +1237,7 @@ public final class PossessionManager {
         }
 
         Optional<EntityType<?>> type = BuiltInRegistries.ENTITY_TYPE.getOptional(
-                new ResourceLocation(stored.getString(STORED_DISCONNECT_HOST_TYPE))
+                ResourceLocation.parse(stored.getString(STORED_DISCONNECT_HOST_TYPE))
         );
         if (type.isEmpty()) {
             data.remove(STORED_DISCONNECT_HOST);
@@ -1406,7 +1404,7 @@ public final class PossessionManager {
                     reqExitLog("RELEASE: calling release, host={}", host); // ТИМЧАСОВО [REQ-EXIT]
                     release(player, host);
                     reqExitLog("RELEASE: release returned, state={} possessedId={}", SoulManager.getState(player), SoulManager.getPossessedEntityId(player)); // ТИМЧАСОВО [REQ-EXIT]
-                } else reqExitLog("RELEASE: stopped, canDissociateFrom=false (frictionless={}, emancipation={})", host.getType().is(ModTags.FRICTIONLESS_HOSTS), player.hasEffect(ModEffects.EMANCIPATION.get())); // ТИМЧАСОВО [REQ-EXIT]
+                } else reqExitLog("RELEASE: stopped, canDissociateFrom=false (frictionless={}, emancipation={})", host.getType().is(ModTags.FRICTIONLESS_HOSTS), player.hasEffect(ModEffects.EMANCIPATION)); // ТИМЧАСОВО [REQ-EXIT]
                 return;
             }
             reqExitLog("RELEASE: no controlled host ({}), trying split, canSplitFromKey={}", reqExitDescribeNoHost(player), canSplitFromKey(player)); // ТИМЧАСОВО [REQ-EXIT]
@@ -1473,7 +1471,7 @@ public final class PossessionManager {
      */
     private static boolean canDissociateFrom(ServerPlayer player, LivingEntity host) {
         return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
-                || player.hasEffect(ModEffects.EMANCIPATION.get())
+                || player.hasEffect(ModEffects.EMANCIPATION)
                 // Port-only: вселення у власну оболонку — це теж «власне тіло».
                 || (host instanceof PlayerShellEntity shell
                         && shell.belongsTo(player.getUUID())
@@ -1487,7 +1485,7 @@ public final class PossessionManager {
     private static boolean canSplitFromKey(ServerPlayer player) {
         // beta.16: потрібна Емансипація. Розширення порту: з увімкненим allowUnconditionalPossessionExit — і без неї.
         return SoulManager.getState(player) == SoulState.REMNANT
-                && (player.hasEffect(ModEffects.EMANCIPATION.get())
+                && (player.hasEffect(ModEffects.EMANCIPATION)
                         || allowsOwnBodyExitWithoutEmancipation());
     }
 
@@ -1622,7 +1620,7 @@ public final class PossessionManager {
             ItemStack hostStack = host.getItemInHand(hand);
             if (!host.isUsingItem()
                     || host.getUsedItemHand() != hand
-                    || !ItemStack.isSameItemSameTags(host.getUseItem(), hostStack)) {
+                    || !ItemStack.isSameItemSameComponents(host.getUseItem(), hostStack)) {
                 LivingEntityAccessor accessor = (LivingEntityAccessor) host;
                 accessor.requiemunofficial$setUseItem(hostStack);
                 accessor.requiemunofficial$setLivingEntityFlag(1, true);
@@ -1630,7 +1628,7 @@ public final class PossessionManager {
             }
             int remaining = ((LivingEntityAccessor) player).requiemunofficial$getUseItemRemaining();
             ((LivingEntityAccessor) host).requiemunofficial$setUseItemRemaining(
-                    remaining > 0 ? remaining : Math.max(2, hostStack.getUseDuration() + 1)
+                    remaining > 0 ? remaining : Math.max(2, hostStack.getUseDuration(host) + 1)
             );
             if (host instanceof AbstractSkeleton skeleton && hostStack.getItem() instanceof BowItem) {
                 skeleton.setAggressive(true);
@@ -1715,10 +1713,13 @@ public final class PossessionManager {
         try {
             if (root.equals("kill") && redirectKillCommand(context, source)) {
                 event.setCanceled(true);
+                source.callback().onSuccess(1);
             } else if (root.equals("damage") && redirectDamageCommand(context, source)) {
                 event.setCanceled(true);
+                source.callback().onSuccess(1);
             } else if (root.equals("effect") && redirectEffectCommand(context, command, source)) {
                 event.setCanceled(true);
+                source.callback().onSuccess(1);
             }
         } catch (Exception ignored) {
             // Let vanilla handle commands that do not match the narrow possessed-host compatibility path.
@@ -1798,7 +1799,7 @@ public final class PossessionManager {
         if (trimmed.startsWith("effect clear ")) {
             int changed = 0;
             if (hasArgument(context, "effect")) {
-                net.minecraft.world.effect.MobEffect effect = ResourceArgument.getMobEffect(context, "effect").value();
+                net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect = ResourceArgument.getMobEffect(context, "effect");
                 for (LivingEntity target : livingTargets) {
                     if (target.removeEffect(effect)) {
                         changed++;
@@ -1822,7 +1823,7 @@ public final class PossessionManager {
         if (!trimmed.startsWith("effect give ")) {
             return false;
         }
-        net.minecraft.world.effect.MobEffect effect = ResourceArgument.getMobEffect(context, "effect").value();
+        net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> effect = ResourceArgument.getMobEffect(context, "effect");
         int seconds = hasArgument(context, "seconds")
                 ? com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "seconds")
                 : 30;
@@ -1831,13 +1832,13 @@ public final class PossessionManager {
                 : 0;
         boolean hideParticles = hasArgument(context, "hideParticles")
                 && com.mojang.brigadier.arguments.BoolArgumentType.getBool(context, "hideParticles");
-        int duration = effect.isInstantenous()
+        int duration = effect.value().isInstantenous()
                 ? seconds
                 : (trimmed.contains(" infinite") ? MobEffectInstance.INFINITE_DURATION : seconds * 20);
         int changed = 0;
         for (LivingEntity target : livingTargets) {
-            if (effect.isInstantenous()) {
-                effect.applyInstantenousEffect(source.getEntity(), source.getEntity(), target, amplifier, 1.0D);
+            if (effect.value().isInstantenous()) {
+                effect.value().applyInstantenousEffect(source.getEntity(), source.getEntity(), target, amplifier, 1.0D);
                 changed++;
             } else if (target.addEffect(new MobEffectInstance(effect, duration, amplifier, false, !hideParticles))) {
                 changed++;
@@ -1847,7 +1848,7 @@ public final class PossessionManager {
             source.sendFailure(Component.translatable("commands.effect.give.failed"));
         } else {
             int count = changed;
-            source.sendSuccess(() -> Component.translatable("commands.effect.give.success.multiple", effect.getDisplayName(), count, seconds), true);
+            source.sendSuccess(() -> Component.translatable("commands.effect.give.success.multiple", effect.value().getDisplayName(), count, seconds), true);
         }
         return true;
     }
@@ -1982,7 +1983,7 @@ public final class PossessionManager {
             return 0.72D;
         }
         if (host instanceof AbstractHorse horse) {
-            return Math.max(0.42D, horse.getCustomJump());
+            return Math.max(0.42D, horse.getAttributeValue(Attributes.JUMP_STRENGTH));
         }
         if (type == EntityType.RABBIT) {
             return 0.58D;
@@ -2563,13 +2564,7 @@ public final class PossessionManager {
 
     private static void spawnSmallFireball(LivingEntity host, Vec3 direction, double spread) {
         Vec3 normalized = direction.lengthSqr() > 1.0E-7D ? direction.normalize() : host.getLookAngle();
-        SmallFireball fireball = new SmallFireball(
-                host.level(),
-                host,
-                direction.x + host.getRandom().nextGaussian() * spread,
-                direction.y,
-                direction.z + host.getRandom().nextGaussian() * spread
-        );
+        SmallFireball fireball = new SmallFireball(host.level(), host, new Vec3(direction.x + host.getRandom().nextGaussian() * spread, direction.y, direction.z + host.getRandom().nextGaussian() * spread));
         Vec3 origin = fireballSpawnPosition(host, normalized);
         fireball.setPos(origin.x, origin.y, origin.z);
         host.level().addFreshEntity(fireball);
@@ -2615,14 +2610,7 @@ public final class PossessionManager {
     private static void shootLargeFireball(LivingEntity host, int explosionPower) {
         Vec3 look = host.getLookAngle();
         Vec3 direction = look.scale(10.0D);
-        LargeFireball fireball = new LargeFireball(
-                host.level(),
-                host,
-                direction.x,
-                direction.y,
-                direction.z,
-                explosionPower
-        );
+        LargeFireball fireball = new LargeFireball(host.level(), host, new Vec3(direction.x, direction.y, direction.z), explosionPower);
         fireball.setPos(
                 host.getX() + look.x * 2.0D,
                 host.getY() + host.getBbHeight() * 0.5D + 0.5D,
@@ -2712,9 +2700,8 @@ public final class PossessionManager {
             speed.removeModifier(AXOLOTL_PLAYING_DEAD_SLOWDOWN);
             speed.addTransientModifier(new AttributeModifier(
                     AXOLOTL_PLAYING_DEAD_SLOWDOWN,
-                    "Playing dead slowdown",
                     -0.9D,
-                    AttributeModifier.Operation.MULTIPLY_TOTAL
+                    AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
             ));
         }
         axolotl.setPlayingDead(true);
@@ -2781,7 +2768,7 @@ public final class PossessionManager {
     }
 
     private static void shootSkeletonArrowForward(LivingEntity host) {
-        Arrow arrow = new Arrow(host.level(), host);
+        Arrow arrow = new Arrow(host.level(), host, new ItemStack(Items.ARROW), null);
         arrow.setBaseDamage(Math.max(2.0D, host.getAttributeValue(Attributes.ATTACK_DAMAGE)));
         arrow.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
         arrow.setPos(host.getX(), host.getEyeY() - 0.1D, host.getZ());
@@ -2798,7 +2785,7 @@ public final class PossessionManager {
     }
 
     private static void shootSkeletonArrowAt(LivingEntity host, LivingEntity target) {
-        Arrow arrow = new Arrow(host.level(), host);
+        Arrow arrow = new Arrow(host.level(), host, new ItemStack(Items.ARROW), null);
         arrow.setBaseDamage(Math.max(2.0D, host.getAttributeValue(Attributes.ATTACK_DAMAGE)));
         arrow.pickup = AbstractArrow.Pickup.CREATIVE_ONLY;
         arrow.setPos(host.getX(), host.getEyeY() - 0.1D, host.getZ());
@@ -3657,7 +3644,7 @@ public final class PossessionManager {
         host.noPhysics = host.getPersistentData().getBoolean(ORIGINAL_NO_PHYSICS);
         host.getPersistentData().remove(ORIGINAL_NO_PHYSICS);
         if (host.getPersistentData().contains(ORIGINAL_MAX_UP_STEP, Tag.TAG_FLOAT)) {
-            ((EntityAccessor) host).requiemunofficial$setMaxUpStep(
+            ua.meekeyn.requiemunofficial.common.possession.StepHeight.set(host, 
                     host.getPersistentData().getFloat(ORIGINAL_MAX_UP_STEP)
             );
             host.getPersistentData().remove(ORIGINAL_MAX_UP_STEP);
@@ -3718,12 +3705,11 @@ public final class PossessionManager {
     }
 
     private static void applyPossessedStepHeight(LivingEntity host) {
-        EntityAccessor accessor = (EntityAccessor) host;
         if (!host.getPersistentData().contains(ORIGINAL_MAX_UP_STEP, Tag.TAG_FLOAT)) {
-            host.getPersistentData().putFloat(ORIGINAL_MAX_UP_STEP, accessor.requiemunofficial$getMaxUpStep());
+            host.getPersistentData().putFloat(ORIGINAL_MAX_UP_STEP, ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(host));
         }
-        accessor.requiemunofficial$setMaxUpStep(
-                Math.max(accessor.requiemunofficial$getMaxUpStep(), MIN_POSSESSED_STEP_HEIGHT)
+        ua.meekeyn.requiemunofficial.common.possession.StepHeight.set(host, 
+                Math.max(ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(host), MIN_POSSESSED_STEP_HEIGHT)
         );
     }
 
@@ -3788,7 +3774,7 @@ public final class PossessionManager {
         if (hadCustomName && host.getCustomName() != null) {
             host.getPersistentData().putString(
                     ORIGINAL_CUSTOM_NAME,
-                    Component.Serializer.toJson(host.getCustomName())
+                    Component.Serializer.toJson(host.getCustomName(), host.registryAccess())
             );
         }
         host.setCustomName(player.getDisplayName().copy());
@@ -3799,17 +3785,11 @@ public final class PossessionManager {
         Component name = host.level().getGameRules().getBoolean(ModGameRules.SHOW_POSSESSOR_NAME_TAG)
                 ? player.getDisplayName().copy()
                 : null;
-        ModNetwork.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> host),
-                new PossessionNameTagPacket(host.getId(), name)
-        );
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingEntityAndSelf(host, new PossessionNameTagPacket(host.getId(), name));
     }
 
     private static void clearPossessorNameTag(LivingEntity host) {
-        ModNetwork.CHANNEL.send(
-                net.minecraftforge.network.PacketDistributor.TRACKING_ENTITY_AND_SELF.with(() -> host),
-                new PossessionNameTagPacket(host.getId(), null)
-        );
+        net.neoforged.neoforge.network.PacketDistributor.sendToPlayersTrackingEntityAndSelf(host, new PossessionNameTagPacket(host.getId(), null));
     }
 
     private static void restoreCustomName(LivingEntity host) {
@@ -3821,7 +3801,7 @@ public final class PossessionManager {
         if (host.getPersistentData().getBoolean(HAD_CUSTOM_NAME)
                 && host.getPersistentData().contains(ORIGINAL_CUSTOM_NAME)) {
             originalName = Component.Serializer.fromJson(
-                    host.getPersistentData().getString(ORIGINAL_CUSTOM_NAME)
+                    host.getPersistentData().getString(ORIGINAL_CUSTOM_NAME), host.registryAccess()
             );
         }
         host.setCustomName(originalName);
@@ -3874,11 +3854,11 @@ public final class PossessionManager {
     }
 
     private static boolean hasPossessionBlockingPenance(ServerPlayer player) {
-        return PenanceMobEffect.blocksPossession(player.getEffect(ModEffects.PENANCE.get()));
+        return PenanceMobEffect.blocksPossession(player.getEffect(ModEffects.PENANCE));
     }
 
     private static void sendSystemMessage(ServerPlayer player, Component message) {
-        if (player.connection != null && player.connection.connection != null) {
+        if (player.connection != null && player.connection.getConnection() != null) {
             player.sendSystemMessage(message);
         }
     }
@@ -4560,11 +4540,10 @@ public final class PossessionManager {
     }
 
     private static void applyBeta16PlayerBodyParameters(ServerPlayer player, LivingEntity host) {
-        EntityAccessor accessor = (EntityAccessor) player;
         if (!player.getPersistentData().contains(ORIGINAL_PLAYER_MAX_UP_STEP, Tag.TAG_FLOAT)) {
-            player.getPersistentData().putFloat(ORIGINAL_PLAYER_MAX_UP_STEP, accessor.requiemunofficial$getMaxUpStep());
+            player.getPersistentData().putFloat(ORIGINAL_PLAYER_MAX_UP_STEP, ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(player));
         }
-        accessor.requiemunofficial$setMaxUpStep(Math.max(accessor.requiemunofficial$getMaxUpStep(), MIN_POSSESSED_STEP_HEIGHT));
+        ua.meekeyn.requiemunofficial.common.possession.StepHeight.set(player, Math.max(ua.meekeyn.requiemunofficial.common.possession.StepHeight.get(player), MIN_POSSESSED_STEP_HEIGHT));
 
         if (!player.getPersistentData().contains(ORIGINAL_PLAYER_NO_GRAVITY, Tag.TAG_BYTE)) {
             player.getPersistentData().putBoolean(ORIGINAL_PLAYER_NO_GRAVITY, player.isNoGravity());
@@ -4585,9 +4564,8 @@ public final class PossessionManager {
             if (Math.abs(amount) > 1.0E-6D) {
                 playerSpeed.addTransientModifier(new AttributeModifier(
                         BETA16_PLAYER_SPEED_MODIFIER,
-                        "Requiem beta16 host movement speed",
                         amount,
-                        AttributeModifier.Operation.ADDITION
+                        AttributeModifier.Operation.ADD_VALUE
                 ));
             }
         }
@@ -4638,25 +4616,25 @@ public final class PossessionManager {
         }
         double base = speed.getBaseValue();
         for (AttributeModifier modifier : speed.getModifiers()) {
-            if (modifier.getOperation() == AttributeModifier.Operation.ADDITION
-                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
-                base += modifier.getAmount();
+            if (modifier.operation() == AttributeModifier.Operation.ADD_VALUE
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.id())) {
+                base += modifier.amount();
             }
         }
         double value = base;
         for (AttributeModifier modifier : speed.getModifiers()) {
-            if (modifier.getOperation() == AttributeModifier.Operation.MULTIPLY_BASE
-                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
-                value += base * modifier.getAmount();
+            if (modifier.operation() == AttributeModifier.Operation.ADD_MULTIPLIED_BASE
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.id())) {
+                value += base * modifier.amount();
             }
         }
         for (AttributeModifier modifier : speed.getModifiers()) {
-            if (modifier.getOperation() == AttributeModifier.Operation.MULTIPLY_TOTAL
-                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.getId())) {
-                value *= 1.0D + modifier.getAmount();
+            if (modifier.operation() == AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL
+                    && !WITCH_DRINKING_SPEED_MODIFIER.equals(modifier.id())) {
+                value *= 1.0D + modifier.amount();
             }
         }
-        return speed.getAttribute().sanitizeValue(value);
+        return speed.getAttribute().value().sanitizeValue(value);
     }
 
     /**
@@ -4676,7 +4654,7 @@ public final class PossessionManager {
             return bodySpeed;
         }
         double base = speed.getBaseValue();
-        double substituted = base + body.getAmount();
+        double substituted = base + body.amount();
         if (Math.abs(substituted) < 1.0E-6D) {
             return base;
         }
@@ -4736,7 +4714,7 @@ public final class PossessionManager {
             playerSpeed.removeModifier(BETA16_PLAYER_SPEED_MODIFIER);
         }
         if (player.getPersistentData().contains(ORIGINAL_PLAYER_MAX_UP_STEP, Tag.TAG_FLOAT)) {
-            ((EntityAccessor) player).requiemunofficial$setMaxUpStep(
+            ua.meekeyn.requiemunofficial.common.possession.StepHeight.set(player, 
                     player.getPersistentData().getFloat(ORIGINAL_PLAYER_MAX_UP_STEP)
             );
             player.getPersistentData().remove(ORIGINAL_PLAYER_MAX_UP_STEP);
@@ -4753,7 +4731,11 @@ public final class PossessionManager {
         }
         if (player.getPersistentData().contains(ORIGINAL_PLAYER_MAYFLY, Tag.TAG_BYTE)) {
             boolean wasCreative = player.getPersistentData().getBoolean(ORIGINAL_PLAYER_FLIGHT_CREATIVE);
-            if (!player.isCreative() && wasCreative) {
+            if (player.isSpectator()) {
+                // Наблюдатель всегда летает: не отнимаем полёт, иначе игрок падает сквозь мир.
+                player.getAbilities().mayfly = true;
+                player.getAbilities().flying = true;
+            } else if (!player.isCreative() && wasCreative) {
                 // Режим змінили з креативу під час одержимості: креативний політ не повертаємо.
                 player.getAbilities().mayfly = false;
                 player.getAbilities().flying = false;
@@ -4777,7 +4759,7 @@ public final class PossessionManager {
     }
 
     private static void updateAbilities(ServerPlayer player) {
-        if (player.connection != null && player.connection.connection != null) {
+        if (player.connection != null && player.connection.getConnection() != null) {
             player.onUpdateAbilities();
         }
     }

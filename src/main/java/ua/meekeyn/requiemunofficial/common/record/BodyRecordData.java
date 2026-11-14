@@ -12,7 +12,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.EntitySoulManager;
 
@@ -30,7 +30,7 @@ public class BodyRecordData extends SavedData {
     private final Map<UUID, BodyRecord> records = new LinkedHashMap<>();
 
     public static BodyRecordData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(BodyRecordData::load, BodyRecordData::new, DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(new SavedData.Factory<>(BodyRecordData::new, BodyRecordData::load, null), DATA_NAME);
     }
 
     public static BodyRecordData get(Level level) {
@@ -40,7 +40,7 @@ public class BodyRecordData extends SavedData {
         return get(serverLevel.getServer());
     }
 
-    public static BodyRecordData load(CompoundTag tag) {
+    public static BodyRecordData load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
         BodyRecordData data = new BodyRecordData();
         ListTag list = tag.getList("Records", Tag.TAG_COMPOUND);
         for (Tag raw : list) {
@@ -53,7 +53,7 @@ public class BodyRecordData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
         ListTag list = new ListTag();
         for (BodyRecord record : records.values()) {
             list.add(record.save());
@@ -189,12 +189,12 @@ public class BodyRecordData extends SavedData {
         }
 
         private static BodyRecord create(UUID recordId, LivingEntity entity) {
-            ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+            ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
             return new BodyRecord(
                     recordId,
                     entity.getUUID(),
                     entity.level().dimension(),
-                    typeId == null ? new ResourceLocation("minecraft", "unknown") : typeId,
+                    typeId == null ? ResourceLocation.fromNamespaceAndPath("minecraft", "unknown") : typeId,
                     entity.getX(),
                     entity.getY(),
                     entity.getZ(),
@@ -246,7 +246,7 @@ public class BodyRecordData extends SavedData {
         private void updateFrom(LivingEntity entity) {
             this.entityId = entity.getUUID();
             this.dimension = entity.level().dimension();
-            ResourceLocation typeId = ForgeRegistries.ENTITY_TYPES.getKey(entity.getType());
+            ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(entity.getType());
             this.entityType = typeId == null ? this.entityType : typeId;
             this.x = entity.getX();
             this.y = entity.getY();

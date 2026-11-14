@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
@@ -15,9 +17,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.living.LivingDropsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingDropsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -28,7 +30,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.WeakHashMap;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessionInventoryManager {
 
     private static final String STORED_INVENTORY = "RequiemPossessionInventory";
@@ -48,7 +50,7 @@ public final class PossessionInventoryManager {
      * PossessedDataBase.onMobConverted.
      */
     @SubscribeEvent
-    public static void onMobConverted(net.minecraftforge.event.entity.living.LivingConversionEvent.Post event) {
+    public static void onMobConverted(net.neoforged.neoforge.event.entity.living.LivingConversionEvent.Post event) {
         if (!event.getEntity().level().isClientSide()) {
             copyStoredInventory(event.getEntity(), event.getOutcome());
         }
@@ -59,11 +61,8 @@ public final class PossessionInventoryManager {
      * слот хотбара примусово скидається на 0 з обох боків.
      */
     @SubscribeEvent
-    public static void onPlayerTick(net.minecraftforge.event.TickEvent.PlayerTickEvent event) {
-        if (event.phase != net.minecraftforge.event.TickEvent.Phase.END) {
-            return;
-        }
-        Player player = event.player;
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        Player player = event.getEntity();
         LivingEntity host = getLimitingHost(player);
         if (host == null) {
             return;
@@ -113,7 +112,7 @@ public final class PossessionInventoryManager {
                 inventory.items.set(slot, stack);
                 return true;
             }
-            if (ItemStack.isSameItemSameTags(existing, stack)
+            if (ItemStack.isSameItemSameComponents(existing, stack)
                     && existing.getCount() + stack.getCount() <= existing.getMaxStackSize()) {
                 clearSource.run();
                 existing.grow(stack.getCount());
@@ -158,7 +157,7 @@ public final class PossessionInventoryManager {
         ListTag stored = data.getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
         for (int i = 0; i < stored.size(); i++) {
             CompoundTag entry = stored.getCompound(i);
-            ItemStack stack = ItemStack.of(entry.getCompound("Stack"));
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(entry.getCompound("Stack"));
             if (!stack.isEmpty()) {
                 net.minecraft.world.entity.item.ItemEntity itemEntity =
                         new net.minecraft.world.entity.item.ItemEntity(
@@ -312,7 +311,7 @@ public final class PossessionInventoryManager {
                                           LivingEntity capabilityHost,
                                           boolean includeArmor) {
         for (EquipmentSlot slot : EquipmentSlot.values()) {
-            if (!includeArmor && slot.getType() == EquipmentSlot.Type.ARMOR) {
+            if (!includeArmor && slot.getType() == EquipmentSlot.Type.HUMANOID_ARMOR) {
                 continue;
             }
             ItemStack sourceStack = source.getItemBySlot(slot);
@@ -377,7 +376,8 @@ public final class PossessionInventoryManager {
     }
 
     public static boolean canCarryHotbar(LivingEntity entity) {
-        return entity.getType().is(ModTags.HOTBAR_CARRIERS);
+        // Хто носить основний інвентар, той носить і хотбар (inventory_carriers успадковує hotbar_carriers).
+        return entity.getType().is(ModTags.HOTBAR_CARRIERS) || canCarryInventory(entity);
     }
 
     public static boolean canCraft(LivingEntity entity) {
@@ -454,7 +454,7 @@ public final class PossessionInventoryManager {
             ListTag stored = host.getPersistentData().getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
             host.getPersistentData().remove(STORED_INVENTORY);
             for (int i = 0; i < stored.size(); i++) {
-                ItemStack stack = ItemStack.of(stored.getCompound(i).getCompound("Stack"));
+                ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(stored.getCompound(i).getCompound("Stack"));
                 if (!stack.isEmpty()) {
                     spawnDeathDrop(dropLevel, deathPos, stack);
                 }
@@ -517,7 +517,7 @@ public final class PossessionInventoryManager {
                     player.getInventory().offhand.set(0, stack);
                 }
             }
-            case ARMOR -> player.getInventory().armor.set(slot.getIndex(), stack);
+            case HUMANOID_ARMOR -> player.getInventory().armor.set(slot.getIndex(), stack);
         }
     }
 
@@ -526,7 +526,7 @@ public final class PossessionInventoryManager {
         if (!root.contains(slot.getName(), Tag.TAG_COMPOUND)) {
             return ItemStack.EMPTY;
         }
-        return ItemStack.of(root.getCompound(slot.getName()));
+        return ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(root.getCompound(slot.getName()));
     }
 
     private static void rememberSyncedStack(LivingEntity host, EquipmentSlot slot, ItemStack stack) {
@@ -534,7 +534,7 @@ public final class PossessionInventoryManager {
         if (stack.isEmpty()) {
             root.remove(slot.getName());
         } else {
-            root.put(slot.getName(), stack.save(new CompoundTag()));
+            root.put(slot.getName(), ua.meekeyn.requiemunofficial.common.util.ItemNbt.write(stack));
         }
         if (root.isEmpty()) {
             host.getPersistentData().remove(LAST_SYNCED_EQUIPMENT);
@@ -584,7 +584,7 @@ public final class PossessionInventoryManager {
     }
 
     private static boolean isArmorDamageOnlyChange(EquipmentSlot slot, ItemStack current, ItemStack previous) {
-        if (slot.getType() != EquipmentSlot.Type.ARMOR
+        if (slot.getType() != EquipmentSlot.Type.HUMANOID_ARMOR
                 || current.isEmpty()
                 || previous.isEmpty()
                 || current.getCount() != previous.getCount()
@@ -617,7 +617,7 @@ public final class PossessionInventoryManager {
             if (host.isAlive()) {
                 CompoundTag entry = new CompoundTag();
                 entry.putByte("Slot", (byte) slot);
-                entry.put("Stack", moved.save(new CompoundTag()));
+                entry.put("Stack", ua.meekeyn.requiemunofficial.common.util.ItemNbt.write(moved));
                 stored.add(entry);
             } else {
                 host.spawnAtLocation(moved);
@@ -639,7 +639,7 @@ public final class PossessionInventoryManager {
         ListTag stored = host.getPersistentData().getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
         for (Tag rawEntry : stored) {
             CompoundTag entry = (CompoundTag) rawEntry;
-            ItemStack stack = ItemStack.of(entry.getCompound("Stack"));
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(entry.getCompound("Stack"));
             int slot = Byte.toUnsignedInt(entry.getByte("Slot"));
             if (stack.isEmpty()) {
                 continue;

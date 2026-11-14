@@ -8,7 +8,7 @@ import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 
 public class CuredVillagerRenderer extends VillagerRenderer {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             RequiemUnofficial.MODID,
             "textures/entity/cured_villager.png"
     );

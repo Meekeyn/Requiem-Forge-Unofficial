@@ -10,7 +10,6 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.network.NetworkHooks;
 import net.minecraft.network.syncher.EntityDataAccessor;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
@@ -68,10 +67,10 @@ public class ReleasedSoulEntity extends Entity {
     }
 
     @Override
-    protected void defineSynchedData() {
-        this.entityData.define(SOUL_TYPE, "empty");
-        this.entityData.define(SOUL_AMOUNT, 1);
-        this.entityData.define(BODY_STATUS, BODY_FOUND);
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        builder.define(SOUL_TYPE, "empty");
+        builder.define(SOUL_AMOUNT, 1);
+        builder.define(BODY_STATUS, BODY_FOUND);
     }
 
     @Override
@@ -294,7 +293,7 @@ public class ReleasedSoulEntity extends Entity {
         }
         if (id == SOUL_EXPIRED_STATUS) {
             // beta.16 SoulEntity: душа, що не знайшла тіла, розсипається.
-            level().playLocalSound(getX(), getY(), getZ(), SoundEvents.SOUL_ESCAPE, SoundSource.AMBIENT, 1.0F, 1.5F, false);
+            level().playLocalSound(getX(), getY(), getZ(), SoundEvents.SOUL_ESCAPE.value(), SoundSource.AMBIENT, 1.0F, 1.5F, false);
             level().playLocalSound(getX(), getY(), getZ(), ua.meekeyn.requiemunofficial.common.init.ModSounds.ENTITY_SOUL_DISINTEGRATE.get(), SoundSource.AMBIENT, 1.0F, 1.0F, false);
             return;
         }
@@ -306,11 +305,6 @@ public class ReleasedSoulEntity extends Entity {
             return;
         }
         super.handleEntityEvent(id);
-    }
-
-    @Override
-    public Packet<ClientGamePacketListener> getAddEntityPacket() {
-        return NetworkHooks.getEntitySpawningPacket(this);
     }
 
     private record LivingEntityRef(net.minecraft.world.entity.LivingEntity entity) {

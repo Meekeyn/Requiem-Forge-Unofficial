@@ -15,9 +15,9 @@ public class MorticianRenderer
         extends MobRenderer<MorticianEntity, MorticianModel<MorticianEntity>> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(RequiemUnofficial.MODID, "textures/entity/mortician.png");
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "textures/entity/mortician.png");
     private static final ResourceLocation PROJECTION_TEXTURE =
-            new ResourceLocation(RequiemUnofficial.MODID, "textures/entity/ethereal_mortician.png");
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "textures/entity/ethereal_mortician.png");
 
     public MorticianRenderer(EntityRendererProvider.Context context) {
         super(context, new MorticianModel<>(context.bakeLayer(MorticianModel.MODEL_LAYER)), 0.5F);

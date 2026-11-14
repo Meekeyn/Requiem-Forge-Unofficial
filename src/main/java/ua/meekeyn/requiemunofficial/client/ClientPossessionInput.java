@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
@@ -9,11 +11,10 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.InputEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.network.ModNetwork;
 import ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket;
@@ -24,7 +25,7 @@ import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessionInput {
 
     private static int jumpCooldown;
@@ -48,10 +49,7 @@ public final class ClientPossessionInput {
     } // ТИМЧАСОВО [REQ-EXIT]
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
 
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
@@ -72,7 +70,7 @@ public final class ClientPossessionInput {
                 applyLocalBeta16VerticalPrediction(minecraft, menuHost);
             }
             if (SoulManager.getPossessedEntityId(minecraft.player) != null) {
-                ModNetwork.CHANNEL.sendToServer(new PossessionInputPacket(
+                ModNetwork.sendToServer(new PossessionInputPacket(
                         0.0F, 0.0F, false, false,
                         minecraft.player.getYRot(), minecraft.player.getXRot()));
             }
@@ -89,7 +87,7 @@ public final class ClientPossessionInput {
 
         while (ModKeyMappings.DISSOCIATION.consumeClick()) {
             RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: ',' consumed, sending RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
-            ModNetwork.CHANNEL.sendToServer(
+            ModNetwork.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.RELEASE)
             );
         }
@@ -101,7 +99,7 @@ public final class ClientPossessionInput {
             while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
                 reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
                 RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed outside host, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
-                ModNetwork.CHANNEL.sendToServer(
+                ModNetwork.sendToServer(
                         new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
                 );
             }
@@ -117,7 +115,7 @@ public final class ClientPossessionInput {
         while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
             RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
             reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
-            ModNetwork.CHANNEL.sendToServer(
+            ModNetwork.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
             );
         }
@@ -175,7 +173,7 @@ public final class ClientPossessionInput {
                 || EntityMobilityManager.get(host).canFly())) {
             return;
         }
-        ModNetwork.CHANNEL.sendToServer(
+        ModNetwork.sendToServer(
                 new PossessionActionPacket(PossessionActionPacket.Action.EMERGENCY_RELEASE)
         );
     }
@@ -183,7 +181,7 @@ public final class ClientPossessionInput {
     private static void sendPossessionActions(Minecraft minecraft) {
         while (minecraft.options.keyAttack.consumeClick()) {
             if (!isMiningBlock(minecraft)) {
-                ModNetwork.CHANNEL.sendToServer(
+                ModNetwork.sendToServer(
                         new PossessionActionPacket(PossessionActionPacket.Action.ATTACK)
                 );
                 attackRepeatCooldown = 4;
@@ -195,7 +193,7 @@ public final class ClientPossessionInput {
         if (minecraft.options.keyAttack.isDown()
                 && attackRepeatCooldown == 0
                 && !isMiningBlock(minecraft)) {
-            ModNetwork.CHANNEL.sendToServer(
+            ModNetwork.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.ATTACK)
             );
             attackRepeatCooldown = 4;
@@ -212,7 +210,7 @@ public final class ClientPossessionInput {
             return;
         }
         while (ModKeyMappings.ABILITY.consumeClick()) {
-            ModNetwork.CHANNEL.sendToServer(
+            ModNetwork.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.INTERACT)
             );
         }
@@ -243,7 +241,7 @@ public final class ClientPossessionInput {
         if (ridingSpider && minecraft.player.isSprinting()) {
             minecraft.player.setSprinting(false);
         }
-        ModNetwork.CHANNEL.sendToServer(new PossessionInputPacket(
+        ModNetwork.sendToServer(new PossessionInputPacket(
                 forward,
                 strafe,
                 jumping,
@@ -415,7 +413,7 @@ public final class ClientPossessionInput {
                     && minecraft.hitResult.getType() == HitResult.Type.BLOCK) {
                 return;
             }
-            ModNetwork.CHANNEL.sendToServer(
+            ModNetwork.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.INTERACT)
             );
             event.setCanceled(true);

@@ -110,10 +110,37 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
         }
     }
 
+    public static final com.mojang.serialization.MapCodec<InertRunestoneBlock> CODEC = simpleCodec(InertRunestoneBlock::new);
+
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos,
-                                 net.minecraft.world.entity.player.Player player,
-                                 InteractionHand hand, BlockHitResult hit) {
+    protected com.mojang.serialization.MapCodec<? extends BaseEntityBlock> codec() {
+        return CODEC;
+    }
+
+    @Override
+    protected net.minecraft.world.ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level,
+                                                                BlockPos pos,
+                                                                net.minecraft.world.entity.player.Player player,
+                                                                InteractionHand hand, BlockHitResult hit) {
+        InteractionResult result = useLegacy(state, level, pos, player, hand, hit);
+        if (result == InteractionResult.SUCCESS) {
+            return net.minecraft.world.ItemInteractionResult.SUCCESS;
+        }
+        if (result == InteractionResult.CONSUME) {
+            return net.minecraft.world.ItemInteractionResult.CONSUME;
+        }
+        return net.minecraft.world.ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+    }
+
+    @Override
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
+                                               net.minecraft.world.entity.player.Player player, BlockHitResult hit) {
+        return useLegacy(state, level, pos, player, InteractionHand.MAIN_HAND, hit);
+    }
+
+    protected InteractionResult useLegacy(BlockState state, Level level, BlockPos pos,
+                                          net.minecraft.world.entity.player.Player player,
+                                          InteractionHand hand, BlockHitResult hit) {
         if (level.isClientSide) {
             return InteractionResult.SUCCESS;
         }
@@ -505,7 +532,7 @@ public class InertRunestoneBlock extends BaseEntityBlock implements EntityBlock 
         int y = level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
         BlockPos spawnPos = new BlockPos(x, y, z);
         if (!level.getWorldBorder().isWithinBounds(spawnPos)
-                || !level.noCollision(ModEntities.MORTICIAN.get().getAABB(
+                || !level.noCollision(ModEntities.MORTICIAN.get().getSpawnAABB(
                         x + 0.5D, y, z + 0.5D))) {
             return;
         }

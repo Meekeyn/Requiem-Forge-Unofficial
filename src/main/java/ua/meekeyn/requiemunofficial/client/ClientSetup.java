@@ -1,14 +1,13 @@
 package ua.meekeyn.requiemunofficial.client;
 
-import net.minecraft.client.gui.screens.MenuScreens;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.ConfigScreenHandler;
-import net.minecraftforge.client.event.EntityRenderersEvent;
-import net.minecraftforge.client.event.RegisterParticleProvidersEvent;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterParticleProvidersEvent;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.client.compat.JadeRequiemCompat;
 import ua.meekeyn.requiemunofficial.client.particle.EntityDustParticle;
@@ -31,18 +30,19 @@ import ua.meekeyn.requiemunofficial.common.init.ModBlockEntities;
 import ua.meekeyn.requiemunofficial.common.init.ModMenuTypes;
 import ua.meekeyn.requiemunofficial.common.init.ModParticles;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class ClientSetup {
 
     private ClientSetup() {
     }
 
-    public static void init(IEventBus modEventBus) {
-        ModLoadingContext.get().registerExtensionPoint(
-                ConfigScreenHandler.ConfigScreenFactory.class,
-                () -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, parent) -> new RequiemConfigScreen(parent))
-        );
+    public static void init(IEventBus modEventBus, ModContainer modContainer) {
+        modContainer.registerExtensionPoint(IConfigScreenFactory.class,
+                (container, parent) -> new RequiemConfigScreen(parent));
+        ua.meekeyn.requiemunofficial.common.init.ModEnchantments.clientAccess = () ->
+                net.minecraft.client.Minecraft.getInstance().level == null ? null
+                        : net.minecraft.client.Minecraft.getInstance().level.registryAccess();
         modEventBus.addListener(ClientSetup::onClientSetup);
+        modEventBus.addListener(ClientSetup::registerScreens);
         modEventBus.addListener(ClientSetup::registerEntityRenderers);
         modEventBus.addListener(ClientSetup::registerLayerDefinitions);
         modEventBus.addListener(ClientSetup::registerParticleProviders);
@@ -51,13 +51,15 @@ public final class ClientSetup {
 
     private static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
-            // Реєструє клієнтський екран для меню рифту
-            MenuScreens.register(ModMenuTypes.RIFT.get(), RiftScreen::new);
             // Jade не повинен показувати власне одержиме тіло гравця
             JadeRequiemCompat.install();
         });
 
         RequiemUnofficial.LOGGER.info("Client setup initialized");
+    }
+
+    private static void registerScreens(net.neoforged.neoforge.client.event.RegisterMenuScreensEvent event) {
+        event.register(ModMenuTypes.RIFT.get(), RiftScreen::new);
     }
 
     private static void registerEntityRenderers(EntityRenderersEvent.RegisterRenderers event) {
@@ -83,6 +85,6 @@ public final class ClientSetup {
         event.registerSpriteSet(ModParticles.ATTRITION.get(), net.minecraft.client.particle.PortalParticle.Provider::new);
         event.registerSpriteSet(ModParticles.ATTUNED.get(), ua.meekeyn.requiemunofficial.client.particle.CureParticle.Provider::new);
         event.registerSpriteSet(ModParticles.CURE.get(), ua.meekeyn.requiemunofficial.client.particle.CureParticle.Provider::new);
-        event.registerSpriteSet(ModParticles.PENANCE.get(), net.minecraft.client.particle.SpellParticle.MobProvider::new);
+        event.registerSpriteSet(ModParticles.PENANCE.get(), net.minecraft.client.particle.SpellParticle.Provider::new);
     }
 }

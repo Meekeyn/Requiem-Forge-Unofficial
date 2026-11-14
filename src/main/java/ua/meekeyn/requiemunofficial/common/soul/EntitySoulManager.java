@@ -1,14 +1,15 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
-import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.tick.EntityTickEvent;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.entity.PlayerShellEntity;
 import ua.meekeyn.requiemunofficial.common.record.BodyRecordData;
@@ -16,7 +17,7 @@ import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class EntitySoulManager {
     private static final String HAS_SOUL = "RequiemHasSoul";
     private static final String SOUL_INITIALIZED = "RequiemSoulInitialized";
@@ -75,14 +76,14 @@ public final class EntitySoulManager {
     }
 
     @SubscribeEvent
-    public static void onLivingTick(LivingEvent.LivingTickEvent event) {
-        if (event.getEntity().level().isClientSide()) {
+    public static void onLivingTick(EntityTickEvent.Pre event) {
+        if (!(event.getEntity() instanceof net.minecraft.world.entity.LivingEntity living) || living.level().isClientSide()) {
             return;
         }
-        if (BodyRecordData.getEntityRecordId(event.getEntity()) != null) {
-            BodyRecordData.get(event.getEntity().level()).updateRecord(event.getEntity());
+        if (BodyRecordData.getEntityRecordId(living) != null) {
+            BodyRecordData.get(living.level()).updateRecord(living);
         }
-        freezeIfInert(event.getEntity());
+        freezeIfInert(living);
     }
 
     @SubscribeEvent
@@ -114,7 +115,7 @@ public final class EntitySoulManager {
     }
 
     @SubscribeEvent
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         Entity attacker = event.getSource().getEntity();
         if (attacker instanceof LivingEntity living
                 && isInertSoullessBody(living)

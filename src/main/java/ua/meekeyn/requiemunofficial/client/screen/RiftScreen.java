@@ -106,7 +106,7 @@ public class RiftScreen extends AbstractContainerScreen<RiftMenu> {
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTicks) {
-        renderBackground(graphics);
+        renderBackground(graphics, mouseX, mouseY, partialTicks);
         boolean available = this.menu.isStructureValid()
                     && this.menu.isPowered()
                     && !this.menu.isRitualActive()

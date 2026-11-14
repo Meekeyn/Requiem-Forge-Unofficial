@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -9,9 +10,9 @@ import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
@@ -28,11 +29,11 @@ import net.minecraft.world.entity.FlyingMob;
 import net.minecraft.world.entity.animal.FlyingAnimal;
 import net.minecraft.world.entity.animal.WaterAnimal;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class EntityMobilityManager implements ResourceManagerReloadListener {
 
     private static final ResourceLocation RESOURCE = ModIds.id("entity_mobility.json");
-    private static final ResourceLocation LEGACY_RESOURCE = new ResourceLocation("requiem", "entity_mobility.json");
+    private static final ResourceLocation LEGACY_RESOURCE = ResourceLocation.fromNamespaceAndPath("requiem", "entity_mobility.json");
     private static volatile Map<ResourceLocation, MobilityProfile> profiles = Map.of();
     private static volatile Map<ResourceLocation, MobilityProfile> clientProfiles = Map.of();
     private static final List<Function<LivingEntity, MobilityProfile>> resolvers = new CopyOnWriteArrayList<>();
@@ -104,7 +105,7 @@ public final class EntityMobilityManager implements ResourceManagerReloadListene
     }
 
     @SubscribeEvent
-    public static void syncProfiles(net.minecraftforge.event.OnDatapackSyncEvent event) {
+    public static void syncProfiles(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
         var packet = new ua.meekeyn.requiemunofficial.common.network.MobilityProfilesPacket(
                 new com.google.gson.Gson().toJson(profiles));
         if (event.getPlayer() != null) {

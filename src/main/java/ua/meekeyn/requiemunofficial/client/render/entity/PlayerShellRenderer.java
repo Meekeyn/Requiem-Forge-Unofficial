@@ -67,7 +67,7 @@ public class PlayerShellRenderer extends LivingEntityRenderer<PlayerShellEntity,
         if (minecraft.getConnection() != null) {
             PlayerInfo playerInfo = minecraft.getConnection().getPlayerInfo(profileId);
             if (playerInfo != null) {
-                return new Skin(playerInfo.getSkinLocation(), SLIM_MODEL.equals(playerInfo.getModelName()));
+                return toSkin(playerInfo.getSkin());
             }
         }
 
@@ -86,24 +86,19 @@ public class PlayerShellRenderer extends LivingEntityRenderer<PlayerShellEntity,
         return defaultSkin(profileId);
     }
 
+    private static Skin toSkin(net.minecraft.client.resources.PlayerSkin skin) {
+        return new Skin(skin.texture(), skin.model() == net.minecraft.client.resources.PlayerSkin.Model.SLIM);
+    }
+
     private static Skin defaultSkin(UUID profileId) {
-        return new Skin(DefaultPlayerSkin.getDefaultSkin(profileId),
-                SLIM_MODEL.equals(DefaultPlayerSkin.getSkinModelName(profileId)));
+        return toSkin(DefaultPlayerSkin.get(profileId));
     }
 
     private static Skin loadSkin(Minecraft minecraft, UUID profileId, String name, String textures) {
-        GameProfile profile = new GameProfile(profileId, name == null || name.isEmpty() ? null : name);
+        GameProfile profile = new GameProfile(profileId, name == null || name.isEmpty() ? "shell" : name);
         profile.getProperties().put("textures", new Property("textures", textures));
         try {
-            Map<MinecraftProfileTexture.Type, MinecraftProfileTexture> info =
-                    minecraft.getSkinManager().getInsecureSkinInformation(profile);
-            MinecraftProfileTexture skin = info.get(MinecraftProfileTexture.Type.SKIN);
-            if (skin == null) {
-                return null;
-            }
-            ResourceLocation location = minecraft.getSkinManager()
-                    .registerTexture(skin, MinecraftProfileTexture.Type.SKIN);
-            return new Skin(location, SLIM_MODEL.equals(skin.getMetadata("model")));
+            return toSkin(minecraft.getSkinManager().getInsecureSkin(profile));
         } catch (RuntimeException exception) {
             return null;
         }

@@ -52,7 +52,7 @@ public class RunestoneBlockEntityRenderer implements BlockEntityRenderer<Runesto
 
     public static ResourceLocation runeTexture(String runeType) {
         String texture = "rift".equals(runeType) ? "rift_rune_side" : runeType + "_rune";
-        return new ResourceLocation(RequiemUnofficial.MODID, "block/" + texture);
+        return ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "block/" + texture);
     }
 
     private static void renderSide(PoseStack poseStack,
@@ -112,13 +112,13 @@ public class RunestoneBlockEntityRenderer implements BlockEntityRenderer<Runesto
                                float normalX,
                                float normalY,
                                float normalZ) {
-        consumer.vertex(pose, x, y, z)
-                .color(255, 255, 255, 255)
-                .uv(u, v)
-                .overlayCoords(0)
-                .uv2(LightTexture.FULL_BRIGHT)
-                .normal(normal, normalX, normalY, normalZ)
-                .endVertex();
+        org.joml.Vector3f transformedNormal = normal.transform(new org.joml.Vector3f(normalX, normalY, normalZ));
+        consumer.addVertex(pose, x, y, z)
+                .setColor(255, 255, 255, 255)
+                .setUv(u, v)
+                .setOverlay(0)
+                .setLight(LightTexture.FULL_BRIGHT)
+                .setNormal(transformedNormal.x, transformedNormal.y, transformedNormal.z);
     }
 
     private enum Side {

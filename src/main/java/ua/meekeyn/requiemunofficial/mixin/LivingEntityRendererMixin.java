@@ -72,7 +72,7 @@ public abstract class LivingEntityRendererMixin<T extends LivingEntity> {
                                                                                    T entity) {
         if (entity instanceof AbstractClientPlayer player
                 && (ClientShadowPlayerFx.isShadowPlayer(player)
-                || ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player))) {
+                || ClientPossessionRenderHelper.shouldHideSoulPlayer(player))) {
             return Collections.emptyIterator();
         }
         return iterator;

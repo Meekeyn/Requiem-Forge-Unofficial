@@ -199,18 +199,13 @@ public class EntityDustParticle extends SingleQuadParticle {
         }
 
         @Override
-        public void begin(BufferBuilder bufferBuilder, TextureManager textureManager) {
+        public BufferBuilder begin(Tesselator tesselator, TextureManager textureManager) {
             RenderSystem.depthMask(true);
             RenderSystem.setShader(GameRenderer::getParticleShader);
             RenderSystem.setShaderTexture(0, texture);
             RenderSystem.enableBlend();
             RenderSystem.blendFunc(GlStateManager.SourceFactor.SRC_ALPHA, GlStateManager.DestFactor.ONE_MINUS_SRC_ALPHA);
-            bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
-        }
-
-        @Override
-        public void end(Tesselator tesselator) {
-            tesselator.end();
+            return tesselator.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.PARTICLE);
         }
 
         @Override

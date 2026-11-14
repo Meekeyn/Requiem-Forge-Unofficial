@@ -1,10 +1,8 @@
 package ua.meekeyn.requiemunofficial.common.loot;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
-import net.minecraft.util.GsonHelper;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParam;
 import net.minecraft.world.level.storage.loot.predicates.LootItemCondition;
@@ -40,17 +38,7 @@ public class RiftMorticianLootCondition implements LootItemCondition {
                 && mortician.isObeliskProjection();
     }
 
-    public static class Serializer implements net.minecraft.world.level.storage.loot.Serializer<RiftMorticianLootCondition> {
-        @Override
-        public void serialize(JsonObject json, RiftMorticianLootCondition condition, JsonSerializationContext ctx) {
-            json.add("entity", ctx.serialize(condition.entity));
-        }
-
-        @Override
-        public RiftMorticianLootCondition deserialize(JsonObject json, JsonDeserializationContext ctx) {
-            return new RiftMorticianLootCondition(
-                    GsonHelper.getAsObject(json, "entity", ctx, LootContext.EntityTarget.class)
-            );
-        }
-    }
+    public static final MapCodec<RiftMorticianLootCondition> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
+            LootContext.EntityTarget.CODEC.fieldOf("entity").forGetter(c -> c.entity)
+    ).apply(i, RiftMorticianLootCondition::new));
 }

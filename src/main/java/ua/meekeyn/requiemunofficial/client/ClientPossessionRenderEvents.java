@@ -1,14 +1,15 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.player.AbstractClientPlayer;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderPlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderPlayerEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessionRenderEvents {
 
     private ClientPossessionRenderEvents() {
@@ -17,7 +18,7 @@ public final class ClientPossessionRenderEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderPossessedSoulPlayer(RenderPlayerEvent.Pre event) {
         if (event.getEntity() instanceof AbstractClientPlayer player
-                && ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player)) {
+                && ClientPossessionRenderHelper.shouldHideSoulPlayer(player)) {
             event.setCanceled(true);
         }
     }

@@ -1,13 +1,13 @@
 package ua.meekeyn.requiemunofficial.common.soul;
 
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
@@ -20,7 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PlayerSoulEvents {
     private static final Map<UUID, PendingSoulReleasePosition> PENDING_DEATH_RELEASE_POSITIONS = new HashMap<>();
 
@@ -39,16 +39,7 @@ public final class PlayerSoulEvents {
     }
 
     @SubscribeEvent
-    public static void onAttachCapabilities(AttachCapabilitiesEvent<Entity> event) {
-        if (event.getObject() instanceof Player) {
-            // Додає capability кожному гравцю
-            event.addCapability(PlayerSoulProvider.ID, new PlayerSoulProvider());
-        }
-    }
-
-    @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
-        event.getOriginal().reviveCaps();
 
         boolean wasPossessingOnDeath = event.isWasDeath()
                 && event.getOriginal() instanceof net.minecraft.server.level.ServerPlayer oldPlayerForState
@@ -66,8 +57,8 @@ public final class PlayerSoulEvents {
             }
         }
 
-        event.getOriginal().getCapability(ModCapabilities.PLAYER_SOUL).ifPresent(oldSoul -> {
-            event.getEntity().getCapability(ModCapabilities.PLAYER_SOUL).ifPresent(newSoul -> {
+        ModCapabilities.soul(event.getOriginal()).ifPresent(oldSoul -> {
+            ModCapabilities.soul(event.getEntity()).ifPresent(newSoul -> {
                 // Копіює дані душі в нового гравця після смерті/респавну
                 newSoul.copyFrom(oldSoul);
                 if (event.isWasDeath()
@@ -85,7 +76,6 @@ public final class PlayerSoulEvents {
             });
         });
 
-        event.getOriginal().invalidateCaps();
         SoulManager.sync(event.getEntity());
     }
 
@@ -136,10 +126,18 @@ public final class PlayerSoulEvents {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase == TickEvent.Phase.END
-                && event.player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
             ua.meekeyn.requiemunofficial.common.effect.PenanceMobEffect.tickPlayer(serverPlayer);
+        }
+    }
+
+    /** Новий спостерігач має знати, чи гравець у формі душі (інакше бачитиме його модель). */
+    @SubscribeEvent
+    public static void onStartTracking(PlayerEvent.StartTracking event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer tracker
+                && event.getTarget() instanceof net.minecraft.server.level.ServerPlayer target) {
+            ModNetwork.sendSoulVisibilityTo(tracker, target);
         }
     }
 

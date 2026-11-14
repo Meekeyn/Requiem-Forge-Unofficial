@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.gametest;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.mojang.authlib.GameProfile;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
@@ -13,8 +14,8 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
 import ua.meekeyn.requiemunofficial.common.soul.EntitySoulManager;
@@ -58,7 +59,7 @@ public final class GroundMovementGameTests {
             if (scenario.equals("speed")) mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SPEED, 600, 0));
             if (scenario.equals("slowness")) mob.addEffect(new MobEffectInstance(MobEffects.MOVEMENT_SLOWDOWN, 600, 0));
             if (scenario.equals("addition")) mob.getAttribute(Attributes.MOVEMENT_SPEED).addTransientModifier(
-                    new AttributeModifier(UUID.fromString("b087540c-a7fb-4cae-a6ee-e1aa54c488cb"), "test", 0.07, AttributeModifier.Operation.ADDITION));
+                    new AttributeModifier(ua.meekeyn.requiemunofficial.common.util.ModIds.id("test_speed"), 0.07, AttributeModifier.Operation.ADD_VALUE));
             if (scenario.equals("large_attribute")) mob.getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(1.2);
         }
         ProbePlayer player = new ProbePlayer(helper);
@@ -151,8 +152,8 @@ public final class GroundMovementGameTests {
 
     private static final class ProbePlayer extends ServerPlayer {
         ProbePlayer(GameTestHelper helper) {
-            super(helper.getLevel().getServer(), helper.getLevel(), new GameProfile(UUID.randomUUID(), "ground-probe"));
+            super(helper.getLevel().getServer(), helper.getLevel(), new GameProfile(UUID.randomUUID(), "ground-probe"), net.minecraft.server.level.ClientInformation.createDefault());
         }
-        @Override public int awardRecipes(java.util.Collection<net.minecraft.world.item.crafting.Recipe<?>> recipes) { return 0; }
+        @Override public int awardRecipes(java.util.Collection<net.minecraft.world.item.crafting.RecipeHolder<?>> recipes) { return 0; }
     }
 }

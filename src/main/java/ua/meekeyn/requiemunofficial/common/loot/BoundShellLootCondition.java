@@ -1,12 +1,10 @@
 package ua.meekeyn.requiemunofficial.common.loot;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.GsonHelper;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.world.level.storage.loot.LootContext;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParam;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
@@ -64,19 +62,8 @@ public class BoundShellLootCondition implements LootItemCondition {
         );
     }
 
-    public static class Serializer implements net.minecraft.world.level.storage.loot.Serializer<BoundShellLootCondition> {
-        @Override
-        public void serialize(JsonObject json, BoundShellLootCondition condition, JsonSerializationContext ctx) {
-            json.add("entity", ctx.serialize(condition.entity));
-            json.add("predicate", condition.predicate.toJson());
-        }
-
-        @Override
-        public BoundShellLootCondition deserialize(JsonObject json, JsonDeserializationContext ctx) {
-            return new BoundShellLootCondition(
-                    GsonHelper.getAsObject(json, "entity", ctx, LootContext.EntityTarget.class),
-                    EntityRefPredicate.fromJson(json.get("predicate"))
-            );
-        }
-    }
+    public static final MapCodec<BoundShellLootCondition> CODEC = RecordCodecBuilder.mapCodec(i -> i.group(
+            LootContext.EntityTarget.CODEC.fieldOf("entity").forGetter(c -> c.entity),
+            EntityRefPredicate.CODEC.optionalFieldOf("predicate", EntityRefPredicate.ANY).forGetter(c -> c.predicate)
+    ).apply(i, BoundShellLootCondition::new));
 }

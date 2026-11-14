@@ -1,20 +1,21 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.NeutralMob;
 import net.minecraft.world.entity.monster.Monster;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.gamerule.PossessionDetection;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessionDetectionManager {
 
     private static final double ALERT_RANGE = 50.0D;
@@ -23,7 +24,7 @@ public final class PossessionDetectionManager {
     }
 
     @SubscribeEvent
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         if (event.getEntity().level().isClientSide()) {
             return;
         }

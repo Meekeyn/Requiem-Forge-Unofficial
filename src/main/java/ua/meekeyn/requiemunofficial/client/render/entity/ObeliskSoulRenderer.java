@@ -15,7 +15,7 @@ import ua.meekeyn.requiemunofficial.common.entity.ObeliskSoulEntity;
 public class ObeliskSoulRenderer extends EntityRenderer<ObeliskSoulEntity> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(RequiemUnofficial.MODID, "textures/entity/soul.png");
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "textures/entity/soul.png");
     private static final int FULL_BRIGHT = 0xF000F0;
 
     public ObeliskSoulRenderer(EntityRendererProvider.Context context) {
@@ -52,13 +52,12 @@ public class ObeliskSoulRenderer extends EntityRenderer<ObeliskSoulEntity> {
 
     private static void vertex(VertexConsumer vertices, PoseStack.Pose pose, float x, float y,
                                float u, float v, float[] color) {
-        vertices.vertex(pose.pose(), x, y, 0.0F)
-                .color(color[0], color[1], color[2], 0.85F)
-                .uv(u, v)
-                .overlayCoords(OverlayTexture.NO_OVERLAY)
-                .uv2(FULL_BRIGHT)
-                .normal(pose.normal(), 0.0F, 1.0F, 0.0F)
-                .endVertex();
+        vertices.addVertex(pose.pose(), x, y, 0.0F)
+                .setColor(color[0], color[1], color[2], 0.85F)
+                .setUv(u, v)
+                .setOverlay(OverlayTexture.NO_OVERLAY)
+                .setLight(FULL_BRIGHT)
+                .setNormal(pose, 0.0F, 1.0F, 0.0F);
     }
 
     private static float[] colorFor(String soulType) {

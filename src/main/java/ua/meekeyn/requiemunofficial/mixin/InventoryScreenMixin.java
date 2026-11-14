@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import ua.meekeyn.requiemunofficial.client.ClientPossessionRenderHelper;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
@@ -68,15 +69,18 @@ public abstract class InventoryScreenMixin extends EffectRenderingInventoryScree
         int entityX = this.leftPos + (shape == PossessionInventoryManager.InventoryShape.ALT_SMALL ? 51 : 91);
         int entityY = this.topPos + (shape == PossessionInventoryManager.InventoryShape.ALT_LARGE ? 150 : 75);
         int size = shape == PossessionInventoryManager.InventoryShape.ALT_LARGE ? 26 : 30;
-        InventoryScreen.renderEntityInInventoryFollowsMouse(
-                graphics,
-                entityX,
-                entityY,
-                size,
-                entityX - mouseX,
-                entityY - 50 - mouseY,
-                renderedEntity
-        );
+        int centerY = entityY - (int) (size * renderedEntity.getBbHeight() / 2.0F);
+        ClientPossessionRenderHelper.setRenderingInventoryPreview(true);
+        try {
+            InventoryScreen.renderEntityInInventoryFollowsMouse(
+                    graphics,
+                    entityX - 25, centerY - 35, entityX + 25, centerY + 35,
+                    size, 0.0625F, (float) mouseX, (float) mouseY,
+                    renderedEntity
+            );
+        } finally {
+            ClientPossessionRenderHelper.setRenderingInventoryPreview(false);
+        }
         ci.cancel();
     }
 
@@ -99,9 +103,8 @@ public abstract class InventoryScreenMixin extends EffectRenderingInventoryScree
                 graphics.blit(INVENTORY_SLOTS, x + 46, y + 61, 46, 61, 48, 18);
             }
         }
-        if (PossessionInventoryManager.canCraft(host)) {
-            graphics.blit(INVENTORY_SLOTS, x + 97, y + 17, 97, 17, 75, 36);
-        }
+        // Слоти крафту 2x2 у меню активні для будь-якого тіла, тож сітку малюємо завжди.
+        graphics.blit(INVENTORY_SLOTS, x + 97, y + 17, 97, 17, 75, 36);
         if (PossessionInventoryManager.canCarryInventory(host)) {
             graphics.blit(INVENTORY_SLOTS, x + 7, y + 83, 7, 83, 162, 54);
         }
@@ -114,9 +117,7 @@ public abstract class InventoryScreenMixin extends EffectRenderingInventoryScree
     }
 
     private LivingEntity requiemunofficial$getPossessedHost(Minecraft minecraft) {
-        UUID hostId = minecraft.player.getCapability(
-                ua.meekeyn.requiemunofficial.common.soul.ModCapabilities.PLAYER_SOUL
-        ).map(soul -> soul.getPossessedEntityId()).orElse(null);
+        UUID hostId = ua.meekeyn.requiemunofficial.common.soul.ModCapabilities.soul(minecraft.player).map(soul -> soul.getPossessedEntityId()).orElse(null);
         if (hostId == null) {
             return null;
         }

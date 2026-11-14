@@ -19,13 +19,14 @@ public abstract class EntityRendererNameTagMixin<T extends Entity> {
                                           Component displayName,
                                           PoseStack poseStack,
                                           MultiBufferSource buffer,
-                                          int packedLight);
+                                          int packedLight,
+                                          float partialTick);
 
     @Redirect(
             method = "render",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;renderNameTag(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"
+                    target = "Lnet/minecraft/client/renderer/entity/EntityRenderer;renderNameTag(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/network/chat/Component;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;IF)V"
             )
     )
     private void requiemunofficial$renderPossessorName(EntityRenderer<T> renderer,
@@ -33,13 +34,15 @@ public abstract class EntityRendererNameTagMixin<T extends Entity> {
                                                        Component name,
                                                        PoseStack poseStack,
                                                        MultiBufferSource buffer,
-                                                       int packedLight) {
+                                                       int packedLight,
+                                                       float partialTick) {
         this.renderNameTag(
                 entity,
                 ClientPossessionNameTags.possessorName(entity).orElse(name),
                 poseStack,
                 buffer,
-                packedLight
+                packedLight,
+                partialTick
         );
     }
 }

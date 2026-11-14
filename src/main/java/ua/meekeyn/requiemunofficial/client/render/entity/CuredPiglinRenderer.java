@@ -9,7 +9,7 @@ import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 
 public class CuredPiglinRenderer extends PiglinRenderer {
 
-    private static final ResourceLocation TEXTURE = new ResourceLocation(
+    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             RequiemUnofficial.MODID,
             "textures/entity/cured_piglin.png"
     );

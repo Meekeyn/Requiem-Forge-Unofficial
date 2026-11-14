@@ -6,12 +6,12 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.common.util.LazyOptional;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
 import ua.meekeyn.requiemunofficial.common.gamerule.StartingRemnantType;
 import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 import ua.meekeyn.requiemunofficial.common.advancement.ModCriteria;
 
+import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -19,11 +19,11 @@ public final class InitialSoulChoiceManager {
 
     private static final String CHOICE_MADE = "RequiemInitialSoulChoiceMade";
     private static final ResourceLocation ORIGINS_SOUL_LAYER =
-            new ResourceLocation("requiemunofficial", "soul_type");
+            ResourceLocation.fromNamespaceAndPath("requiemunofficial", "soul_type");
     private static final ResourceLocation ORIGINS_MORTAL =
-            new ResourceLocation("requiemunofficial", "mortal");
+            ResourceLocation.fromNamespaceAndPath("requiemunofficial", "mortal");
     private static final ResourceLocation ORIGINS_REMNANT =
-            new ResourceLocation("requiemunofficial", "remnant");
+            ResourceLocation.fromNamespaceAndPath("requiemunofficial", "remnant");
 
     private InitialSoulChoiceManager() {
     }
@@ -67,40 +67,50 @@ public final class InitialSoulChoiceManager {
         ModCriteria.MADE_REMNANT_CHOICE.trigger(player, choice);
     }
 
+    /**
+     * Читає вибір раси Origins через рефлексію (Origins підключено лише як необов'язкова залежність).
+     * API контейнера залежить від версії Origins, тож підтримано обидві форми результату
+     * IOriginContainer.get(entity): Optional і «голий» контейнер.
+     */
     private static ResourceLocation readOriginsSoulType(ServerPlayer player) {
         try {
             Class<?> containerApi = Class.forName("io.github.edwinmindcraft.origins.api.capabilities.IOriginContainer");
             Method get = containerApi.getMethod("get", net.minecraft.world.entity.Entity.class);
-            Object optional = get.invoke(null, player);
-            if (!(optional instanceof LazyOptional<?> lazyOptional)) {
+            Object raw = get.invoke(null, player);
+            Object container = raw;
+            if (raw instanceof java.util.Optional<?> optional) {
+                container = optional.orElse(null);
+            } else if (raw != null) {
+                try {
+                    Method resolve = raw.getClass().getMethod("resolve");
+                    Object resolved = resolve.invoke(raw);
+                    if (resolved instanceof java.util.Optional<?> optional) {
+                        container = optional.orElse(null);
+                    }
+                } catch (NoSuchMethodException ignored) {
+                    // Не LazyOptional: вважаємо, що це сам контейнер.
+                }
+            }
+            if (container == null) {
                 return null;
             }
-
-            final ResourceLocation[] selected = new ResourceLocation[1];
-            lazyOptional.ifPresent(container -> {
-                try {
-                    Method getOrigins = container.getClass().getMethod("getOrigins");
-                    Object rawOrigins = getOrigins.invoke(container);
-                    if (!(rawOrigins instanceof Map<?, ?> origins)) {
-                        return;
-                    }
-                    for (Map.Entry<?, ?> entry : origins.entrySet()) {
-                        if (!(entry.getKey() instanceof ResourceKey<?> layer)
-                                || !(entry.getValue() instanceof ResourceKey<?> origin)) {
-                            continue;
-                        }
-                        if (ORIGINS_SOUL_LAYER.equals(layer.location())) {
-                            selected[0] = origin.location();
-                            return;
-                        }
-                    }
-                } catch (ReflectiveOperationException ignored) {
+            Method getOrigins = container.getClass().getMethod("getOrigins");
+            if (!(getOrigins.invoke(container) instanceof Map<?, ?> origins)) {
+                return null;
+            }
+            for (Map.Entry<?, ?> entry : origins.entrySet()) {
+                if (entry.getKey() instanceof ResourceKey<?> layer
+                        && entry.getValue() instanceof ResourceKey<?> origin
+                        && ORIGINS_SOUL_LAYER.equals(layer.location())) {
+                    return origin.location();
                 }
-            });
-            return selected[0];
-        } catch (ReflectiveOperationException exception) {
-            return null;
+            }
+        } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
+            // Origins не встановлено.
+        } catch (ReflectiveOperationException | RuntimeException exception) {
+            RequiemUnofficial.LOGGER.debug("Origins integration unavailable", exception);
         }
+        return null;
     }
 
     public static boolean hasChosen(Player player) {

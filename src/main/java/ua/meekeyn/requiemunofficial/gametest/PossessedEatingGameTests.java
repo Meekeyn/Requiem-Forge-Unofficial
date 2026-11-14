@@ -14,8 +14,8 @@ import net.minecraft.world.entity.monster.piglin.Piglin;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessedItemManager;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
@@ -195,7 +195,7 @@ public final class PossessedEatingGameTests {
         helper.assertTrue(player.getUseItemRemainingTicks() > 0,
                 "Zombie raw meat use time must be applied to the stack");
 
-        int nutrition = beef.getFoodProperties(player).getNutrition();
+        int nutrition = beef.getFoodProperties(player).nutrition();
         beef.finishUsingItem(helper.getLevel(), player);
         helper.assertTrue(zombie.getHealth() == before + (float) nutrition,
                 "Zombie raw meat must heal by the food's nutrition");
@@ -341,7 +341,7 @@ public final class PossessedEatingGameTests {
 
     private static ServerPlayer possessor(GameTestHelper helper, String name) {
         ServerPlayer player = new ServerPlayer(helper.getLevel().getServer(), helper.getLevel(),
-                new GameProfile(UUID.randomUUID(), name));
+                new GameProfile(UUID.randomUUID(), name), net.minecraft.server.level.ClientInformation.createDefault());
         player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
         player.setOnGround(true);
         player.setDeltaMovement(Vec3.ZERO);

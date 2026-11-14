@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.mixin;
 
+import net.minecraft.core.Holder;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.LivingEntity;
@@ -16,7 +17,7 @@ public abstract class MobEffectInstanceMixin {
     private int duration;
 
     @Shadow
-    public abstract MobEffect getEffect();
+    public abstract Holder<MobEffect> getEffect();
 
     @Inject(
             method = "tick",
@@ -25,8 +26,8 @@ public abstract class MobEffectInstanceMixin {
     private void requiemunofficial$freezeStickyDuration(LivingEntity entity,
                                                         Runnable onExpiration,
                                                         CallbackInfoReturnable<Boolean> cir) {
-        MobEffect effect = getEffect();
-        if (effect instanceof StickyMobEffect sticky && sticky.shouldFreezeDuration(entity)) {
+        Holder<MobEffect> effect = getEffect();
+        if (effect.value() instanceof StickyMobEffect sticky && sticky.shouldFreezeDuration(entity)) {
             this.duration++;
         }
     }

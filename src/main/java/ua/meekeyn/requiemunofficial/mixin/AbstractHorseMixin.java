@@ -2,7 +2,6 @@ package ua.meekeyn.requiemunofficial.mixin;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,9 +16,9 @@ public abstract class AbstractHorseMixin {
     private void requiemunofficial$undeadPossessedRiderCountsAsSaddled(CallbackInfoReturnable<Boolean> cir) {
         AbstractHorse self = (AbstractHorse) (Object) this;
         Entity passenger = self.getFirstPassenger();
-        if (self.getMobType() != MobType.UNDEAD
+        if (!self.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD)
                 || !(passenger instanceof LivingEntity livingPassenger)
-                || livingPassenger.getMobType() != MobType.UNDEAD) {
+                || !livingPassenger.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD)) {
             return;
         }
 

@@ -9,7 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import ua.meekeyn.requiemunofficial.common.entity.ReleasedSoulEntity;
 import ua.meekeyn.requiemunofficial.common.init.ModEntities;
 import ua.meekeyn.requiemunofficial.common.init.ModItems;
@@ -40,7 +40,7 @@ public class FilledSoulVesselItem extends SoulVesselItem {
             return InteractionResult.FAIL;
         }
 
-        var targetType = ForgeRegistries.ENTITY_TYPES.getKey(target.getType());
+        var targetType = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         String targetSoulType = targetType == null ? "minecraft:unknown" : targetType.toString();
         if (!targetSoulType.equals(getSoulType(stack))) {
             sendSystemMessage(player, Component.translatable(
@@ -82,7 +82,7 @@ public class FilledSoulVesselItem extends SoulVesselItem {
 
     private static void sendSystemMessage(Player player, Component message) {
         if (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
-                || serverPlayer.connection != null && serverPlayer.connection.connection != null) {
+                || serverPlayer.connection != null && serverPlayer.connection.getConnection() != null) {
             player.sendSystemMessage(message);
         }
     }

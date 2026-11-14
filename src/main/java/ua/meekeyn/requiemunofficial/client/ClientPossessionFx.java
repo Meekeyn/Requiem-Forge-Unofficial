@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.shaders.Uniform;
 import net.minecraft.client.Minecraft;
@@ -9,10 +11,9 @@ import net.minecraft.client.renderer.PostPass;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.Entity;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.network.PossessionFxPacket;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
@@ -38,7 +39,7 @@ import java.util.Map;
  * {@code LevelRenderer.doEntityOutline()} — там же, где Satin вызывал
  * {@code ShaderEffectRenderCallback} в бете-16.
  */
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessionFx {
 
     private static final ResourceLocation ZOOM_SHADER = ModIds.id("shaders/post/zoom.json");
@@ -170,8 +171,8 @@ public final class ClientPossessionFx {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || possessionTarget.get() == null) {
+    public static void onClientTick(ClientTickEvent.Post event) {
+        if (possessionTarget.get() == null) {
             return;
         }
 

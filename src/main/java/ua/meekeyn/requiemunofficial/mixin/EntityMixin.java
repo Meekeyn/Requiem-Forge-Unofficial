@@ -64,16 +64,16 @@ public abstract class EntityMixin {
         }
     }
 
-    @Inject(method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;)V", at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$suppressSoulGameEvent(GameEvent event, CallbackInfo ci) {
+    @Inject(method = "gameEvent(Lnet/minecraft/core/Holder;)V", at = @At("HEAD"), cancellable = true)
+    private void requiemunofficial$suppressSoulGameEvent(net.minecraft.core.Holder<GameEvent> event, CallbackInfo ci) {
         if (requiemunofficial$shouldSuppressGameEvent((Entity) (Object) this, event)) {
             ci.cancel();
         }
     }
 
-    @Inject(method = "gameEvent(Lnet/minecraft/world/level/gameevent/GameEvent;Lnet/minecraft/world/entity/Entity;)V",
+    @Inject(method = "gameEvent(Lnet/minecraft/core/Holder;Lnet/minecraft/world/entity/Entity;)V",
             at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$suppressSoulGameEvent(GameEvent event, Entity source, CallbackInfo ci) {
+    private void requiemunofficial$suppressSoulGameEvent(net.minecraft.core.Holder<GameEvent> event, Entity source, CallbackInfo ci) {
         if (requiemunofficial$shouldSuppressGameEvent((Entity) (Object) this, event)) {
             ci.cancel();
         }
@@ -98,7 +98,7 @@ public abstract class EntityMixin {
     }
 
     @Redirect(
-            method = "collideBoundingBox",
+            method = "collectColliders",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/level/Level;getBlockCollisions(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/AABB;)Ljava/lang/Iterable;"
@@ -139,14 +139,14 @@ public abstract class EntityMixin {
         return shapes;
     }
 
-    private static boolean requiemunofficial$shouldSuppressGameEvent(Entity entity, GameEvent event) {
+    private static boolean requiemunofficial$shouldSuppressGameEvent(Entity entity, net.minecraft.core.Holder<GameEvent> event) {
         if (!(entity instanceof Player player)) {
             return false;
         }
         if (PossessionManager.isPossessing(player)) {
             return true;
         }
-        return event == GameEvent.STEP && VagrantRules.isRestricted(player);
+        return event.is(GameEvent.STEP) && VagrantRules.isRestricted(player);
     }
 
     private static boolean requiemunofficial$isRestrictedVagrant(Entity entity) {

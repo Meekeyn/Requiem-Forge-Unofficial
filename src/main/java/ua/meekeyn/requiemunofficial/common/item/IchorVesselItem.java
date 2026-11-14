@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.item;
 
+import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
@@ -34,12 +35,12 @@ public class IchorVesselItem extends Item {
         return ichorType;
     }
 
-    public MobEffect getEffect() {
+    public Holder<MobEffect> getEffect() {
         return switch (ichorType) {
-            case "attrition" -> ModEffects.ATTRITION.get();
-            case "emancipation" -> ModEffects.EMANCIPATION.get();
-            case "penance" -> ModEffects.PENANCE.get();
-            case "reclamation" -> ModEffects.RECLAMATION.get();
+            case "attrition" -> ModEffects.ATTRITION;
+            case "emancipation" -> ModEffects.EMANCIPATION;
+            case "penance" -> ModEffects.PENANCE;
+            case "reclamation" -> ModEffects.RECLAMATION;
             default -> null;
         };
     }
@@ -60,7 +61,7 @@ public class IchorVesselItem extends Item {
             if (!canActivate(user)) {
                 return stack;
             }
-            MobEffect effect = getEffect();
+            Holder<MobEffect> effect = getEffect();
             if (effect != null) {
                 user.addEffect(new MobEffectInstance(effect, EFFECT_DURATION, 0, false, false, true));
             }
@@ -85,7 +86,7 @@ public class IchorVesselItem extends Item {
     }
 
     private boolean canActivate(LivingEntity user) {
-        MobEffect effect = getEffect();
+        Holder<MobEffect> effect = getEffect();
         if (effect == null) {
             return false;
         }
@@ -100,7 +101,7 @@ public class IchorVesselItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
+    public int getUseDuration(ItemStack stack, net.minecraft.world.entity.LivingEntity entity) {
         return USE_DURATION;
     }
 
@@ -110,9 +111,9 @@ public class IchorVesselItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level,
+    public void appendHoverText(ItemStack stack, net.minecraft.world.item.Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag flag) {
-        super.appendHoverText(stack, level, tooltip, flag);
+        super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(Component.translatable(
                 "tooltip.requiemunofficial.ichor_vessel.type",
                 Component.translatable("ichor_type.requiemunofficial." + ichorType)

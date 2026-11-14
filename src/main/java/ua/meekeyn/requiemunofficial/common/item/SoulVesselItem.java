@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.item;
 
+import ua.meekeyn.requiemunofficial.common.util.ItemNbt;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.ParticleTypes;
@@ -23,7 +24,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 import ua.meekeyn.requiemunofficial.common.init.ModItems;
 import ua.meekeyn.requiemunofficial.common.init.ModSounds;
 import ua.meekeyn.requiemunofficial.common.init.ModEntityAttributes;
@@ -69,15 +70,16 @@ public class SoulVesselItem extends Item {
 
     public static void setSoulData(ItemStack stack, String soulType, SoulKind soulKind, int soulAmount) {
         int clampedAmount = Math.max(1, Math.min(CAPACITY, soulAmount));
-        CompoundTag tag = stack.getOrCreateTag();
-        tag.putString(TAG_SOUL_TYPE, soulType);
-        tag.putString(TAG_SOUL_KIND, soulKind.id());
-        tag.putInt(TAG_SOUL_AMOUNT, clampedAmount);
-        tag.putInt(TAG_SOUL_ENERGY, soulKind.energyFor(clampedAmount));
+        ItemNbt.edit(stack, tag -> {
+            tag.putString(TAG_SOUL_TYPE, soulType);
+            tag.putString(TAG_SOUL_KIND, soulKind.id());
+            tag.putInt(TAG_SOUL_AMOUNT, clampedAmount);
+            tag.putInt(TAG_SOUL_ENERGY, soulKind.energyFor(clampedAmount));
+        });
     }
 
     public static String getSoulType(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         if (tag == null) {
             return "empty";
         }
@@ -85,7 +87,7 @@ public class SoulVesselItem extends Item {
     }
 
     public static int getSoulAmount(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         if (tag == null) {
             return 0;
         }
@@ -93,7 +95,7 @@ public class SoulVesselItem extends Item {
     }
 
     public static String getSoulKind(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         if (tag == null || !tag.contains(TAG_SOUL_KIND)) {
             return SoulKind.BEAST.id();
         }
@@ -101,7 +103,7 @@ public class SoulVesselItem extends Item {
     }
 
     public static int getSoulEnergy(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         if (tag == null) {
             return 0;
         }
@@ -112,21 +114,21 @@ public class SoulVesselItem extends Item {
     }
 
     public static void setBodyRecord(ItemStack stack, UUID recordId) {
-        stack.getOrCreateTag().putUUID(TAG_BODY_RECORD, recordId);
+        ItemNbt.edit(stack, tag -> tag.putUUID(TAG_BODY_RECORD, recordId));
     }
 
     public static UUID getBodyRecord(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         return tag != null && tag.hasUUID(TAG_BODY_RECORD) ? tag.getUUID(TAG_BODY_RECORD) : null;
     }
 
     public static boolean hasSoulData(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         return tag != null && tag.contains(TAG_SOUL_TYPE) && tag.contains(TAG_SOUL_AMOUNT);
     }
 
     public static void clearSoulData(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
+        CompoundTag tag = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTag(stack);
         if (tag == null) {
             return;
         }
@@ -137,9 +139,7 @@ public class SoulVesselItem extends Item {
         tag.remove(TAG_SOUL_ENERGY);
         tag.remove(TAG_BODY_RECORD);
 
-        if (tag.isEmpty()) {
-            stack.setTag(null);
-        }
+        ItemNbt.setTag(stack, tag);
     }
 
     @Override
@@ -182,22 +182,26 @@ public class SoulVesselItem extends Item {
             return InteractionResult.PASS;
         }
 
-        CompoundTag active = stack.getOrCreateTagElement(TAG_ACTIVE_CAPTURE);
-        active.putUUID(TAG_CAPTURE_TARGET, target.getUUID());
-        active.putInt(TAG_CAPTURE_TIME, computeCaptureTime(stack, target, player, captureType.get(), hand));
-        active.putBoolean(TAG_CAPTURE_CREATIVE_BOOST,
-                isCreativeSoulVessel(stack) || hasCreativeOffhandAccelerator(player, hand));
+        int captureTime = computeCaptureTime(stack, target, player, captureType.get(), hand);
+        boolean creativeBoost = isCreativeSoulVessel(stack) || hasCreativeOffhandAccelerator(player, hand);
+        ItemNbt.edit(stack, root -> {
+            CompoundTag active = root.getCompound(TAG_ACTIVE_CAPTURE);
+            active.putUUID(TAG_CAPTURE_TARGET, target.getUUID());
+            active.putInt(TAG_CAPTURE_TIME, captureTime);
+            active.putBoolean(TAG_CAPTURE_CREATIVE_BOOST, creativeBoost);
+            root.put(TAG_ACTIVE_CAPTURE, active);
+        });
         provokeNeutralTarget(player, target);
         if (startUsing
                 && (!(player instanceof net.minecraft.server.level.ServerPlayer serverPlayer)
-                || serverPlayer.connection != null && serverPlayer.connection.connection != null)) {
+                || serverPlayer.connection != null && serverPlayer.connection.getConnection() != null)) {
             player.startUsingItem(hand);
         }
         if (playFeedback) {
             player.level().playSound(
                     null,
                     target.blockPosition(),
-                    SoundEvents.SOUL_ESCAPE,
+                    SoundEvents.SOUL_ESCAPE.value(),
                     SoundSource.PLAYERS,
                     0.7F,
                     0.65F
@@ -220,11 +224,11 @@ public class SoulVesselItem extends Item {
             return stack;
         }
 
-        CompoundTag active = stack.getTagElement(TAG_ACTIVE_CAPTURE);
+        CompoundTag active = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(stack, TAG_ACTIVE_CAPTURE);
         if (active == null || !active.hasUUID(TAG_CAPTURE_TARGET)) {
             return stack;
         }
-        stack.removeTagKey(TAG_ACTIVE_CAPTURE);
+        ItemNbt.removeKey(stack, TAG_ACTIVE_CAPTURE);
 
         Entity entity = serverLevel.getEntity(active.getUUID(TAG_CAPTURE_TARGET));
         if (!(entity instanceof LivingEntity target)) {
@@ -254,7 +258,7 @@ public class SoulVesselItem extends Item {
 
         SoulKind soulKind = SoulKind.classify(target);
         int soulAmount = SoulHarvestEvents.calculateSoulAmount(target, soulKind);
-        var entityTypeId = ForgeRegistries.ENTITY_TYPES.getKey(target.getType());
+        var entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.getType());
         String soulType = entityTypeId == null ? "minecraft:unknown" : entityTypeId.toString();
         ItemStack filled = new ItemStack(ModItems.FILLED_SOUL_VESSEL.get());
         setSoulData(filled, soulType, soulKind, soulAmount);
@@ -279,7 +283,7 @@ public class SoulVesselItem extends Item {
         if (!(level instanceof ServerLevel serverLevel)) {
             return;
         }
-        CompoundTag active = stack.getTagElement(TAG_ACTIVE_CAPTURE);
+        CompoundTag active = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(stack, TAG_ACTIVE_CAPTURE);
         if (active == null || !active.hasUUID(TAG_CAPTURE_TARGET)) {
             return;
         }
@@ -290,8 +294,8 @@ public class SoulVesselItem extends Item {
     }
 
     @Override
-    public int getUseDuration(ItemStack stack) {
-        CompoundTag active = stack.getTagElement(TAG_ACTIVE_CAPTURE);
+    public int getUseDuration(ItemStack stack, LivingEntity entity) {
+        CompoundTag active = ua.meekeyn.requiemunofficial.common.util.ItemNbt.getTagElement(stack, TAG_ACTIVE_CAPTURE);
         return active == null ? 0 : Math.max(1, active.getInt(TAG_CAPTURE_TIME));
     }
 
@@ -394,7 +398,7 @@ public class SoulVesselItem extends Item {
 
     private static int computeSoulOffense(LivingEntity user) {
         // beta.16: сила душі — це атрибут soul_offense (гравець 15, Attrition −20% за рівень).
-        var offense = user.getAttribute(ModEntityAttributes.SOUL_OFFENSE.get());
+        var offense = user.getAttribute(ModEntityAttributes.SOUL_OFFENSE);
         return offense == null ? 0 : (int) Math.round(offense.getValue());
     }
 
@@ -408,7 +412,7 @@ public class SoulVesselItem extends Item {
         double healthModifier = woundedModifier * 0.8D + 0.2D;
         double strengthModifier = computeStrengthModifier(intrinsicStrength);
         double physicalModifier = strengthModifier * healthModifier;
-        var defense = entity.getAttribute(ModEntityAttributes.SOUL_DEFENSE.get());
+        var defense = entity.getAttribute(ModEntityAttributes.SOUL_DEFENSE);
         double base = defense == null ? 0.0D : defense.getValue();
         return (int) Math.round(base + physicalModifier * (maxHealth + intrinsicArmor * 2.0D + intrinsicArmorToughness * 3.0D));
     }
@@ -423,7 +427,7 @@ public class SoulVesselItem extends Item {
         return Math.sqrt(intrinsicStrength * 0.5D);
     }
 
-    private static double getAttributeBaseValue(LivingEntity entity, Attribute attribute) {
+    private static double getAttributeBaseValue(LivingEntity entity, net.minecraft.core.Holder<Attribute> attribute) {
         var instance = entity.getAttribute(attribute);
         return instance == null ? 0.0D : instance.getBaseValue();
     }
@@ -456,7 +460,7 @@ public class SoulVesselItem extends Item {
         level.playSound(
                 null,
                 target.blockPosition(),
-                SoundEvents.SOUL_ESCAPE,
+                SoundEvents.SOUL_ESCAPE.value(),
                 SoundSource.PLAYERS,
                 0.8F,
                 0.9F + target.getRandom().nextFloat() * 0.2F
@@ -551,9 +555,9 @@ public class SoulVesselItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, @Nullable Level level,
+    public void appendHoverText(ItemStack stack, net.minecraft.world.item.Item.TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag isAdvanced) {
-        super.appendHoverText(stack, level, tooltipComponents, isAdvanced);
+        super.appendHoverText(stack, context, tooltipComponents, isAdvanced);
 
         if (hasSoulData(stack)) {
             tooltipComponents.add(Component.translatable(

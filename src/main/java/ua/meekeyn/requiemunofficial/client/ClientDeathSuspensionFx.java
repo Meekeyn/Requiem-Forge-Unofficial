@@ -1,5 +1,7 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
@@ -14,12 +16,11 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import org.joml.Matrix4f;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.init.ModSounds;
@@ -30,7 +31,7 @@ import ua.meekeyn.requiemunofficial.mixin.PostChainAccessor;
 import java.io.IOException;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientDeathSuspensionFx {
     private static final int FREEZE_ANIMATION_TICKS = 60;
     private static final int CHOICE_PULSE_TICKS = 40;
@@ -117,10 +118,7 @@ public final class ClientDeathSuspensionFx {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
         if (suspended) {
             freezeTicks++;
             previousRadius = radius;
@@ -161,12 +159,12 @@ public final class ClientDeathSuspensionFx {
         }
 
         updateUniforms(chain, event);
-        chain.process(event.getPartialTick());
+        chain.process(event.getPartialTick().getGameTimeDeltaPartialTick(false));
         minecraft.getMainRenderTarget().bindWrite(false);
     }
 
     @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Post event) {
+    public static void onRenderGuiOverlay(RenderGuiLayerEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
@@ -174,7 +172,7 @@ public final class ClientDeathSuspensionFx {
 
         GuiGraphics graphics = event.getGuiGraphics();
         if (pulseTicks > 0) {
-            renderChoicePulse(graphics, minecraft, event.getPartialTick());
+            renderChoicePulse(graphics, minecraft, event.getPartialTick().getGameTimeDeltaPartialTick(false));
         }
     }
 
@@ -211,7 +209,7 @@ public final class ClientDeathSuspensionFx {
         Camera camera = event.getCamera();
         Vec3 cameraPosition = camera.getPosition();
         Entity centerEntity = camera.getEntity();
-        float tickDelta = event.getPartialTick();
+        float tickDelta = event.getPartialTick().getGameTimeDeltaPartialTick(false);
         double centerX = centerEntity == null ? cameraPosition.x : Mth.lerp(tickDelta, centerEntity.xOld, centerEntity.getX());
         double centerY = centerEntity == null ? cameraPosition.y : Mth.lerp(tickDelta, centerEntity.yOld, centerEntity.getY());
         double centerZ = centerEntity == null ? cameraPosition.z : Mth.lerp(tickDelta, centerEntity.zOld, centerEntity.getZ());

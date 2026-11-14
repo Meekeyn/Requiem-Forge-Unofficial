@@ -2,7 +2,6 @@ package ua.meekeyn.requiemunofficial.common.soul;
 
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.MobType;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 public enum SoulKind {
@@ -32,7 +31,7 @@ public enum SoulKind {
         if (type.is(ModTags.SOUL_AGGREGATES)) {
             return AGGREGATE;
         }
-        if (entity.getMobType() == MobType.UNDEAD) {
+        if (entity.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD)) {
             return UNDEAD;
         }
         if (type.is(ModTags.HUMANS)

@@ -56,8 +56,8 @@ public abstract class BaseRunestoneBlockEntity extends BlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
 
         if (tag.contains("power_rate")) {
             this.powerRate = tag.getFloat("power_rate");
@@ -72,20 +72,20 @@ public abstract class BaseRunestoneBlockEntity extends BlockEntity {
         }
 
         if (tag.contains("custom_name")) {
-            this.customName = Component.Serializer.fromJson(tag.getString("custom_name"));
+            this.customName = Component.Serializer.fromJson(tag.getString("custom_name"), provider);
         }
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
 
         tag.putFloat("power_rate", this.powerRate);
         tag.putFloat("previous_power_rate", this.previousPowerRate);
         tag.putLong("last_power_update_time", this.lastPowerUpdateTime);
 
         if (this.customName != null) {
-            tag.putString("custom_name", Component.Serializer.toJson(this.customName));
+            tag.putString("custom_name", Component.Serializer.toJson(this.customName, provider));
         }
     }
 }

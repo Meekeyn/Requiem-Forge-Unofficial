@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.entity;
 
+import net.minecraft.core.Holder;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import net.minecraft.nbt.CompoundTag;
@@ -127,8 +128,8 @@ public class PlayerShellEntity extends PathfinderMob {
 
     private static String getTexturesProperty(GameProfile profile) {
         for (Property property : profile.getProperties().get(PROFILE_TEXTURES_PROPERTY)) {
-            if (property.getValue() != null && !property.getValue().isEmpty()) {
-                return property.getValue();
+            if (property.value() != null && !property.value().isEmpty()) {
+                return property.value();
             }
         }
         return null;
@@ -194,7 +195,7 @@ public class PlayerShellEntity extends PathfinderMob {
         for (Tag rawEntry : bodyInventory) {
             CompoundTag entry = (CompoundTag) rawEntry;
             int slot = Byte.toUnsignedInt(entry.getByte("Slot"));
-            ItemStack stack = ItemStack.of(entry);
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(entry);
             if (!stack.isEmpty() && (transferAll || SoulLifecycleManager.isSoulboundStack(stack, slot))) {
                 placeSavedStack(player, slot, stack);
                 clearEquipmentMirror(slot);
@@ -207,7 +208,7 @@ public class PlayerShellEntity extends PathfinderMob {
 
     public boolean hasCapturedStackMatching(net.minecraft.world.item.Item item) {
         for (Tag rawEntry : bodyInventory) {
-            ItemStack stack = ItemStack.of((CompoundTag) rawEntry);
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read((CompoundTag) rawEntry);
             if (stack.is(item)) {
                 return true;
             }
@@ -219,7 +220,7 @@ public class PlayerShellEntity extends PathfinderMob {
         for (Tag rawEntry : bodyInventory) {
             CompoundTag entry = (CompoundTag) rawEntry;
             if (Byte.toUnsignedInt(entry.getByte("Slot")) == slot
-                    && ItemStack.of(entry).is(item)) {
+                    && ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(entry).is(item)) {
                 return true;
             }
         }
@@ -235,11 +236,20 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     @Override
-    protected void defineSynchedData() {
-        super.defineSynchedData();
-        this.entityData.define(OWNER_ID, Optional.empty());
-        this.entityData.define(PROFILE_NAME, "");
-        this.entityData.define(PROFILE_TEXTURES, "");
+    protected void defineSynchedData(net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+        super.defineSynchedData(builder);
+        builder.define(OWNER_ID, Optional.empty());
+        builder.define(PROFILE_NAME, "");
+        builder.define(PROFILE_TEXTURES, "");
+    }
+
+    /**
+     * У 1.21 NoAi-моб не симулює фізику на сервері (travel викликається лише при isEffectiveAi),
+     * тож оболонка зависала в повітрі. Рух керується сервером незалежно від NoAi — тіло падає як у 1.20.
+     */
+    @Override
+    public boolean isControlledByLocalInstance() {
+        return super.isControlledByLocalInstance() || !level().isClientSide;
     }
 
     @Override
@@ -258,11 +268,6 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     @Override
-    public boolean canBreatheUnderwater() {
-        return true;
-    }
-
-    @Override
     public boolean isInvulnerableTo(DamageSource source) {
         // Покинуте тіло не задихається у блоках і не тоне.
         return source.is(DamageTypes.IN_WALL)
@@ -276,8 +281,8 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     @Override
-    protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
-        super.dropCustomDeathLoot(source, looting, recentlyHit);
+    protected void dropCustomDeathLoot(net.minecraft.server.level.ServerLevel level, DamageSource source, boolean recentlyHit) {
+        super.dropCustomDeathLoot(level, source, recentlyHit);
         dropCapturedBodyInventory();
     }
 
@@ -321,7 +326,7 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     private void restoreBodyEffects(ServerPlayer player) {
-        for (MobEffect effect : player.getActiveEffectsMap().keySet().toArray(MobEffect[]::new)) {
+        for (Holder<MobEffect> effect : player.getActiveEffectsMap().keySet().toArray(Holder[]::new)) {
             if (!SoulLifecycleManager.isSoulboundEffect(effect)) {
                 removeEffect(player, effect);
             }
@@ -331,7 +336,7 @@ public class PlayerShellEntity extends PathfinderMob {
         }
     }
 
-    private static void removeEffect(ServerPlayer player, MobEffect effect) {
+    private static void removeEffect(ServerPlayer player, Holder<MobEffect> effect) {
         if (hasLiveConnection(player)) {
             player.removeEffect(effect);
         } else {
@@ -384,7 +389,7 @@ public class PlayerShellEntity extends PathfinderMob {
         for (Tag rawEntry : bodyInventory) {
             CompoundTag entry = (CompoundTag) rawEntry;
             int slot = Byte.toUnsignedInt(entry.getByte("Slot"));
-            ItemStack stack = ItemStack.of(entry);
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read(entry);
             if (!stack.isEmpty()) {
                 restoreSavedStack(player, slot, stack);
             }
@@ -439,7 +444,7 @@ public class PlayerShellEntity extends PathfinderMob {
             return;
         }
         for (Tag rawEntry : bodyInventory) {
-            ItemStack stack = ItemStack.of((CompoundTag) rawEntry);
+            ItemStack stack = ua.meekeyn.requiemunofficial.common.util.ItemNbt.read((CompoundTag) rawEntry);
             if (!stack.isEmpty()) {
                 spawnAtLocation(stack.copy());
             }
@@ -452,6 +457,6 @@ public class PlayerShellEntity extends PathfinderMob {
     }
 
     private static boolean hasLiveConnection(ServerPlayer player) {
-        return player.connection != null && player.connection.connection != null;
+        return player.connection != null && player.connection.getConnection() != null;
     }
 }

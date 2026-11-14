@@ -200,7 +200,7 @@ public class RiftMenu extends AbstractContainerMenu {
         buffer.writeVarInt(descriptor.width());
         buffer.writeVarInt(descriptor.height());
         buffer.writeBoolean(descriptor.name().isPresent());
-        descriptor.name().ifPresent(buffer::writeComponent);
+        descriptor.name().ifPresent(n -> ua.meekeyn.requiemunofficial.common.network.ModNetwork.writeComponent(buffer, n));
     }
 
     private static ObeliskRecordData.ObeliskDescriptor readDescriptor(FriendlyByteBuf buffer) {
@@ -210,7 +210,7 @@ public class RiftMenu extends AbstractContainerMenu {
         int width = buffer.readVarInt();
         int height = buffer.readVarInt();
         Optional<Component> name = buffer.readBoolean()
-                ? Optional.of(buffer.readComponent())
+                ? Optional.of(ua.meekeyn.requiemunofficial.common.network.ModNetwork.readComponent(buffer))
                 : Optional.empty();
         return new ObeliskRecordData.ObeliskDescriptor(recordId, dimension, pos, width, height, name);
     }

@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.gamerule;
 
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.google.gson.JsonObject;
 import net.minecraft.commands.CommandBuildContext;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
@@ -11,7 +12,7 @@ import net.minecraft.network.FriendlyByteBuf;
  * <p>Minecraft 1.20.1 при відправці {@code ClientboundCommandsPacket} шукає тип аргумента у
  * {@code ArgumentTypeInfos.byClass} та {@code BuiltInRegistries.COMMAND_ARGUMENT_TYPE}; без
  * реєстрації вхід у світ падає з {@code IllegalArgumentException: Unrecognized argument type}.
- * Реєстрація виконується через Forge API: {@code ForgeRegistries.COMMAND_ARGUMENT_TYPES}
+ * Реєстрація виконується через Forge API: {@code BuiltInRegistries.COMMAND_ARGUMENT_TYPE}
  * (DeferredRegister, див. {@code ModGameRules}) і {@code ArgumentTypeInfos.registerByClass}.
  *
  * <p>Мережевий формат — повне ім'я класу перелічування, тож клієнт відновлює той самий

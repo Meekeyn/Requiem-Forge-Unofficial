@@ -46,7 +46,7 @@ public abstract class PlayerRendererMixin extends LivingEntityRenderer<AbstractC
                                                        MultiBufferSource buffer,
                                                        int packedLight,
                                                        CallbackInfo ci) {
-        if (!ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player)) {
+        if (!ClientPossessionRenderHelper.shouldHideSoulPlayer(player)) {
             return;
         }
         ci.cancel();

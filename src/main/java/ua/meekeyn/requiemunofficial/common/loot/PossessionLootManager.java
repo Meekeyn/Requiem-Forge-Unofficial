@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.loot;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -11,9 +12,9 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.LootTable;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParamSet;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
-import net.minecraftforge.event.entity.living.LivingConversionEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 
 /**
@@ -23,7 +24,7 @@ import ua.meekeyn.requiemunofficial.RequiemUnofficial;
  * Прапорець "вже був одержимий" зберігається в ForgeData моба і переноситься при перетвореннях
  * (у beta.16 — {@code previously_possessed} у компоненті PossessedData, copyFrom при onMobConverted).
  */
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessionLootManager {
     /** Аналог {@code requiem:possession} (RequiemLootTables.POSSESSION): THIS_ENTITY + ORIGIN. */
     public static final LootContextParamSet POSSESSION = new LootContextParamSet.Builder()
@@ -47,7 +48,7 @@ public final class PossessionLootManager {
         }
         host.getPersistentData().putBoolean(PREVIOUSLY_POSSESSED, true);
 
-        LootTable lootTable = level.getServer().getLootData().getLootTable(getLootTableId(host));
+        LootTable lootTable = level.getServer().reloadableRegistries().getLootTable(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.LOOT_TABLE, getLootTableId(host)));
         LootParams params = new LootParams.Builder(level)
                 .withParameter(LootContextParams.THIS_ENTITY, host)
                 .withParameter(LootContextParams.ORIGIN, host.position())
@@ -67,7 +68,7 @@ public final class PossessionLootManager {
 
     public static ResourceLocation getLootTableId(LivingEntity host) {
         ResourceLocation typeId = BuiltInRegistries.ENTITY_TYPE.getKey(host.getType());
-        return new ResourceLocation(typeId.getNamespace(), "requiem/possession/" + typeId.getPath());
+        return ResourceLocation.fromNamespaceAndPath(typeId.getNamespace(), "requiem/possession/" + typeId.getPath());
     }
 
     private static void giveOrDrop(ServerPlayer player, ItemStack stack) {

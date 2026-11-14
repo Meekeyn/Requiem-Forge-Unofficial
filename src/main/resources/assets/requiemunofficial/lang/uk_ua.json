@@ -235,5 +235,6 @@
   "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
   "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
   "attribute.name.remnant.requiemunofficial.soul_offense": "Сила душі",
-  "attribute.name.remnant.requiemunofficial.soul_defense": "Захист душі"
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Захист душі",
+  "requiemunofficial:subtitles.item.opus.use": "Використано Опус"
 }

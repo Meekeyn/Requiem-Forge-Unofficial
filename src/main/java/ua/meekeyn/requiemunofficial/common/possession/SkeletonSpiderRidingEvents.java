@@ -1,18 +1,19 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.neoforged.neoforge.event.tick.LevelTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Spider;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.living.LivingChangeTargetEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingChangeTargetEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
@@ -21,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class SkeletonSpiderRidingEvents {
     private static final String PROVOKED_BY_RIDER = "RequiemSkeletonRiderProvoked";
     private static final String PROVOKED_BY_RIDER_UNTIL = "RequiemSkeletonRiderProvokedUntil";
@@ -99,8 +100,8 @@ public final class SkeletonSpiderRidingEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
         if (!(event.getEntity() instanceof Spider spider)
-                || event.getNewTarget() == null
-                || !isPossessedSkeleton(event.getNewTarget())) {
+                || event.getNewAboutToBeSetTarget() == null
+                || !isPossessedSkeleton(event.getNewAboutToBeSetTarget())) {
             return;
         }
 
@@ -108,15 +109,15 @@ public final class SkeletonSpiderRidingEvents {
         // When the rider provokes the spider, onLivingAttack marks it provoked first, so this
         // guard is skipped and the spider is allowed to turn on the rider.
         if (!spider.getPersistentData().getBoolean(PROVOKED_BY_RIDER)
-                && event.getNewTarget().isPassengerOfSameVehicle(spider)) {
+                && event.getNewAboutToBeSetTarget().isPassengerOfSameVehicle(spider)) {
             event.setCanceled(true);
-            event.setNewTarget(null);
+            event.setNewAboutToBeSetTarget(null);
             spider.setTarget(null);
         }
     }
 
     @SubscribeEvent(priority = EventPriority.HIGH)
-    public static void onLivingAttack(LivingAttackEvent event) {
+    public static void onLivingAttack(LivingIncomingDamageEvent event) {
         Entity attacker = event.getSource().getEntity();
         if (event.getEntity() instanceof Spider spider
                 && attacker instanceof LivingEntity living
@@ -144,16 +145,16 @@ public final class SkeletonSpiderRidingEvents {
     }
 
     @SubscribeEvent
-    public static void onWorldTick(TickEvent.LevelTickEvent event) {
-        if (event.phase != TickEvent.Phase.END || event.level.isClientSide() || PROVOKED_SPIDERS.isEmpty()) {
+    public static void onWorldTick(LevelTickEvent.Post event) {
+        if (event.getLevel().isClientSide() || PROVOKED_SPIDERS.isEmpty()) {
             return;
         }
-        long now = event.level.getGameTime();
+        long now = event.getLevel().getGameTime();
         PROVOKED_SPIDERS.entrySet().removeIf(entry -> {
             if (entry.getValue() > now) {
                 return false;
             }
-            if (event.level instanceof net.minecraft.server.level.ServerLevel serverLevel) {
+            if (event.getLevel() instanceof net.minecraft.server.level.ServerLevel serverLevel) {
                 net.minecraft.world.entity.Entity entity = serverLevel.getEntity(entry.getKey());
                 if (entity instanceof Spider spider) {
                     spider.getPersistentData().remove(PROVOKED_BY_RIDER);

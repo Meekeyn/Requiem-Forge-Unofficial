@@ -1,5 +1,8 @@
 package ua.meekeyn.requiemunofficial.common.possession;
 
+import net.minecraft.core.Holder;
+import net.neoforged.neoforge.event.tick.PlayerTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -29,7 +32,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.alchemy.Potion;
-import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.level.Level;
@@ -38,11 +40,10 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.event.AddReloadListenerEvent;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
@@ -62,7 +63,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class PossessedItemManager implements ResourceManagerReloadListener {
 
     private static final String DIRECTORY = "requiem/mob_items/healing";
@@ -232,9 +233,8 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
-        if (event.phase != TickEvent.Phase.END
-                || !(event.player instanceof ServerPlayer player)
+    public static void onPlayerTick(PlayerTickEvent.Post event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)
                 || player.level().isClientSide()) {
             return;
         }
@@ -384,8 +384,8 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             }
             matchedReagent = true;
             if (possessor.level().getGameRules().getBoolean(ModGameRules.DISABLE_CURE)
-                    || PenanceMobEffect.blocksCure(host.getEffect(ModEffects.PENANCE.get()))
-                    || PenanceMobEffect.blocksCure(possessor.getEffect(ModEffects.PENANCE.get()))
+                    || PenanceMobEffect.blocksCure(host.getEffect(ModEffects.PENANCE))
+                    || PenanceMobEffect.blocksCure(possessor.getEffect(ModEffects.PENANCE))
                     || itemUser.getCooldowns().isOnCooldown(stack.getItem())) {
                 return UseDecision.BLOCK;
             }
@@ -432,7 +432,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             if (food == null) {
                 return Optional.of(stack);
             }
-            host.heal(food.getNutrition());
+            host.heal(food.nutrition());
             result = stack.getItem().finishUsingItem(stack, player.level(), player);
         }
 
@@ -499,20 +499,20 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
                                                 LivingEntity host,
                                                 ItemStack stack,
                                                 Level level) {
-        Map<MobEffect, MobEffectInstance> before = Map.copyOf(player.getActiveEffectsMap());
+        Map<Holder<MobEffect>, MobEffectInstance> before = Map.copyOf(player.getActiveEffectsMap());
         ItemStack result = stack.getItem().finishUsingItem(stack, level, player);
-        Map<MobEffect, MobEffectInstance> after = Map.copyOf(player.getActiveEffectsMap());
+        Map<Holder<MobEffect>, MobEffectInstance> after = Map.copyOf(player.getActiveEffectsMap());
         revertNewHarmfulEffects(player, before, after);
         host.swing(player.getUsedItemHand(), true);
         return result;
     }
 
     private static void revertNewHarmfulEffects(Player player,
-                                                Map<MobEffect, MobEffectInstance> before,
-                                                Map<MobEffect, MobEffectInstance> after) {
-        for (Map.Entry<MobEffect, MobEffectInstance> entry : after.entrySet()) {
-            MobEffect effect = entry.getKey();
-            if (effect.isBeneficial()) {
+                                                Map<Holder<MobEffect>, MobEffectInstance> before,
+                                                Map<Holder<MobEffect>, MobEffectInstance> after) {
+        for (Map.Entry<Holder<MobEffect>, MobEffectInstance> entry : after.entrySet()) {
+            Holder<MobEffect> effect = entry.getKey();
+            if (effect.value().isBeneficial()) {
                 continue;
             }
 
@@ -551,8 +551,8 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         for (CureRule rule : cureRules) {
             if (!rule.matches(host, stack)
                     || possessor.level().getGameRules().getBoolean(ModGameRules.DISABLE_CURE)
-                    || PenanceMobEffect.blocksCure(host.getEffect(ModEffects.PENANCE.get()))
-                    || PenanceMobEffect.blocksCure(possessor.getEffect(ModEffects.PENANCE.get()))
+                    || PenanceMobEffect.blocksCure(host.getEffect(ModEffects.PENANCE))
+                    || PenanceMobEffect.blocksCure(possessor.getEffect(ModEffects.PENANCE))
                     || getCureWeakness(possessor, host) == null
                     || itemUser.getCooldowns().isOnCooldown(stack.getItem())) {
                 continue;
@@ -587,9 +587,9 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
      */
     private static int getNormalFoodUseDuration(ItemStack stack) {
         if (stack.getFoodProperties(null) != null) {
-            return Item.EAT_DURATION;
+            return 32;
         }
-        return stack.getUseDuration();
+        return stack.getUseDuration(null);
     }
 
     private static DietDecision getDietDecision(LivingEntity host, ItemStack stack) {
@@ -664,7 +664,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
     }
 
     public static int getHumanityLevel(LivingEntity host) {
-        return EnchantmentHelper.getEnchantmentLevel(ModEnchantments.HUMANITY.get(), host);
+        return EnchantmentHelper.getEnchantmentLevel(ModEnchantments.humanity(host.registryAccess()), host);
     }
 
     public static HealingRule parse(JsonObject root) {
@@ -750,7 +750,7 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
             return null;
         }
         JsonObject usedItem = requirements.getAsJsonObject("used_item");
-        Potion potion = usedItem == null ? null : potion(usedItem);
+        net.minecraft.core.Holder<Potion> potion = usedItem == null ? null : potion(usedItem);
         if (potion == null) {
             return null;
         }
@@ -770,12 +770,12 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         return component;
     }
 
-    private static Potion potion(JsonObject object) {
+    private static net.minecraft.core.Holder<Potion> potion(JsonObject object) {
         if (!object.has("potion")) {
             return null;
         }
         ResourceLocation id = ResourceLocation.tryParse(object.get("potion").getAsString());
-        return id == null ? null : BuiltInRegistries.POTION.getOptional(id).orElse(null);
+        return id == null ? null : BuiltInRegistries.POTION.getHolder(id).map(h -> (net.minecraft.core.Holder<Potion>) h).orElse(null);
     }
 
     /** Приймає тип як у власному (requiemunofficial:), так і в оригінальному (requiem:) просторі імен. */
@@ -842,10 +842,10 @@ public final class PossessedItemManager implements ResourceManagerReloadListener
         }
     }
 
-    private record OldTooltipRule(int priority, Component tooltip, Potion potion) {
+    private record OldTooltipRule(int priority, Component tooltip, net.minecraft.core.Holder<Potion> potion) {
         TooltipMatch tooltipMatch(LivingEntity host, ItemStack stack) {
             if (host.getType().is(ModTags.CURABLE_UNDEAD)
-                    && PotionUtils.getPotion(stack) == potion) {
+                    && stack.getOrDefault(net.minecraft.core.component.DataComponents.POTION_CONTENTS, net.minecraft.world.item.alchemy.PotionContents.EMPTY).is(potion)) {
                 return new TooltipMatch(priority, tooltip, true);
             }
             return null;

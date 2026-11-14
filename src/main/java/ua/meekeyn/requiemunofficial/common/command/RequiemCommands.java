@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.command;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -20,9 +21,9 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.level.GameRules;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.entity.PlayerShellEntity;
 import ua.meekeyn.requiemunofficial.common.init.ModEntities;
@@ -39,7 +40,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class RequiemCommands {
     private static final DynamicCommandExceptionType NOT_LIVING =
             new DynamicCommandExceptionType(entity -> Component.translatable(
@@ -630,7 +631,7 @@ public final class RequiemCommands {
             }
         }
         throw REMNANT_TYPE_NOT_FOUND.create("minecraft".equals(id.getNamespace())
-                ? new ResourceLocation("requiem", path).toString()
+                ? ResourceLocation.fromNamespaceAndPath("requiem", path).toString()
                 : id.toString());
     }
 

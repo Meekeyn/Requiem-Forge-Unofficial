@@ -23,7 +23,7 @@ import ua.meekeyn.requiemunofficial.common.entity.MorticianEntity;
 
 public class MorticianModel<T extends Entity> extends HierarchicalModel<T> implements HeadedModel {
     public static final ModelLayerLocation MODEL_LAYER = new ModelLayerLocation(
-            new ResourceLocation(RequiemUnofficial.MODID, "mortician"),
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "mortician"),
             "main"
     );
     public static final String SLEEVES = "sleeves";
@@ -108,9 +108,10 @@ public class MorticianModel<T extends Entity> extends HierarchicalModel<T> imple
 
     @Override
     public void renderToBuffer(PoseStack poseStack, VertexConsumer vertexConsumer, int packedLight,
-                               int packedOverlay, float red, float green, float blue, float alpha) {
-        super.renderToBuffer(poseStack, vertexConsumer, packedLight, packedOverlay, red, green, blue,
-                alpha * this.baseAlpha);
+                               int packedOverlay, int color) {
+        int alpha = (int) ((color >>> 24 & 0xFF) * this.baseAlpha);
+        super.renderToBuffer(poseStack, vertexConsumer, packedLight, packedOverlay,
+                (alpha << 24) | (color & 0xFFFFFF));
     }
 
     @Override

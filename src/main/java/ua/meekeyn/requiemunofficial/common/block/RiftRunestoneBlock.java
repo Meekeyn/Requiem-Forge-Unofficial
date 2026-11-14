@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.block;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +14,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
-import net.minecraftforge.network.NetworkHooks;
 import ua.meekeyn.requiemunofficial.common.block.entity.RunestoneBlockEntity;
 import ua.meekeyn.requiemunofficial.common.block.obelisk.ObeliskMatcher;
 import ua.meekeyn.requiemunofficial.common.effect.AttritionMobEffect;
@@ -28,7 +28,7 @@ import java.util.Optional;
 
 public class RiftRunestoneBlock extends RunestoneBlock {
 
-    public RiftRunestoneBlock(Properties properties, String runeType, int maxLevel, MobEffect effect) {
+    public RiftRunestoneBlock(Properties properties, String runeType, int maxLevel, Holder<MobEffect> effect) {
         super(properties, runeType, maxLevel, effect);
     }
 
@@ -37,9 +37,9 @@ public class RiftRunestoneBlock extends RunestoneBlock {
     }
 
     @Override
-    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+    protected InteractionResult useLegacy(BlockState state, Level level, BlockPos pos, Player player,
                                  InteractionHand hand, BlockHitResult hit) {
-        InteractionResult superResult = super.use(state, level, pos, player, hand, hit);
+        InteractionResult superResult = super.useLegacy(state, level, pos, player, hand, hit);
         if (superResult.consumesAction()) {
             return superResult;
         }
@@ -76,7 +76,7 @@ public class RiftRunestoneBlock extends RunestoneBlock {
                 getMenuTitle(runestone)
         );
 
-        NetworkHooks.openScreen(serverPlayer, provider, buffer -> RiftMenu.writeOpeningData(buffer, headPos, serverPlayer));
+        serverPlayer.openMenu(provider, buffer -> RiftMenu.writeOpeningData(buffer, headPos, serverPlayer));
         return InteractionResult.CONSUME;
     }
 
@@ -104,7 +104,7 @@ public class RiftRunestoneBlock extends RunestoneBlock {
     }
 
     private static boolean hasMaximumAttrition(Player player) {
-        MobEffectInstance attrition = player.getEffect(ModEffects.ATTRITION.get());
+        MobEffectInstance attrition = player.getEffect(ModEffects.ATTRITION);
         return attrition != null && attrition.getAmplifier() >= AttritionMobEffect.MAX_LEVEL;
     }
 

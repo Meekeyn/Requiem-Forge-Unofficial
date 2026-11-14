@@ -28,7 +28,7 @@ public abstract class RenderLayerZoomMixin {
     private static boolean requiemunofficial$goZoom;
 
     @Inject(
-            method = "renderColoredCutoutModel(Lnet/minecraft/client/model/EntityModel;Lnet/minecraft/resources/ResourceLocation;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFF)V",
+            method = "renderColoredCutoutModel(Lnet/minecraft/client/model/EntityModel;Lnet/minecraft/resources/ResourceLocation;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;I)V",
             at = @At("HEAD")
     )
     private static void requiemunofficial$captureEntity(EntityModel<?> model,
@@ -37,15 +37,13 @@ public abstract class RenderLayerZoomMixin {
                                                         MultiBufferSource bufferSource,
                                                         int packedLight,
                                                         LivingEntity entity,
-                                                        float red,
-                                                        float green,
-                                                        float blue,
+                                                        int color,
                                                         CallbackInfo ci) {
         requiemunofficial$goZoom = entity != null && entity == ClientPossessionFx.getAnimationEntity();
     }
 
     @ModifyArg(
-            method = "renderColoredCutoutModel(Lnet/minecraft/client/model/EntityModel;Lnet/minecraft/resources/ResourceLocation;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;FFF)V",
+            method = "renderColoredCutoutModel(Lnet/minecraft/client/model/EntityModel;Lnet/minecraft/resources/ResourceLocation;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;ILnet/minecraft/world/entity/LivingEntity;I)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/MultiBufferSource;getBuffer(Lnet/minecraft/client/renderer/RenderType;)Lcom/mojang/blaze3d/vertex/VertexConsumer;"

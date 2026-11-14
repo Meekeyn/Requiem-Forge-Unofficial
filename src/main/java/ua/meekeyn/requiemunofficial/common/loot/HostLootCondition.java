@@ -1,13 +1,12 @@
 package ua.meekeyn.requiemunofficial.common.loot;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonSerializationContext;
 import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.util.GsonHelper;
+import com.mojang.serialization.MapCodec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Optional;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.storage.loot.LootContext;
@@ -26,14 +25,14 @@ import java.util.UUID;
  * HOST — перевіряє тіло, яким керує гравець-ціль (beta.16 {@code PossessionComponent.getHost});
  * POSSESSOR — перевіряє гравця, що вселився в ціль (beta.16 {@code Possessable#getPossessor}).
  * Як і в оригіналі, {@code "predicate": {}} вимагає, щоб перевірювана сутність існувала,
- * а відсутній предикат ({@link EntityPredicate#ANY}) пропускає все.
+ * а відсутній предикат (відсутнє поле) пропускає все.
  */
 public class HostLootCondition implements LootItemCondition {
     private final CheckedEntity checkedEntity;
     private final LootContext.EntityTarget entity;
-    private final EntityPredicate predicate;
+    private final Optional<EntityPredicate> predicate;
 
-    public HostLootCondition(CheckedEntity checkedEntity, LootContext.EntityTarget entity, EntityPredicate predicate) {
+    public HostLootCondition(CheckedEntity checkedEntity, LootContext.EntityTarget entity, Optional<EntityPredicate> predicate) {
         this.checkedEntity = checkedEntity;
         this.entity = entity;
         this.predicate = predicate;
@@ -61,7 +60,8 @@ public class HostLootCondition implements LootItemCondition {
             case HOST -> findHost(e);
             case POSSESSOR -> findPossessor(e);
         };
-        return this.predicate.matches(lootContext.getLevel(), lootContext.getParamOrNull(LootContextParams.ORIGIN), checked);
+        return this.predicate.isEmpty()
+                || this.predicate.get().matches(lootContext.getLevel(), lootContext.getParamOrNull(LootContextParams.ORIGIN), checked);
     }
 
     /** Тіло, у яке вселився гравець (null, якщо це не гравець або він ні в кого не вселився). */
@@ -78,27 +78,11 @@ public class HostLootCondition implements LootItemCondition {
         return PossessionManager.getActivePossessor(level, possessorId);
     }
 
-    public static class Serializer implements net.minecraft.world.level.storage.loot.Serializer<HostLootCondition> {
-        private final CheckedEntity checkedEntity;
-
-        public Serializer(CheckedEntity checkedEntity) {
-            this.checkedEntity = checkedEntity;
-        }
-
-        @Override
-        public void serialize(JsonObject json, HostLootCondition condition, JsonSerializationContext ctx) {
-            json.add("entity", ctx.serialize(condition.entity));
-            json.add("predicate", condition.predicate.serializeToJson());
-        }
-
-        @Override
-        public HostLootCondition deserialize(JsonObject json, JsonDeserializationContext ctx) {
-            return new HostLootCondition(
-                    this.checkedEntity,
-                    GsonHelper.getAsObject(json, "entity", ctx, LootContext.EntityTarget.class),
-                    EntityPredicate.fromJson(json.get("predicate"))
-            );
-        }
+    public static MapCodec<HostLootCondition> codec(CheckedEntity checkedEntity) {
+        return RecordCodecBuilder.mapCodec(i -> i.group(
+                LootContext.EntityTarget.CODEC.fieldOf("entity").forGetter(c -> c.entity),
+                EntityPredicate.CODEC.optionalFieldOf("predicate").forGetter(c -> c.predicate)
+        ).apply(i, (entity, predicate) -> new HostLootCondition(checkedEntity, entity, predicate)));
     }
 
     public enum CheckedEntity {

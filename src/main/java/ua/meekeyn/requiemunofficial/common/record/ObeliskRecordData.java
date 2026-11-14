@@ -27,8 +27,7 @@ public class ObeliskRecordData extends SavedData {
 
     public static ObeliskRecordData get(MinecraftServer server) {
         return server.overworld().getDataStorage().computeIfAbsent(
-                ObeliskRecordData::load,
-                ObeliskRecordData::new,
+                new SavedData.Factory<>(ObeliskRecordData::new, ObeliskRecordData::load, null),
                 DATA_NAME
         );
     }
@@ -37,21 +36,21 @@ public class ObeliskRecordData extends SavedData {
         return get(level.getServer());
     }
 
-    public static ObeliskRecordData load(CompoundTag tag) {
+    public static ObeliskRecordData load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
         ObeliskRecordData data = new ObeliskRecordData();
         ListTag list = tag.getList("Records", Tag.TAG_COMPOUND);
         for (Tag raw : list) {
-            ObeliskRecord.load((CompoundTag) raw).ifPresent(record ->
+            ObeliskRecord.load((CompoundTag) raw, provider).ifPresent(record ->
                     data.records.put(record.recordId(), record));
         }
         return data;
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag) {
+    public CompoundTag save(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
         ListTag list = new ListTag();
         for (ObeliskRecord record : records.values()) {
-            list.add(record.save());
+            list.add(record.save(provider));
         }
         tag.put("Records", list);
         return tag;
@@ -198,7 +197,7 @@ public class ObeliskRecordData extends SavedData {
             );
         }
 
-        private static Optional<ObeliskRecord> load(CompoundTag tag) {
+        private static Optional<ObeliskRecord> load(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
             if (!tag.hasUUID("Record") || !tag.contains("Dimension") || !tag.contains("Pos")) {
                 return Optional.empty();
             }
@@ -208,7 +207,7 @@ public class ObeliskRecordData extends SavedData {
             }
             Component name = null;
             if (tag.contains("Name")) {
-                name = Component.Serializer.fromJson(tag.getString("Name"));
+                name = Component.Serializer.fromJson(tag.getString("Name"), provider);
             }
             return Optional.of(new ObeliskRecord(
                     tag.getUUID("Record"),
@@ -221,7 +220,7 @@ public class ObeliskRecordData extends SavedData {
             ));
         }
 
-        private CompoundTag save() {
+        private CompoundTag save(net.minecraft.core.HolderLookup.Provider provider) {
             CompoundTag tag = new CompoundTag();
             tag.putUUID("Record", recordId);
             tag.putString("Dimension", dimension.toString());
@@ -229,7 +228,7 @@ public class ObeliskRecordData extends SavedData {
             tag.putInt("Width", width);
             tag.putInt("Height", height);
             if (name != null) {
-                tag.putString("Name", Component.Serializer.toJson(name));
+                tag.putString("Name", Component.Serializer.toJson(name, provider));
             }
             tag.putBoolean("Invalid", invalid);
             return tag;

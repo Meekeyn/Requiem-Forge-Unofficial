@@ -1,17 +1,18 @@
 
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.player.Player;
-import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 
-@Mod.EventBusSubscriber(modid = "requiemunofficial", value = net.minecraftforge.api.distmarker.Dist.CLIENT)
+@EventBusSubscriber(modid = "requiemunofficial", value = net.neoforged.api.distmarker.Dist.CLIENT)
 public final class ClientVagrantNightVision {
 
     /**
@@ -35,10 +36,7 @@ public final class ClientVagrantNightVision {
     }
 
     @SubscribeEvent
-    public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase != TickEvent.Phase.END) {
-            return;
-        }
+    public static void onClientTick(ClientTickEvent.Post event) {
 
         Minecraft minecraft = Minecraft.getInstance();
         Player player = minecraft.player;

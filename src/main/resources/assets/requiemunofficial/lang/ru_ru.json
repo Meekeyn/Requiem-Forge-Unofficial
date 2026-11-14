@@ -334,5 +334,16 @@
   "jei.requiemunofficial.info.totem_of_skeletonization": "Используется правилами трансформации и воскрешения как катализатор скелетизации.",
   "jei.requiemunofficial.info.runestones": "Рунические камни используются в структурах обелисков и разломов. Варианты из рунического тахилита при активации дают соответствующие эффекты.",
   "attribute.name.remnant.requiemunofficial.soul_offense": "Сила души",
-  "attribute.name.remnant.requiemunofficial.soul_defense": "Защита души"
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Защита души",
+  "screen.requiemunofficial.config.section_requiem": "Настройки обычного Requiem",
+  "screen.requiemunofficial.config.section_port": "Настройки порта (Unofficial)",
+  "screen.requiemunofficial.config.fancy_demon_render": "Шейдерный вид бестелесных душ: %s",
+  "screen.requiemunofficial.config.section_world_rules": "Игровые правила обычного Requiem (этот мир)",
+  "screen.requiemunofficial.config.rule_show_possessor_name_tag": "Показывать ник вселившегося: %s",
+  "screen.requiemunofficial.config.rule_disable_cure": "Отключить излечение: %s",
+  "screen.requiemunofficial.config.rule_drop_vessel": "Выбрасывать сосуд при выходе из игры: %s",
+  "screen.requiemunofficial.config.rule_starting_remnant": "Стартовый тип остатка: %s",
+  "screen.requiemunofficial.config.rule_keep_inventory": "Сохранение инвентаря при вселении: %s",
+  "screen.requiemunofficial.config.rule_detection": "Обнаружение вселения: %s",
+  "screen.requiemunofficial.config.obelisk_soul_blocks": "Обелискам нужен песок/почва душ (выкл. = работают в любом биоме): %s"
 }

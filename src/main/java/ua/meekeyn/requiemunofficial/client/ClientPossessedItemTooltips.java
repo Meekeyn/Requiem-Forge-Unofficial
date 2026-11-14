@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.entity.Entity;
@@ -16,13 +17,12 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MilkBucketItem;
 import net.minecraft.world.item.TridentItem;
-import net.minecraft.world.item.alchemy.PotionUtils;
 import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.event.entity.player.ItemTooltipEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessedItemManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -30,7 +30,7 @@ import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class ClientPossessedItemTooltips {
     private ClientPossessedItemTooltips() {
     }
@@ -83,7 +83,7 @@ public final class ClientPossessedItemTooltips {
             key = "requiemunofficial:tooltip.calcium_bucket";
         } else if (host instanceof Drowned && stack.getItem() instanceof TridentItem) {
             key = "requiemunofficial:tooltip.drowned_grip";
-        } else if (host instanceof Witch && stack.is(Items.POTION) && PotionUtils.getPotion(stack) == Potions.WATER) {
+        } else if (host instanceof Witch && stack.is(Items.POTION) && stack.getOrDefault(net.minecraft.core.component.DataComponents.POTION_CONTENTS, net.minecraft.world.item.alchemy.PotionContents.EMPTY).is(Potions.WATER)) {
             key = "requiemunofficial:tooltip.witch_brew_base";
         } else {
             return;

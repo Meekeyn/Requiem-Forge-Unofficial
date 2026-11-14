@@ -52,7 +52,7 @@ public final class PlayerBodyMovement {
         }
         if (host == null) return;
         var dimensions = host.getDimensions(player.getPose());
-        if (player.getBbWidth() != dimensions.width || player.getBbHeight() != dimensions.height) {
+        if (player.getBbWidth() != dimensions.width() || player.getBbHeight() != dimensions.height()) {
             player.refreshDimensions();
         }
         var profile = EntityMobilityManager.get(host);

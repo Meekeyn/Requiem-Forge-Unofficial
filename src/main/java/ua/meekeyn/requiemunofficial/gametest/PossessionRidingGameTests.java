@@ -13,10 +13,10 @@ import net.minecraft.world.entity.animal.Cow;
 import net.minecraft.world.entity.animal.horse.AbstractHorse;
 import net.minecraft.world.entity.monster.Spider;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraftforge.event.entity.living.LivingAttackEvent;
-import net.minecraftforge.event.entity.player.PlayerInteractEvent;
-import net.minecraftforge.gametest.GameTestHolder;
-import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.event.entity.living.LivingIncomingDamageEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.network.PossessionInputPacket;
 import ua.meekeyn.requiemunofficial.common.possession.PossessedMountRules;
@@ -199,11 +199,8 @@ public final class PossessionRidingGameTests {
         possess(player, skeleton);
         SkeletonSpiderRidingEvents.onEntityInteract(interact(player, spider));
 
-        LivingAttackEvent attack = new LivingAttackEvent(
-                spider,
-                helper.getLevel().damageSources().mobAttack(skeleton),
-                1.0F
-        );
+        LivingIncomingDamageEvent attack = new LivingIncomingDamageEvent(
+                spider, new net.neoforged.neoforge.common.damagesource.DamageContainer(helper.getLevel().damageSources().mobAttack(skeleton), 1.0F));
         SkeletonSpiderRidingEvents.onLivingAttack(attack);
 
         helper.assertTrue(!skeleton.isPassenger(), "The provoked spider should buck its rider off");
@@ -222,11 +219,8 @@ public final class PossessionRidingGameTests {
         helper.assertTrue(skeleton.getVehicle() == spider, "Setup: the skeleton should be mounted");
 
         // The rider strikes its own spider: it is provoked, bucks the rider, and turns on it.
-        SkeletonSpiderRidingEvents.onLivingAttack(new LivingAttackEvent(
-                spider,
-                helper.getLevel().damageSources().mobAttack(skeleton),
-                1.0F
-        ));
+        SkeletonSpiderRidingEvents.onLivingAttack(new LivingIncomingDamageEvent(
+                spider, new net.neoforged.neoforge.common.damagesource.DamageContainer(helper.getLevel().damageSources().mobAttack(skeleton), 1.0F)));
         helper.assertTrue(!skeleton.isPassenger(), "Setup: the rider should be bucked off");
         helper.assertTrue(spider.getTarget() == skeleton, "Setup: the spider should be aggressive toward the rider");
 
@@ -481,7 +475,7 @@ public final class PossessionRidingGameTests {
                 helper.getLevel().getServer(),
                 helper.getLevel(),
                 new GameProfile(UUID.randomUUID(), name)
-        );
+        , net.minecraft.server.level.ClientInformation.createDefault());
         SoulManager.setState(player, SoulState.VAGRANT);
         return player;
     }

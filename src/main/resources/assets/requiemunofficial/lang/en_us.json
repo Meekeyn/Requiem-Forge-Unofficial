@@ -355,5 +355,17 @@
   "origins:power.requiemunofficial.soul_mending.name": "Soul Mending",
   "origins:power.requiemunofficial.soul_mending.description": "Your soul slowly mends itself during possession.",
   "attribute.name.remnant.requiemunofficial.soul_offense": "Soul Offense",
-  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense"
+  "attribute.name.remnant.requiemunofficial.soul_defense": "Soul Defense",
+  "requiemunofficial:subtitles.item.opus.use": "Opus Daemonium activates",
+  "screen.requiemunofficial.config.section_requiem": "Regular Requiem settings",
+  "screen.requiemunofficial.config.section_port": "Port settings (Unofficial)",
+  "screen.requiemunofficial.config.fancy_demon_render": "Fancy incorporeal shader render: %s",
+  "screen.requiemunofficial.config.section_world_rules": "Regular Requiem world rules (this world)",
+  "screen.requiemunofficial.config.rule_show_possessor_name_tag": "Show possessor name tag: %s",
+  "screen.requiemunofficial.config.rule_disable_cure": "Disable curing: %s",
+  "screen.requiemunofficial.config.rule_drop_vessel": "Drop soul vessel on disconnect: %s",
+  "screen.requiemunofficial.config.rule_starting_remnant": "Starting remnant type: %s",
+  "screen.requiemunofficial.config.rule_keep_inventory": "Possession keep inventory: %s",
+  "screen.requiemunofficial.config.rule_detection": "Possession detection: %s",
+  "screen.requiemunofficial.config.obelisk_soul_blocks": "Obelisks need soul sand/soil (off = work in any biome): %s"
 }

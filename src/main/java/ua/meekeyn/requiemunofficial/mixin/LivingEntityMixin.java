@@ -103,20 +103,16 @@ public abstract class LivingEntityMixin {
     private void requiemunofficial$usePossessedTravelInput(LivingEntity self, Vec3 travelVector) {
         ua.meekeyn.requiemunofficial.common.possession.PossessionMovementController.travel(self, travelVector);
     }
-    @Redirect(method = "travel", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/entity/ai/attributes/AttributeInstance;getValue()D"))
-    private double requiemunofficial$bodyGravity(net.minecraft.world.entity.ai.attributes.AttributeInstance gravity) {
-        double value = gravity.getValue();
-        // Forge-подорожж travel також читає тут SWIM_SPEED, тому масштабування species-гравітації
-        // має застосовуватися виключно до власного атрибута гравітації.
-        if (gravity.getAttribute() == net.minecraftforge.common.ForgeMod.ENTITY_GRAVITY.get()
-                && (Object) this instanceof net.minecraft.world.entity.player.Player player) {
+    @Inject(method = "getDefaultGravity", at = @At("RETURN"), cancellable = true)
+    private void requiemunofficial$bodyGravity(CallbackInfoReturnable<Double> cir) {
+        double value = cir.getReturnValueD();
+        if ((Object) this instanceof net.minecraft.world.entity.player.Player player) {
             LivingEntity host = ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.host(player);
             if (host != null) {
                 value *= ua.meekeyn.requiemunofficial.common.possession.EntityMobilityManager.get(host).gravity() / 0.08D;
+                cir.setReturnValue(value);
             }
         }
-        return value;
     }
 
     @Inject(method = "getJumpPower", at = @At("RETURN"), cancellable = true)

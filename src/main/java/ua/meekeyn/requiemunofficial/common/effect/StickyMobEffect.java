@@ -11,7 +11,7 @@ public interface StickyMobEffect {
     }
 
     static boolean shouldStick(MobEffectInstance effect, LivingEntity affected) {
-        return effect.getEffect() instanceof StickyMobEffect sticky
+        return effect.getEffect().value() instanceof StickyMobEffect sticky
                 && sticky.shouldStick(affected)
                 && (effect.getDuration() > 0 || sticky.shouldFreezeDuration(affected));
     }

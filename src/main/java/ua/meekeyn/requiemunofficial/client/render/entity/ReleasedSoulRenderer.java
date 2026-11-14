@@ -14,7 +14,7 @@ import ua.meekeyn.requiemunofficial.common.entity.ReleasedSoulEntity;
 public class ReleasedSoulRenderer extends EntityRenderer<ReleasedSoulEntity> {
 
     private static final ResourceLocation TEXTURE =
-            new ResourceLocation(RequiemUnofficial.MODID, "textures/entity/soul.png");
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "textures/entity/soul.png");
 
     public ReleasedSoulRenderer(EntityRendererProvider.Context context) {
         super(context);
@@ -48,12 +48,11 @@ public class ReleasedSoulRenderer extends EntityRenderer<ReleasedSoulEntity> {
 
     private static void vertex(VertexConsumer consumer, PoseStack.Pose pose,
                                float x, float y, float u, float v, int packedLight) {
-        consumer.vertex(pose.pose(), x, y, 0.0F)
-                .color(180, 235, 255, 180)
-                .uv(u, v)
-                .overlayCoords(0)
-                .uv2(packedLight)
-                .normal(pose.normal(), 0.0F, 1.0F, 0.0F)
-                .endVertex();
+        consumer.addVertex(pose.pose(), x, y, 0.0F)
+                .setColor(180, 235, 255, 180)
+                .setUv(u, v)
+                .setOverlay(0)
+                .setLight(packedLight)
+                .setNormal(pose, 0.0F, 1.0F, 0.0F);
     }
 }

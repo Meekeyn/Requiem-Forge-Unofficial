@@ -1,14 +1,13 @@
 package ua.meekeyn.requiemunofficial;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModLoadingContext;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.config.ModConfig;
-import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.loading.FMLEnvironment;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.config.ModConfig;
 import ua.meekeyn.requiemunofficial.client.ClientSetup;
 import ua.meekeyn.requiemunofficial.common.config.RequiemClientConfig;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
@@ -24,17 +23,14 @@ public class RequiemUnofficial {
     public static final String MODID = "requiemunofficial";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public RequiemUnofficial() {
+    public RequiemUnofficial(IEventBus modEventBus, ModContainer modContainer) {
         logStartupDiagnosticsMarker();
-        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, RequiemConfig.SPEC);
-        ModLoadingContext.get().registerConfig(ModConfig.Type.CLIENT, RequiemClientConfig.SPEC);
-        net.minecraftforge.common.crafting.CraftingHelper.register(
-                ua.meekeyn.requiemunofficial.common.recipe.ConfigRecipeCondition.Serializer.INSTANCE);
+        modContainer.registerConfig(ModConfig.Type.COMMON, RequiemConfig.SPEC);
+        modContainer.registerConfig(ModConfig.Type.CLIENT, RequiemClientConfig.SPEC);
+        ua.meekeyn.requiemunofficial.common.recipe.RecipeConditions.register(modEventBus);
 
         ModItems.register(modEventBus);
-        ModEnchantments.register(modEventBus);
         ModBlocks.register(modEventBus);
         ModBlocks.registerBlockItems();
         ModBlockEntities.register(modEventBus);
@@ -48,12 +44,14 @@ public class RequiemUnofficial {
         ua.meekeyn.requiemunofficial.common.loot.RequiemLootConditions.register(modEventBus);
         ModGameRules.init();
         ModGameRules.register(modEventBus);
-        ModCriteria.init();
-        modEventBus.addListener(ModCapabilities::register);
+        ModCriteria.register(modEventBus);
+        ModCapabilities.register(modEventBus);
 
-        ModNetwork.register();
+        modEventBus.addListener(ModNetwork::register);
         ModEntityAttributes.init(modEventBus);
-        DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> () -> ClientSetup.init(modEventBus));
+        if (FMLEnvironment.dist == Dist.CLIENT) {
+            ClientSetup.init(modEventBus, modContainer);
+        }
     }
 
     private static void logStartupDiagnosticsMarker() {

@@ -66,7 +66,7 @@ public abstract class ScreenEffectRendererMixin {
     @ModifyArg(
             method = "renderFire",
             at = @At(value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/vertex/VertexConsumer;color(FFFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;"),
+                    target = "Lcom/mojang/blaze3d/vertex/VertexConsumer;setColor(FFFF)Lcom/mojang/blaze3d/vertex/VertexConsumer;"),
             index = 3
     )
     private static float requiemunofficial$thinControlledBlazeFire(float alpha) {

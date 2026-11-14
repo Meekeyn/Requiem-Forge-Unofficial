@@ -228,8 +228,8 @@ public class RunestoneBlockEntity extends BaseRunestoneBlockEntity {
     }
 
     @Override
-    public void load(CompoundTag tag) {
-        super.load(tag);
+    public void loadAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.loadAdditional(tag, provider);
 
         this.obeliskCoreWidth = tag.getInt("obelisk_core_width");
         this.obeliskCoreHeight = tag.getInt("obelisk_core_height");
@@ -265,8 +265,8 @@ public class RunestoneBlockEntity extends BaseRunestoneBlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag) {
-        super.saveAdditional(tag);
+    protected void saveAdditional(CompoundTag tag, net.minecraft.core.HolderLookup.Provider provider) {
+        super.saveAdditional(tag, provider);
 
         tag.putInt("obelisk_core_width", this.obeliskCoreWidth);
         tag.putInt("obelisk_core_height", this.obeliskCoreHeight);

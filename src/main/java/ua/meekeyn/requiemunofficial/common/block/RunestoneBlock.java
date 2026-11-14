@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.block;
 
+import net.minecraft.core.Holder;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
@@ -13,22 +14,22 @@ public class RunestoneBlock extends InertRunestoneBlock {
     private final String runeType;
     private final int maxLevel;
     @Nullable
-    private final Supplier<? extends MobEffect> effectSupplier;
+    private final Supplier<? extends Holder<MobEffect>> effectSupplier;
 
     public RunestoneBlock(Properties properties) {
-        this(properties, "neutral", 0, (Supplier<? extends MobEffect>) null);
+        this(properties, "neutral", 0, (Supplier<? extends Holder<MobEffect>>) null);
     }
 
     public RunestoneBlock(Properties properties, String runeType, int maxLevel) {
-        this(properties, runeType, maxLevel, (Supplier<? extends MobEffect>) null);
+        this(properties, runeType, maxLevel, (Supplier<? extends Holder<MobEffect>>) null);
     }
 
-    public RunestoneBlock(Properties properties, String runeType, int maxLevel, @Nullable MobEffect effect) {
+    public RunestoneBlock(Properties properties, String runeType, int maxLevel, @Nullable Holder<MobEffect> effect) {
         this(properties, runeType, maxLevel, effect == null ? null : () -> effect);
     }
 
     public RunestoneBlock(Properties properties, String runeType, int maxLevel,
-                         @Nullable Supplier<? extends MobEffect> effectSupplier) {
+                         @Nullable Supplier<? extends Holder<MobEffect>> effectSupplier) {
         super(properties);
         this.runeType = runeType;
         this.maxLevel = maxLevel;
@@ -44,7 +45,7 @@ public class RunestoneBlock extends InertRunestoneBlock {
     }
 
     @Nullable
-    public MobEffect getEffect() {
+    public Holder<MobEffect> getEffect() {
         return effectSupplier == null ? null : effectSupplier.get();
     }
 
@@ -68,7 +69,7 @@ public class RunestoneBlock extends InertRunestoneBlock {
     }
 
     public void applyEffect(ServerPlayer player, int runeLevel, int obeliskWidth) {
-        MobEffect effect = getEffect();
+        Holder<MobEffect> effect = getEffect();
         if (!shouldApplyEffect(player, runeLevel, obeliskWidth) || effect == null) {
             return;
         }
@@ -87,7 +88,7 @@ public class RunestoneBlock extends InertRunestoneBlock {
             }
         }
 
-        boolean showParticles = effect.getCategory() != MobEffectCategory.HARMFUL;
+        boolean showParticles = effect.value().getCategory() != MobEffectCategory.HARMFUL;
 
         // Накладає або оновлює базовий ефект руни
         player.addEffect(new MobEffectInstance(

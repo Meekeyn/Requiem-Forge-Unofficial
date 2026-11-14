@@ -1,6 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.config;
 
-import net.minecraftforge.common.ForgeConfigSpec;
+import net.neoforged.neoforge.common.ModConfigSpec;
 
 /**
  * Клієнтські налаштування порту. В оригіналі beta.16 {@code graphics.fancyDemonRender}
@@ -9,11 +9,11 @@ import net.minecraftforge.common.ForgeConfigSpec;
  * CLIENT-spec, а не COMMON.
  */
 public final class RequiemClientConfig {
-    public static final ForgeConfigSpec SPEC;
-    public static final ForgeConfigSpec.BooleanValue FANCY_DEMON_RENDER;
+    public static final ModConfigSpec SPEC;
+    public static final ModConfigSpec.BooleanValue FANCY_DEMON_RENDER;
 
     static {
-        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
+        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
 
         builder.push("requiemunofficial");
         builder.push("graphics");

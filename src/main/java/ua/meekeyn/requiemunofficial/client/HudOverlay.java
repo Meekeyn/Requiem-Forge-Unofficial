@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.client;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
@@ -13,11 +14,11 @@ import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.BooleanOp;
 import net.minecraft.world.phys.shapes.Shapes;
-import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
-import net.minecraftforge.client.event.RenderGuiOverlayEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.api.distmarker.Dist;
+import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
+import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.api.distmarker.Dist;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
@@ -25,25 +26,27 @@ import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 import ua.meekeyn.requiemunofficial.common.soul.VagrantRules;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID, value = Dist.CLIENT)
 public final class HudOverlay {
-    private static final ResourceLocation GUI_ICONS =
-            new ResourceLocation("minecraft", "textures/gui/icons.png");
-    private static final ResourceLocation WIDGETS =
-            new ResourceLocation("minecraft", "textures/gui/widgets.png");
+    // У 1.21 icons.png і widgets.png прибрані: HUD малюється спрайтами з атласу gui.
+    private static final ResourceLocation HOTBAR_SPRITE = ResourceLocation.withDefaultNamespace("hud/hotbar");
+    private static final ResourceLocation HOTBAR_SELECTION_SPRITE =
+            ResourceLocation.withDefaultNamespace("hud/hotbar_selection");
+    private static final ResourceLocation HOTBAR_OFFHAND_LEFT_SPRITE =
+            ResourceLocation.withDefaultNamespace("hud/hotbar_offhand_left");
+    private static final ResourceLocation HEART_CONTAINER_SPRITE =
+            ResourceLocation.withDefaultNamespace("hud/heart/container");
+    private static final ResourceLocation HEART_FULL_SPRITE = ResourceLocation.withDefaultNamespace("hud/heart/full");
+    private static final ResourceLocation HEART_HALF_SPRITE = ResourceLocation.withDefaultNamespace("hud/heart/half");
     private static final ResourceLocation POSSESSION_ICON =
-            new ResourceLocation(RequiemUnofficial.MODID, "textures/gui/possession_icon.png");
-    private static final int HEART_EMPTY_U = 16;
-    private static final int HEART_FULL_U = 52;
-    private static final int HEART_HALF_U = 61;
-    private static final int HEART_V = 0;
+            ResourceLocation.fromNamespaceAndPath(RequiemUnofficial.MODID, "textures/gui/possession_icon.png");
     private static final int POSSESSION_ICON_SIZE = 16;
 
     private HudOverlay() {
     }
 
     @SubscribeEvent
-    public static void onRenderGuiOverlayPre(RenderGuiOverlayEvent.Pre event) {
+    public static void onRenderGuiOverlayPre(RenderGuiLayerEvent.Pre event) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.player == null) {
             return;
@@ -54,12 +57,12 @@ public final class HudOverlay {
             event.setCanceled(true);
             return;
         }
-        if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type() && hasLimitedHotbar(minecraft)) {
+        if (event.getName().equals(VanillaGuiLayers.HOTBAR) && hasLimitedHotbar(minecraft)) {
             // Ванільний хотбар показав би заблоковані слоти; малюємо власний, а Post-логіку
             // хотбара (серця тіла тощо) викликаємо вручну, бо скасований оверлей Post не отримує.
             event.setCanceled(true);
-            onRenderGuiOverlay(new RenderGuiOverlayEvent.Post(
-                    event.getWindow(), event.getGuiGraphics(), event.getPartialTick(), event.getOverlay()));
+            onRenderGuiOverlay(new RenderGuiLayerEvent.Post(
+                    event.getGuiGraphics(), event.getPartialTick(), event.getName(), event.getLayer()));
         }
     }
 
@@ -71,13 +74,13 @@ public final class HudOverlay {
         return host != null && !PossessionInventoryManager.canCarryHotbar(host);
     }
 
-    private static boolean isHiddenPossessedOverlay(Minecraft minecraft, RenderGuiOverlayEvent.Pre event) {
+    private static boolean isHiddenPossessedOverlay(Minecraft minecraft, RenderGuiLayerEvent.Pre event) {
         // Здоров'я тіла малюється окремо в renderBodyHealth, тож ванільний рядок сердець зайвий.
-        if (event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()) {
+        if (event.getName().equals(VanillaGuiLayers.PLAYER_HEALTH)) {
             return true;
         }
         // Смуга голоду лишається тільки для regular eater: лише їхній голод справжній.
-        if (event.getOverlay() != VanillaGuiOverlay.FOOD_LEVEL.type()) {
+        if (!event.getName().equals(VanillaGuiLayers.FOOD_LEVEL)) {
             return false;
         }
         LivingEntity host = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
@@ -85,7 +88,7 @@ public final class HudOverlay {
     }
 
     @SubscribeEvent
-    public static void onRenderGuiOverlay(RenderGuiOverlayEvent.Post event) {
+    public static void onRenderGuiOverlay(RenderGuiLayerEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
 
         if (minecraft.player == null) {
@@ -93,7 +96,7 @@ public final class HudOverlay {
         }
 
         GuiGraphics guiGraphics = event.getGuiGraphics();
-        if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type()) {
+        if (event.getName().equals(VanillaGuiLayers.HOTBAR)) {
             renderVagrantBlockOcclusion(minecraft, guiGraphics);
         }
 
@@ -101,12 +104,12 @@ public final class HudOverlay {
             return;
         }
 
-        if (event.getOverlay() == VanillaGuiOverlay.CROSSHAIR.type()
+        if (event.getName().equals(VanillaGuiLayers.CROSSHAIR)
                 && isFreeVagrant(minecraft)
                 && ClientPossessionTargetHint.canPossessTarget()) {
             renderPossessionTargetIcon(minecraft, guiGraphics);
         }
-        if (event.getOverlay() == VanillaGuiOverlay.HOTBAR.type()
+        if (event.getName().equals(VanillaGuiLayers.HOTBAR)
                 && isPossessing(minecraft)
                 && (minecraft.getCameraEntity() != minecraft.player || hasLimitedHotbar(minecraft))) {
             renderPossessionHotbar(minecraft, guiGraphics);
@@ -242,8 +245,8 @@ public final class HudOverlay {
             return;
         }
 
-        guiGraphics.blit(WIDGETS, left, top, 0, 0, 182, 22);
-        guiGraphics.blit(WIDGETS, left - 1 + selected * 20, top - 1, 0, 22, 24, 22);
+        guiGraphics.blitSprite(HOTBAR_SPRITE, left, top, 182, 22);
+        guiGraphics.blitSprite(HOTBAR_SELECTION_SPRITE, left - 1 + selected * 20, top - 1, 24, 23);
 
         for (int slot = 0; slot < 9; slot++) {
             ItemStack stack = minecraft.player.getInventory().items.get(slot);
@@ -261,25 +264,25 @@ public final class HudOverlay {
             return;
         }
         int left = minecraft.getWindow().getGuiScaledWidth() / 2 - 11;
-        guiGraphics.blit(WIDGETS, left, top, 0, 0, 21, 22);
-        guiGraphics.blit(WIDGETS, left + 21, top, 181, 0, 1, 22);
-        guiGraphics.blit(WIDGETS, left - 1, top - 1, 0, 22, 24, 22);
+        guiGraphics.blitSprite(HOTBAR_SPRITE, 182, 22, 0, 0, left, top, 21, 22);
+        guiGraphics.blitSprite(HOTBAR_SPRITE, 182, 22, 181, 0, left + 21, top, 1, 22);
+        guiGraphics.blitSprite(HOTBAR_SELECTION_SPRITE, left - 1, top - 1, 24, 23);
         ItemStack mainHand = minecraft.player.getInventory().items.get(0);
         guiGraphics.renderItem(mainHand, left + 3, top + 3);
         guiGraphics.renderItemDecorations(minecraft.font, mainHand, left + 3, top + 3);
 
         ItemStack offHand = minecraft.player.getOffhandItem();
         if (!offHand.isEmpty() && PossessionInventoryManager.canUseEquipmentSlot(host, EquipmentSlot.OFFHAND)) {
-            guiGraphics.blit(WIDGETS, left - 29, top - 1, 24, 22, 29, 24);
+            guiGraphics.blitSprite(HOTBAR_OFFHAND_LEFT_SPRITE, left - 29, top - 1, 29, 24);
             guiGraphics.renderItem(offHand, left - 26, top + 3);
             guiGraphics.renderItemDecorations(minecraft.font, offHand, left - 26, top + 3);
         }
     }
 
-    private static void renderBodyHealth(RenderGuiOverlayEvent.Post event,
+    private static void renderBodyHealth(RenderGuiLayerEvent.Post event,
                                          Minecraft minecraft,
                                          LivingEntity possessedHost) {
-        if (event.getOverlay() != VanillaGuiOverlay.HOTBAR.type()) {
+        if (!event.getName().equals(VanillaGuiLayers.HOTBAR)) {
             return;
         }
 
@@ -296,22 +299,22 @@ public final class HudOverlay {
             int slotX = left + col * 8;
             int slotY = top - row * 10;
             int bodyHealth = health - i * 2;
-            guiGraphics.blit(GUI_ICONS, slotX, slotY, HEART_EMPTY_U, HEART_V, 9, 9);
+            guiGraphics.blitSprite(HEART_CONTAINER_SPRITE, slotX, slotY, 9, 9);
             if (bodyHealth >= 2) {
-                guiGraphics.blit(GUI_ICONS, slotX, slotY, HEART_FULL_U, HEART_V, 9, 9);
+                guiGraphics.blitSprite(HEART_FULL_SPRITE, slotX, slotY, 9, 9);
             } else if (bodyHealth == 1) {
-                guiGraphics.blit(GUI_ICONS, slotX, slotY, HEART_HALF_U, HEART_V, 9, 9);
+                guiGraphics.blitSprite(HEART_HALF_SPRITE, slotX, slotY, 9, 9);
             }
         }
 
     }
 
-    private static boolean isBodyStatusOverlay(RenderGuiOverlayEvent.Pre event) {
-        return event.getOverlay() == VanillaGuiOverlay.PLAYER_HEALTH.type()
-                || event.getOverlay() == VanillaGuiOverlay.ARMOR_LEVEL.type()
-                || event.getOverlay() == VanillaGuiOverlay.FOOD_LEVEL.type()
-                || event.getOverlay() == VanillaGuiOverlay.AIR_LEVEL.type()
-                || event.getOverlay() == VanillaGuiOverlay.MOUNT_HEALTH.type();
+    private static boolean isBodyStatusOverlay(RenderGuiLayerEvent.Pre event) {
+        return event.getName().equals(VanillaGuiLayers.PLAYER_HEALTH)
+                || event.getName().equals(VanillaGuiLayers.ARMOR_LEVEL)
+                || event.getName().equals(VanillaGuiLayers.FOOD_LEVEL)
+                || event.getName().equals(VanillaGuiLayers.AIR_LEVEL)
+                || event.getName().equals(VanillaGuiLayers.VEHICLE_HEALTH);
     }
 
     private static boolean isFreeVagrant(Minecraft minecraft) {

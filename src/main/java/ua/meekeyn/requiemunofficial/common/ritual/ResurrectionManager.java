@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.ritual;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -8,9 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.block.entity.RunestoneBlockEntity;
 import ua.meekeyn.requiemunofficial.common.block.obelisk.ObeliskMatcher;
@@ -18,7 +19,7 @@ import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulLifecycleManager;
 import ua.meekeyn.requiemunofficial.common.soul.SoulState;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class ResurrectionManager {
 
     private ResurrectionManager() {

@@ -32,7 +32,7 @@ public abstract class EntityRenderDispatcherMixin {
                                                                                int packedLight,
                                                                                CallbackInfo ci) {
         if (entity instanceof net.minecraft.client.player.AbstractClientPlayer player
-                && ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player)) {
+                && ClientPossessionRenderHelper.shouldHideSoulPlayer(player)) {
             ci.cancel();
             return;
         }

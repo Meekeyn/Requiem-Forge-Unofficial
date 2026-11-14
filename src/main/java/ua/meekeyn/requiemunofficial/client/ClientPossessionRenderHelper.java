@@ -41,9 +41,17 @@ public final class ClientPossessionRenderHelper {
         return possessedId != null && possessedId.equals(entity.getUUID());
     }
 
+    /** Увімкнено, поки екран інвентаря малює превʼю вселеного тіла: тоді тіло не ховаємо. */
+    private static boolean renderingInventoryPreview;
+
+    public static void setRenderingInventoryPreview(boolean rendering) {
+        renderingInventoryPreview = rendering;
+    }
+
     public static boolean shouldHideLocalPossessedHost(Entity entity) {
         Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player == null || !minecraft.options.getCameraType().isFirstPerson()) {
+        if (renderingInventoryPreview
+                || minecraft.player == null || !minecraft.options.getCameraType().isFirstPerson()) {
             return false;
         }
 
@@ -55,6 +63,18 @@ public final class ClientPossessionRenderHelper {
         return player == Minecraft.getInstance().player
                 && SoulManager.getState(player) == SoulState.VAGRANT
                 && SoulManager.getPossessedEntityId(player) != null;
+    }
+
+    /**
+     * Чи треба повністю прибрати гравця з рендеру (модель, шари, предмети, нікнейм).
+     * Локальний гравець: як і раніше, лише коли він у вселеному тілі (вільна душа малюється
+     * тіньовим ефектом). Інші гравці: коли сервер повідомив, що вони у формі душі.
+     */
+    public static boolean shouldHideSoulPlayer(AbstractClientPlayer player) {
+        if (player == Minecraft.getInstance().player) {
+            return shouldHideLocalSoulPlayer(player);
+        }
+        return ClientSoulVisibility.isHidden(player);
     }
 
     public static boolean isFreeLocalSoulPlayer(AbstractClientPlayer player) {

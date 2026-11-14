@@ -1,5 +1,6 @@
 package ua.meekeyn.requiemunofficial.common.transformation;
 
+import net.neoforged.fml.common.EventBusSubscriber;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.nbt.CompoundTag;
@@ -14,11 +15,10 @@ import net.minecraft.world.entity.monster.ZombieVillager;
 import net.minecraft.world.entity.npc.Villager;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.trading.MerchantOffers;
-import net.minecraft.world.entity.MobType;
-import net.minecraftforge.event.entity.living.LivingConversionEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.event.entity.living.LivingConversionEvent;
+import net.neoforged.bus.api.EventPriority;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.util.ModTags;
 import ua.meekeyn.requiemunofficial.common.possession.PossessionManager;
@@ -27,7 +27,7 @@ import ua.meekeyn.requiemunofficial.common.advancement.ModCriteria;
 
 import java.util.UUID;
 
-@Mod.EventBusSubscriber(modid = RequiemUnofficial.MODID)
+@EventBusSubscriber(modid = RequiemUnofficial.MODID)
 public final class TransformationManager {
 
     private static final String ORIGINAL_BODY_TYPE = "RequiemOriginalBodyType";
@@ -104,7 +104,7 @@ public final class TransformationManager {
         if (possessor == null || !PossessionManager.transferPossession(possessor, source, outcome)) {
             return false;
         }
-        boolean cure = source.getMobType() == MobType.UNDEAD && outcome.getMobType() != MobType.UNDEAD;
+        boolean cure = source.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD) && !outcome.getType().is(net.minecraft.tags.EntityTypeTags.UNDEAD);
         ModCriteria.TRANSFORMED_POSSESSED_ENTITY.trigger(possessor, source, outcome, cure);
         return true;
     }
@@ -233,7 +233,8 @@ public final class TransformationManager {
             villager.setGossips(sourceData.get("Gossips"));
         }
         if (sourceData.contains("Offers", Tag.TAG_COMPOUND)) {
-            villager.setOffers(new MerchantOffers(sourceData.getCompound("Offers")));
+            MerchantOffers.CODEC.parse(net.minecraft.resources.RegistryOps.create(net.minecraft.nbt.NbtOps.INSTANCE, villager.registryAccess()), sourceData.getCompound("Offers"))
+                    .result().ifPresent(villager::setOffers);
         }
     }
 
@@ -242,9 +243,10 @@ public final class TransformationManager {
             case HAND -> slot.getIndex() < handChances.size()
                     ? handChances.getFloat(slot.getIndex())
                     : 0.085F;
-            case ARMOR -> slot.getIndex() < armorChances.size()
+            case HUMANOID_ARMOR -> slot.getIndex() < armorChances.size()
                     ? armorChances.getFloat(slot.getIndex())
                     : 0.085F;
+            default -> 0.085F;
         };
     }
 }

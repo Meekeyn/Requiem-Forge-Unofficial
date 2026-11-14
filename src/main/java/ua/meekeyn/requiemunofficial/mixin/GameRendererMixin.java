@@ -22,8 +22,8 @@ public abstract class GameRendererMixin {
      * первая же душа кадра очистила её (бета-16: {@code ShadowPlayerFx}
      * делал это в {@code EntitiesPreRenderCallback}).
      */
-    @Inject(method = "render(FJZ)V", at = @At("HEAD"))
-    private void requiemunofficial$beginShadowPlayerFrame(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("HEAD"))
+    private void requiemunofficial$beginShadowPlayerFrame(net.minecraft.client.DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
         ClientShadowPlayerFx.beginFrame();
     }
 
@@ -35,20 +35,21 @@ public abstract class GameRendererMixin {
      * в цель {@code players} теневого игрока.
      */
     @Inject(
-            method = "render(FJZ)V",
+            method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/LevelRenderer;doEntityOutline()V",
                     shift = At.Shift.AFTER
             )
     )
-    private void requiemunofficial$renderPostEffects(float partialTick, long nanoTime, boolean renderLevel, CallbackInfo ci) {
+    private void requiemunofficial$renderPostEffects(net.minecraft.client.DeltaTracker deltaTracker, boolean renderLevel, CallbackInfo ci) {
+        float partialTick = deltaTracker.getGameTimeDeltaPartialTick(false);
         ClientShadowPlayerFx.renderShaderEffects(partialTick);
         ClientPossessionFx.renderShaderEffects(partialTick);
     }
 
     @ModifyArg(
-            method = "pick",
+            method = "pick(Lnet/minecraft/world/entity/Entity;DDF)Lnet/minecraft/world/phys/HitResult;",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/projectile/ProjectileUtil;getEntityHitResult(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/Vec3;Lnet/minecraft/world/phys/AABB;Ljava/util/function/Predicate;D)Lnet/minecraft/world/phys/EntityHitResult;"

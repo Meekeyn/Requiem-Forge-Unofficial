@@ -3,10 +3,10 @@ package ua.meekeyn.requiemunofficial.common.init;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.world.level.GameRules;
-import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.registries.DeferredRegister;
-import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.RegistryObject;
+import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.neoforged.neoforge.registries.DeferredHolder;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
 import ua.meekeyn.requiemunofficial.common.gamerule.EnumArgumentInfo;
 import ua.meekeyn.requiemunofficial.common.gamerule.EnumGameRule;
@@ -23,9 +23,9 @@ public final class ModGameRules {
      * "Unrecognized argument type". Див. Forge-документацію до ArgumentTypeInfos.registerByClass.
      */
     public static final DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES =
-            DeferredRegister.create(ForgeRegistries.COMMAND_ARGUMENT_TYPES, RequiemUnofficial.MODID);
+            DeferredRegister.create(BuiltInRegistries.COMMAND_ARGUMENT_TYPE, RequiemUnofficial.MODID);
 
-    public static final RegistryObject<EnumArgumentInfo> ENUM_ARGUMENT_TYPE_INFO =
+    public static final DeferredHolder<ArgumentTypeInfo<?, ?>, EnumArgumentInfo> ENUM_ARGUMENT_TYPE_INFO =
             ARGUMENT_TYPES.register("enum", () -> ArgumentTypeInfos.registerByClass(
                     EnumArgumentInfo.enumArgumentClass(),
                     EnumArgumentInfo.INSTANCE

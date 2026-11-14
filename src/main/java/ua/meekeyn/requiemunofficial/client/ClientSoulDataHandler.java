@@ -14,7 +14,7 @@ public final class ClientSoulDataHandler {
             return;
         }
 
-        Minecraft.getInstance().player.getCapability(ModCapabilities.PLAYER_SOUL).ifPresent(soul -> {
+        ModCapabilities.soul(Minecraft.getInstance().player).ifPresent(soul -> {
             soul.setSoulPower(packet.soulPower());
             soul.setIchorLevel(packet.ichorLevel());
             soul.setState(packet.state());
