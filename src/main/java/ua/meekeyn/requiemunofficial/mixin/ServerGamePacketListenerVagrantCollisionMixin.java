@@ -31,7 +31,7 @@ public abstract class ServerGamePacketListenerVagrantCollisionMixin {
                                                                            double y,
                                                                            double z,
                                                                            CallbackInfoReturnable<Boolean> cir) {
-        if (!cir.getReturnValue() || !VagrantRules.isRestricted(this.player)) {
+        if (!cir.getReturnValue() || !VagrantRules.canPhase(this.player)) {
             return;
         }
 

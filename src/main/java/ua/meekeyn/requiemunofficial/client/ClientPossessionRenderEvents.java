@@ -17,7 +17,7 @@ public final class ClientPossessionRenderEvents {
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onRenderPossessedSoulPlayer(RenderPlayerEvent.Pre event) {
         if (event.getEntity() instanceof AbstractClientPlayer player
-                && ClientPossessionRenderHelper.shouldHideLocalSoulPlayer(player)) {
+                && ClientPossessionRenderHelper.shouldHideSoulPlayer(player)) {
             event.setCanceled(true);
         }
     }

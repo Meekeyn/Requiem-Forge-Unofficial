@@ -99,9 +99,8 @@ public abstract class InventoryScreenMixin extends EffectRenderingInventoryScree
                 graphics.blit(INVENTORY_SLOTS, x + 46, y + 61, 46, 61, 48, 18);
             }
         }
-        if (PossessionInventoryManager.canCraft(host)) {
-            graphics.blit(INVENTORY_SLOTS, x + 97, y + 17, 97, 17, 75, 36);
-        }
+        // Слоти крафту 2x2 у меню активні для будь-якого тіла, тож сітку малюємо завжди.
+        graphics.blit(INVENTORY_SLOTS, x + 97, y + 17, 97, 17, 75, 36);
         if (PossessionInventoryManager.canCarryInventory(host)) {
             graphics.blit(INVENTORY_SLOTS, x + 7, y + 83, 7, 83, 162, 54);
         }

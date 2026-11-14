@@ -160,6 +160,9 @@ public final class PossessionManager {
     private static final String ORIGINAL_PLAYER_FLYING = "RequiemOriginalPlayerFlying";
     private static final String BETA16_PLAYER_BODY = "RequiemBeta16PlayerBody";
     private static final String ORIGINAL_PLAYER_MAX_UP_STEP = "RequiemOriginalPlayerMaxUpStep";
+    private static final String SPECTATOR_HOST_ACTIVE = "RequiemSpectatorHostActive";
+    private static final String SPECTATOR_HOST_INVISIBLE = "RequiemSpectatorHostInvisible";
+    private static final String SPECTATOR_HOST_INVULNERABLE = "RequiemSpectatorHostInvulnerable";
     private static final String STORED_DISCONNECT_HOST = "RequiemStoredDisconnectHost";
     private static final String STORED_DISCONNECT_HOST_TYPE = "Type";
     private static final String STORED_DISCONNECT_HOST_DIMENSION = "Dimension";
@@ -640,6 +643,13 @@ public final class PossessionManager {
         FALL_ASSISTS.values().removeIf(PossessionManager::tickFallAssist);
     }
 
+    /** Starts manual gravity for a body that may hang in mid-air (NoAI shells, released hosts). */
+    public static void assistFall(LivingEntity body) {
+        if (body != null && !body.level().isClientSide()) {
+            FALL_ASSISTS.put(body.getUUID(), new FallAssist(body));
+        }
+    }
+
     /** Returns true when the assist is finished and must be dropped. */
     private static boolean tickFallAssist(FallAssist assist) {
         LivingEntity host = assist.host;
@@ -648,9 +658,7 @@ public final class PossessionManager {
                 || host.isInWater() || host.isInLava() || host.onClimbable()) {
             return true;
         }
-        if (host.onGround()) {
-            return true;
-        }
+        // onGround тут не довіряємо: після проксі-телепортації тіла гравця прапор міг лишитися «true» у повітрі.
         // Vanilla physics already moves it: nothing to assist.
         if (!Double.isNaN(assist.lastY) && Math.abs(host.getY() - assist.lastY) > 1.0E-4D) {
             assist.lastY = host.getY();
@@ -667,6 +675,36 @@ public final class PossessionManager {
         return false;
     }
 
+    private static void carryHostWithSpectator(ServerPlayer player, LivingEntity host) {
+        if (host == null || host.level() != player.level()) {
+            return;
+        }
+        if (!player.getPersistentData().getBoolean(SPECTATOR_HOST_ACTIVE)) {
+            player.getPersistentData().putBoolean(SPECTATOR_HOST_ACTIVE, true);
+            host.getPersistentData().putBoolean(SPECTATOR_HOST_INVISIBLE, host.isInvisible());
+            host.getPersistentData().putBoolean(SPECTATOR_HOST_INVULNERABLE, host.isInvulnerable());
+        }
+        host.setInvisible(true);
+        host.setInvulnerable(true);
+        host.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+        host.setDeltaMovement(Vec3.ZERO);
+        host.fallDistance = 0.0F;
+    }
+
+    private static void endSpectatorHostCarry(ServerPlayer player, LivingEntity host) {
+        player.getPersistentData().remove(SPECTATOR_HOST_ACTIVE);
+        if (host == null) {
+            return;
+        }
+        host.setInvisible(host.getPersistentData().getBoolean(SPECTATOR_HOST_INVISIBLE));
+        host.setInvulnerable(host.getPersistentData().getBoolean(SPECTATOR_HOST_INVULNERABLE));
+        host.getPersistentData().remove(SPECTATOR_HOST_INVISIBLE);
+        host.getPersistentData().remove(SPECTATOR_HOST_INVULNERABLE);
+        host.moveTo(player.getX(), player.getY(), player.getZ(), player.getYRot(), player.getXRot());
+        host.setDeltaMovement(Vec3.ZERO);
+        host.fallDistance = 0.0F;
+    }
+
     @SubscribeEvent
     public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
         if (event.phase != TickEvent.Phase.END
@@ -681,11 +719,15 @@ public final class PossessionManager {
 
         UUID possessedId = SoulManager.getPossessedEntityId(player);
         if (player.isSpectator()) {
+            // Як у ваніли: тіло переходить у спектатор разом з гравцем і лишається вселеним.
             if (possessedId != null) {
-                release(player, findHost(player, possessedId), false);
+                carryHostWithSpectator(player, findHost(player, possessedId));
             }
             clearVagrantSenseTargets(player);
             return;
+        }
+        if (player.getPersistentData().getBoolean(SPECTATOR_HOST_ACTIVE)) {
+            endSpectatorHostCarry(player, possessedId == null ? null : findHost(player, possessedId));
         }
         if (possessedId == null) {
             return;
@@ -843,7 +885,7 @@ public final class PossessionManager {
     }
 
     private static boolean shouldShowVagrantSenseTargets(ServerPlayer player) {
-        return VagrantRules.isRestricted(player);
+        return VagrantRules.canPhase(player);
     }
 
     private static void clearVagrantSenseTargets(ServerPlayer player) {
@@ -1178,7 +1220,7 @@ public final class PossessionManager {
 
         UUID hostId = SoulManager.getPossessedEntityId(serverPlayer);
         if (hostId == null) {
-            return VagrantRules.isRestricted(serverPlayer);
+            return VagrantRules.canPhase(serverPlayer);
         }
 
         return possessesNonEaterBody(serverPlayer, hostId);
@@ -1385,34 +1427,24 @@ public final class PossessionManager {
     }
 
     public static void handleAction(ServerPlayer player, PossessionActionPacket.Action action) {
-        boolean reqExitAction = action == PossessionActionPacket.Action.RELEASE || action == PossessionActionPacket.Action.EMERGENCY_RELEASE || action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE; // ТИМЧАСОВО [REQ-EXIT]
-        if (!player.isAlive()) {
-            if (reqExitAction) reqExitLog("handleAction {}: stopped, player is dead", action); // ТИМЧАСОВО [REQ-EXIT]
+        if (!player.isAlive() || player.isSpectator()) {
             return;
         }
-        if (player.isSpectator()) {
-            if (reqExitAction) reqExitLog("handleAction {}: stopped, player is spectator", action); // ТИМЧАСОВО [REQ-EXIT]
-            return;
-        }
-        if (action == PossessionActionPacket.Action.RELEASE) {
-            if (isWithinReleaseInputGrace(player)) {
-                reqExitLog("RELEASE: stopped, within {}-tick grace after possession start", RELEASE_INPUT_GRACE_TICKS); // ТИМЧАСОВО [REQ-EXIT]
+        if (action == PossessionActionPacket.Action.RELEASE
+                || action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE) {
+            // Клавіша M. allowUnconditionalPossessionExit (тестовий конфіг) знімає умови beta.16.
+            if (action == PossessionActionPacket.Action.RELEASE && isWithinReleaseInputGrace(player)) {
                 return;
             }
+            boolean unconditional = RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get();
+            boolean emancipated = player.hasEffect(ModEffects.EMANCIPATION.get());
             LivingEntity host = getControlledHost(player);
             if (host != null) {
-                // Оригінальна beta.16 умова виходу з тіла за клавішею дисоціації.
-                if (canDissociateFrom(player, host)) {
-                    reqExitLog("RELEASE: calling release, host={}", host); // ТИМЧАСОВО [REQ-EXIT]
+                if (unconditional || emancipated || host.getType().is(ModTags.FRICTIONLESS_HOSTS)) {
                     release(player, host);
-                    reqExitLog("RELEASE: release returned, state={} possessedId={}", SoulManager.getState(player), SoulManager.getPossessedEntityId(player)); // ТИМЧАСОВО [REQ-EXIT]
-                } else reqExitLog("RELEASE: stopped, canDissociateFrom=false (frictionless={}, emancipation={})", host.getType().is(ModTags.FRICTIONLESS_HOSTS), player.hasEffect(ModEffects.EMANCIPATION.get())); // ТИМЧАСОВО [REQ-EXIT]
-                return;
-            }
-            reqExitLog("RELEASE: no controlled host ({}), trying split, canSplitFromKey={}", reqExitDescribeNoHost(player), canSplitFromKey(player)); // ТИМЧАСОВО [REQ-EXIT]
-            // Оригінальний beta.16 раскол («Ethereal Fracture») вимагає стану remnant та
-            // ефекту Емансипації; команди нижче використовують примусовий раскол окремо.
-            if (canSplitFromKey(player) && !isWithinOwnBodySplitGuard(player)) {
+                }
+            } else if ((unconditional || emancipated) && !isWithinOwnBodySplitGuard(player)
+                    && SoulManager.getState(player) == SoulState.REMNANT) {
                 SoulLifecycleManager.splitPlayer(player);
             }
             return;
@@ -1431,27 +1463,6 @@ public final class PossessionManager {
             }
             return;
         }
-        if (action == PossessionActionPacket.Action.UNCONDITIONAL_RELEASE) {
-            reqExitLog("UNCONDITIONAL_RELEASE: config allowUnconditionalPossessionExit={}", RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()); // ТИМЧАСОВО [REQ-EXIT]
-            // Port-only: серверно-авторитетна перевірка конфігу.
-            if (!RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get()) {
-                reqExitLog("UNCONDITIONAL_RELEASE: stopped by config"); // ТИМЧАСОВО [REQ-EXIT]
-                return;
-            }
-            LivingEntity host = getControlledHost(player);
-            if (host != null) {
-                reqExitLog("UNCONDITIONAL_RELEASE: calling release, host={}", host); // ТИМЧАСОВО [REQ-EXIT]
-                release(player, host);
-                reqExitLog("UNCONDITIONAL_RELEASE: release returned, state={} possessedId={}", SoulManager.getState(player), SoulManager.getPossessedEntityId(player)); // ТИМЧАСОВО [REQ-EXIT]
-            } else if (isWithinOwnBodySplitGuard(player)) {
-                reqExitLog("UNCONDITIONAL_RELEASE: stopped, within {}-tick guard after host release", OWN_BODY_SPLIT_AFTER_RELEASE_GUARD_TICKS); // ТИМЧАСОВО [REQ-EXIT]
-            } else if (SoulManager.getState(player) == SoulState.REMNANT) {
-                // Розширення порту: з увімкненим конфігом V виводить і з власного живого тіла, без Емансипації.
-                reqExitLog("UNCONDITIONAL_RELEASE: no host, splitting own body"); // ТИМЧАСОВО [REQ-EXIT]
-                SoulLifecycleManager.splitPlayer(player);
-            } else reqExitLog("UNCONDITIONAL_RELEASE: stopped, no controlled host ({})", reqExitDescribeNoHost(player)); // ТИМЧАСОВО [REQ-EXIT]
-            return;
-        }
 
         LivingEntity host = getControlledHost(player);
         if (host == null) {
@@ -1465,36 +1476,6 @@ public final class PossessionManager {
             case RELEASE, EMERGENCY_RELEASE, UNCONDITIONAL_RELEASE -> {
             }
         }
-    }
-
-    /**
-     * Оригінальна beta.16 логіка {@code canDissociateFrom}: вихід із тіла за клавішею дисоціації
-     * дозволений для «frictionless» тіл (шалкер) або за наявності Емансипації.
-     */
-    private static boolean canDissociateFrom(ServerPlayer player, LivingEntity host) {
-        return host.getType().is(ModTags.FRICTIONLESS_HOSTS)
-                || player.hasEffect(ModEffects.EMANCIPATION.get())
-                // Port-only: вселення у власну оболонку — це теж «власне тіло».
-                || (host instanceof PlayerShellEntity shell
-                        && shell.belongsTo(player.getUUID())
-                        && allowsOwnBodyExitWithoutEmancipation());
-    }
-
-    /**
-     * Оригінальний beta.16 {@code DemonRemnantState.canSplit(false)}: раскол із клавіші можливий
-     * лише для remnant-стану за наявності Емансипації.
-     */
-    private static boolean canSplitFromKey(ServerPlayer player) {
-        // beta.16: потрібна Емансипація. Розширення порту: з увімкненим allowUnconditionalPossessionExit — і без неї.
-        return SoulManager.getState(player) == SoulState.REMNANT
-                && (player.hasEffect(ModEffects.EMANCIPATION.get())
-                        || allowsOwnBodyExitWithoutEmancipation());
-    }
-
-    /** Port-only: вихід із власного тіла на ',' без Емансипації (окремий конфіг або безумовний вихід). */
-    private static boolean allowsOwnBodyExitWithoutEmancipation() {
-        return RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.get()
-                || RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.get();
     }
 
     public static void updatePossessionInput(ServerPlayer player, PossessionInputPacket packet) {
@@ -1529,7 +1510,7 @@ public final class PossessionManager {
 
     public static LivingEntity getBeta16PlayerBodyHost(Player player) {
         UUID hostId = SoulManager.getPossessedEntityId(player);
-        if (hostId == null) {
+        if (hostId == null || player.isSpectator()) {
             return null;
         }
         for (Entity entity : player.level().getEntities(
@@ -1901,19 +1882,6 @@ public final class PossessionManager {
     private record RedirectedTargets(List<Entity> targets, boolean changed) {
     }
 
-    // ТИМЧАСОВО [REQ-EXIT]: діагностика без побічних ефектів — повторює перевірки getControlledHost і повертає причину null.
-    private static String reqExitDescribeNoHost(ServerPlayer player) { // ТИМЧАСОВО [REQ-EXIT]
-        if (SoulManager.getState(player) != SoulState.VAGRANT) return "state=" + SoulManager.getState(player) + " (not VAGRANT)"; // ТИМЧАСОВО [REQ-EXIT]
-        UUID id = SoulManager.getPossessedEntityId(player); // ТИМЧАСОВО [REQ-EXIT]
-        if (id == null) return "possessedId=null"; // ТИМЧАСОВО [REQ-EXIT]
-        LivingEntity h = findHost(player, id); // ТИМЧАСОВО [REQ-EXIT]
-        if (h == null) return "host " + id + " not found in any level"; // ТИМЧАСОВО [REQ-EXIT]
-        return "host=" + h + " uuidMatch=" + id.equals(h.getUUID()) + " possessor=" + getPossessor(h) + " alive=" + h.isAlive(); // ТИМЧАСОВО [REQ-EXIT]
-    } // ТИМЧАСОВО [REQ-EXIT]
-
-    private static void reqExitLog(String message, Object... args) { // ТИМЧАСОВО [REQ-EXIT]
-        ua.meekeyn.requiemunofficial.RequiemUnofficial.LOGGER.info("[REQ-EXIT] server: " + message, args); // ТИМЧАСОВО [REQ-EXIT]
-    } // ТИМЧАСОВО [REQ-EXIT]
 
     private static LivingEntity getControlledHost(ServerPlayer player) {
         if (SoulManager.getState(player) != SoulState.VAGRANT) {
@@ -2027,6 +1995,11 @@ public final class PossessionManager {
             return;
         }
 
+        if (host instanceof Shulker closedShulker
+                && ((ShulkerAccessor) closedShulker).requiemunofficial$getRawPeekAmount() <= 50) {
+            return;
+        }
+
         LivingEntity target = findAttackTarget(player, host, getAttackReach(host));
         if ((target == null || !host.hasLineOfSight(target)) && host.getType() == EntityType.SHULKER) {
             // beta.16 AutoAimAbility(16, 4): без цілі в прицілі шалкер стріляє в найближчу.
@@ -2036,6 +2009,10 @@ public final class PossessionManager {
             if (tryForwardSpecialAttack(host)) {
                 host.getPersistentData().putLong(NEXT_ATTACK_TIME, gameTime + getAttackCooldown(host));
                 host.swing(InteractionHand.MAIN_HAND, true);
+            } else if (host instanceof net.minecraft.world.entity.animal.IronGolem) {
+                // Голем махає руками і при промаху: анімацію клієнту дає лише подія 4 (як у doHurtTarget).
+                host.getPersistentData().putLong(NEXT_ATTACK_TIME, gameTime + getAttackCooldown(host));
+                host.level().broadcastEntityEvent(host, (byte) 4);
             }
             return;
         }
@@ -2092,6 +2069,40 @@ public final class PossessionManager {
         return hit;
     }
 
+    /** beta.16 WitherSkullAbility: випадкова з трьох голів; target == null — синій череп уперед. */
+    private static void shootWitherSkull(LivingEntity host, LivingEntity target) {
+        int head = host.getRandom().nextInt(3);
+        double x = host.getX();
+        double y = host.getY() + 3.0D;
+        double z = host.getZ();
+        if (head > 0) {
+            float angle = (host.yBodyRot + 180.0F * (head - 1)) * ((float) Math.PI / 180.0F);
+            x += Math.cos(angle) * 1.3D;
+            y = host.getY() + 2.2D;
+            z += Math.sin(angle) * 1.3D;
+        }
+        double dx;
+        double dy;
+        double dz;
+        if (target != null) {
+            dx = target.getX() - x;
+            dy = target.getY() + target.getEyeHeight() * 0.5D - y;
+            dz = target.getZ() - z;
+        } else {
+            Vec3 look = host.getLookAngle();
+            dx = look.x + host.getRandom().nextGaussian() * 0.05D;
+            dy = look.y + host.getRandom().nextGaussian() * 0.05D;
+            dz = look.z + host.getRandom().nextGaussian() * 0.05D;
+        }
+        net.minecraft.world.entity.projectile.WitherSkull skull =
+                new net.minecraft.world.entity.projectile.WitherSkull(host.level(), host, dx, dy, dz);
+        skull.setOwner(host);
+        skull.setDangerous(target == null);
+        skull.setPos(x, y, z);
+        host.level().addFreshEntity(skull);
+        host.level().levelEvent(null, 1024, host.blockPosition(), 0);
+    }
+
     private static boolean tryForwardSpecialAttack(LivingEntity host) {
         EntityType<?> type = host.getType();
         if (type == EntityType.BLAZE) {
@@ -2100,6 +2111,11 @@ public final class PossessionManager {
         }
         if (type == EntityType.GHAST) {
             shootLargeFireball(host, 1);
+            return true;
+        }
+        if (type == EntityType.WITHER) {
+            // beta.16 BlueWitherSkullAbility: без цілі — заряджений (синій) череп у напрямку погляду.
+            shootWitherSkull(host, null);
             return true;
         }
         if (type == EntityType.SNOW_GOLEM && host instanceof SnowGolem snowGolem) {
@@ -2212,6 +2228,9 @@ public final class PossessionManager {
                 return 18L;
             }
         }
+        if (type == EntityType.WITHER) {
+            return 40L;
+        }
         if (type == EntityType.GHAST || type == EntityType.EVOKER) {
             return 30L;
         }
@@ -2240,6 +2259,9 @@ public final class PossessionManager {
 
     private static double getAttackReach(LivingEntity host) {
         EntityType<?> type = host.getType();
+        if (type == EntityType.WITHER) {
+            return 20.0D;
+        }
         String alexPath = alexPath(type);
         if (alexPath != null) {
             if (alexPath.equals("sunbird") || alexPath.equals("guster") || alexPath.equals("straddler")) {
@@ -2294,6 +2316,11 @@ public final class PossessionManager {
             shootLargeFireball(host, 1);
             return true;
         }
+        if (type == EntityType.WITHER) {
+            // beta.16 BlackWitherSkullAbility: звичайний (чорний) череп у ціль, дальність 20.
+            shootWitherSkull(host, target);
+            return true;
+        }
         if ((type == EntityType.GUARDIAN || type == EntityType.ELDER_GUARDIAN)
                 && host instanceof Guardian guardian) {
             startGuardianBeam(guardian, target);
@@ -2322,6 +2349,7 @@ public final class PossessionManager {
             return target.hurt(player.damageSources().mobAttack(host), 2.0F);
         }
         if (type == EntityType.IRON_GOLEM) {
+            host.level().broadcastEntityEvent(host, (byte) 4);
             knockTarget(host, target, 1.0D, 0.8D);
             return target.hurt(player.damageSources().mobAttack(host), 10.0F);
         }
@@ -2873,6 +2901,22 @@ public final class PossessionManager {
         }
     }
 
+    /** Монстри, що полювали на тіло, після виходу душі переключаються на самого гравця, а не втрачають агро. */
+    private static void passProvokedAggroToPlayer(ServerPlayer player, LivingEntity host) {
+        if (!player.isAlive() || player.isCreative() || player.isSpectator() || !(host.level() instanceof ServerLevel)) {
+            return;
+        }
+        for (Monster monster : host.level().getEntitiesOfClass(Monster.class,
+                host.getBoundingBox().inflate(32.0D), mob -> mob != host && mob.isAlive())) {
+            if (monster.getTarget() != host) {
+                continue;
+            }
+            monster.getPersistentData().remove(PROVOKED_BY_POSSESSED_HOST);
+            monster.getPersistentData().remove(PROVOKED_BY_POSSESSED_HOST_UNTIL);
+            monster.setTarget(player);
+        }
+    }
+
     private static void rememberExistingHostility(LivingEntity host) {
         for (Monster monster : host.level().getEntitiesOfClass(Monster.class,
                 host.getBoundingBox().inflate(32.0D), mob -> mob != host && mob.isAlive())) {
@@ -3354,11 +3398,37 @@ public final class PossessionManager {
             return false;
         }
 
-        level.playSound(null, host.getX(), host.getY(), host.getZ(),
-                SoundEvents.ENDERMAN_TELEPORT, host.getSoundSource(), 1.0F, 1.0F);
+        blinkTo(level, host, target);
+        return true;
+    }
+
+    private static void blinkTo(ServerLevel level, LivingEntity host, Vec3 target) {
+        playBlinkFx(level, host, host.position());
         teleportControlledBody(host, target.x, target.y, target.z);
-        level.playSound(null, target.x, target.y, target.z,
-                SoundEvents.ENDERMAN_TELEPORT, host.getSoundSource(), 1.0F, 1.0F);
+        playBlinkFx(level, host, target);
+    }
+
+    private static void playBlinkFx(ServerLevel level, LivingEntity host, Vec3 at) {
+        level.playSound(null, at.x, at.y, at.z, SoundEvents.ENDERMAN_TELEPORT, host.getSoundSource(), 1.0F, 1.0F);
+        level.sendParticles(ParticleTypes.PORTAL, at.x, at.y + host.getBbHeight() * 0.5D, at.z,
+                32, 0.4D, host.getBbHeight() * 0.5D, 0.4D, 0.2D);
+    }
+
+    /**
+     * Ванільна самотелепортація ендермена (від стріли, води, шкоди) рухає лише сутність-тіло, яку
+     * режим «тіло = гравець» одразу повертає назад. Тут телепортуємо керуюче тіло гравця.
+     *
+     * @return true, якщо телепорт перехоплено і виконано
+     */
+    public static boolean redirectPossessedTeleport(LivingEntity host, double x, double y, double z) {
+        if (!(host.level() instanceof ServerLevel level) || findPossessionControl(host) == null) {
+            return false;
+        }
+        Vec3 target = findNearestStandingTeleportTarget(level, host, BlockPos.containing(x, y, z));
+        if (target == null) {
+            return true;
+        }
+        blinkTo(level, host, target);
         return true;
     }
 
@@ -3524,6 +3594,9 @@ public final class PossessionManager {
             }
         }
         SoulManager.clearPossession(player);
+        if (host != null) {
+            passProvokedAggroToPlayer(player, host);
+        }
         ACTIVE_POSSESSORS.remove(player.getUUID());
         POSSESSION_INPUTS.remove(player.getUUID());
         POSSESSION_TARGET_HINTS.remove(player.getUUID());

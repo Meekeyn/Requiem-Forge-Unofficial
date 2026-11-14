@@ -31,16 +31,10 @@ public abstract class SlotMixin {
         }
     }
 
-    @Inject(method = "mayPickup", at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$limitPossessedSlotPickup(Player player, CallbackInfoReturnable<Boolean> cir) {
-        if (!requiemunofficial$canUsePlayerSlot()) {
-            cir.setReturnValue(false);
-        }
-    }
-
+    // Заблокований слот лише віддає: речі, що там лишилися, можна забрати, покласти нічого не можна.
     @Inject(method = "isActive", at = @At("HEAD"), cancellable = true)
-    private void requiemunofficial$hideLockedPossessedSlots(CallbackInfoReturnable<Boolean> cir) {
-        if (!requiemunofficial$canUsePlayerSlot()) {
+    private void requiemunofficial$hideEmptyLockedPossessedSlots(CallbackInfoReturnable<Boolean> cir) {
+        if (!requiemunofficial$canUsePlayerSlot() && !((Slot) (Object) this).hasItem()) {
             cir.setReturnValue(false);
         }
     }

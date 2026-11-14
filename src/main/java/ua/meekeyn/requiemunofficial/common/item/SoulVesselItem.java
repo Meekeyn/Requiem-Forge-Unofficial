@@ -148,6 +148,15 @@ public class SoulVesselItem extends Item {
         return beginCapture(stack, player, target, hand, true, true);
     }
 
+    /**
+     * Порожня посудина в руці має пріоритет над власною взаємодією цілі (обмін з алаєм, торгівля жителя):
+     * викликається з події до {@code Entity.interact}. PASS — посудина нічого не бере, ваніль працює як завжди.
+     */
+    public static InteractionResult captureBeforeTargetInteraction(ItemStack stack, Player player,
+                                                                   LivingEntity target, InteractionHand hand) {
+        return beginCapture(stack, player, target, hand, true, true);
+    }
+
     public static InteractionResult beginCaptureForTest(ItemStack stack, Player player, LivingEntity target,
                                                         InteractionHand hand) {
         return beginCapture(stack, player, target, hand, false, false);
@@ -204,6 +213,21 @@ public class SoulVesselItem extends Item {
             );
         }
         return InteractionResult.CONSUME;
+    }
+
+    /** Чи триває захоплення душі цією посудиною (тег виставляє сервер на початку каналу). */
+    public static boolean isCaptureInProgress(ItemStack stack) {
+        if (!isCaptureVessel(stack)) {
+            return false;
+        }
+        CompoundTag active = stack.getTagElement(TAG_ACTIVE_CAPTURE);
+        return active != null && active.hasUUID(TAG_CAPTURE_TARGET);
+    }
+
+    // Відпустили клавішу раніше за кінець каналу: захоплення скасовується.
+    @Override
+    public void releaseUsing(ItemStack stack, Level level, LivingEntity user, int timeLeft) {
+        stack.removeTagKey(TAG_ACTIVE_CAPTURE);
     }
 
     private static boolean isCaptureVessel(ItemStack stack) {

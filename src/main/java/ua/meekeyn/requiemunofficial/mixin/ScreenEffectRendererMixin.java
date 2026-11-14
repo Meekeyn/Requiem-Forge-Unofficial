@@ -38,7 +38,7 @@ public abstract class ScreenEffectRendererMixin {
     private static Pair<BlockState, BlockPos> requiemunofficial$hideLeafViewBlockingOverlay(net.minecraft.world.entity.player.Player player) {
         Pair<BlockState, BlockPos> overlay = requiemunofficial$getOverlayBlock(player);
         if (overlay != null
-                && VagrantRules.isRestricted(player)
+                && VagrantRules.canPhase(player)
                 && VagrantRules.shouldSuppressCollisionWith(player, overlay.getLeft())) {
             return null;
         }

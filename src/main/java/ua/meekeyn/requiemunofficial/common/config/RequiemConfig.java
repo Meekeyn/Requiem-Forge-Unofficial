@@ -11,7 +11,6 @@ public final class RequiemConfig {
     public static final ForgeConfigSpec.IntValue RUNE_EFFECT_WIDTH_DURATION_BONUS_TICKS;
     public static final ForgeConfigSpec.IntValue RUNE_EFFECT_LEVEL_DURATION_BONUS_TICKS;
     public static final ForgeConfigSpec.BooleanValue ALLOW_UNCONDITIONAL_POSSESSION_EXIT;
-    public static final ForgeConfigSpec.BooleanValue ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION;
     public static final ForgeConfigSpec.BooleanValue OBELISK_REQUIRE_SOUL_BLOCKS;
     public static final ForgeConfigSpec.BooleanValue OBELISK_STORED_ENERGY_BONUS;
     public static final ForgeConfigSpec.BooleanValue RUNE_CRAFTING_RECIPES;
@@ -74,14 +73,9 @@ public final class RequiemConfig {
 
         builder.push("possession");
         ALLOW_UNCONDITIONAL_POSSESSION_EXIT = builder
-                .comment("Allow port-only unconditional possession exit (bound to its own key).",
-                        "When false, dissociation follows the original beta.16 conditions.")
-                .define("allowUnconditionalPossessionExit", false);
-        ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION = builder
-                .comment("Allow a living remnant to leave their own body with the dissociation key (',')",
-                        "without the Emancipation effect. When false, the original beta.16 rule applies",
-                        "(Emancipation required), unless allowUnconditionalPossessionExit is enabled.")
-                .define("allowOwnBodyExitWithoutEmancipation", false);
+                .comment("Test option: the exit key (M) always leaves the body (own or possessed).",
+                        "When false, exit follows the original beta.16 conditions (Emancipation, or a frictionless host).")
+                .define("allowUnconditionalPossessionExit", true);
         builder.pop();
 
         builder.pop();

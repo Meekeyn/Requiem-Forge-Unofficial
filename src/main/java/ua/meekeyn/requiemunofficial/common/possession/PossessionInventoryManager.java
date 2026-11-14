@@ -55,6 +55,42 @@ public final class PossessionInventoryManager {
     }
 
     /**
+     * Єдине правило для всіх тіл: предмет у руці, якої тіло не має (слот заблокований), не можна
+     * використати, інакше гравець «тримає» річ, якої немає в інвентарі.
+     */
+    private static boolean isHandSlotLocked(Player player, net.minecraft.world.InteractionHand hand) {
+        LivingEntity host = getLimitingHost(player);
+        if (host == null) {
+            return false;
+        }
+        int slot = hand == net.minecraft.world.InteractionHand.MAIN_HAND
+                ? player.getInventory().selected : Inventory.SLOT_OFFHAND;
+        return !isSlotAccessible(host, slot);
+    }
+
+    @SubscribeEvent
+    public static void onLockedHandUse(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickItem event) {
+        if (!event.getItemStack().isEmpty() && isHandSlotLocked(event.getEntity(), event.getHand())) {
+            event.setCanceled(true);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLockedHandUseOnBlock(net.minecraftforge.event.entity.player.PlayerInteractEvent.RightClickBlock event) {
+        if (!event.getItemStack().isEmpty() && isHandSlotLocked(event.getEntity(), event.getHand())) {
+            event.setUseItem(net.minecraftforge.eventbus.api.Event.Result.DENY);
+        }
+    }
+
+    @SubscribeEvent
+    public static void onLockedHandStartUsing(net.minecraftforge.event.entity.living.LivingEntityUseItemEvent.Start event) {
+        if (event.getEntity() instanceof Player player && !event.getItem().isEmpty()
+                && isHandSlotLocked(player, player.getUsedItemHand())) {
+            event.setCanceled(true);
+        }
+    }
+
+    /**
      * Без HOTBAR тіло тримає предмет лише в слоті 0 (MAINHAND_SLOT beta.16), тому вибраний
      * слот хотбара примусово скидається на 0 з обох боків.
      */
@@ -377,11 +413,14 @@ public final class PossessionInventoryManager {
     }
 
     public static boolean canCarryHotbar(LivingEntity entity) {
-        return entity.getType().is(ModTags.HOTBAR_CARRIERS);
+        // Locki: HOTBAR — дочірній вузол MAIN_INVENTORY, тож відкритий основний інвентар (inventory_carriers) відкриває
+        // і хотбар 1..8; тег hotbar_carriers відкриває лише хотбар.
+        return entity.getType().is(ModTags.HOTBAR_CARRIERS) || canCarryInventory(entity);
     }
 
     public static boolean canCraft(LivingEntity entity) {
-        return entity.getType().is(ModTags.SUPERCRAFTERS);
+        // Оригінал: слот CRAFTING відкривається разом із руками (canUseItems); supercrafters — окремий тег порту.
+        return canUseItems(entity) || entity.getType().is(ModTags.SUPERCRAFTERS);
     }
 
     public static boolean canUseArmor(LivingEntity entity) {
@@ -434,21 +473,16 @@ public final class PossessionInventoryManager {
         }
         ServerLevel dropLevel = host != null && host.level() instanceof ServerLevel hostLevel ? hostLevel : level;
         Inventory inventory = player.getInventory();
-        // Випадає лише те, що тіло справді несло (за його loadout); решта лишається в душі.
+        // Усе, що душа несе всередині тіла, належить цьому тілу: слоти очищаються до спавну
+        // (без дюпа), тож випадає весь інвентар, броня й друга рука.
         for (int slot = 0; slot < inventory.items.size(); slot++) {
-            if (host != null && isSlotAccessible(host, slot)) {
-                dropDeathSlot(inventory.items, slot, dropLevel, deathPos);
-            }
+            dropDeathSlot(inventory.items, slot, dropLevel, deathPos);
         }
-        if (host != null && canUseArmor(host)) {
-            for (int slot = 0; slot < inventory.armor.size(); slot++) {
-                dropDeathSlot(inventory.armor, slot, dropLevel, deathPos);
-            }
+        for (int slot = 0; slot < inventory.armor.size(); slot++) {
+            dropDeathSlot(inventory.armor, slot, dropLevel, deathPos);
         }
-        if (host != null && canUseEquipmentSlot(host, EquipmentSlot.OFFHAND)) {
-            for (int slot = 0; slot < inventory.offhand.size(); slot++) {
-                dropDeathSlot(inventory.offhand, slot, dropLevel, deathPos);
-            }
+        for (int slot = 0; slot < inventory.offhand.size(); slot++) {
+            dropDeathSlot(inventory.offhand, slot, dropLevel, deathPos);
         }
         if (host != null && host.getPersistentData().contains(STORED_INVENTORY, Tag.TAG_LIST)) {
             ListTag stored = host.getPersistentData().getList(STORED_INVENTORY, Tag.TAG_COMPOUND);
@@ -601,9 +635,10 @@ public final class PossessionInventoryManager {
 
     private static void transferMainInventory(ServerPlayer player, LivingEntity host) {
         ListTag stored = new ListTag();
-        // Лише основний інвентар (9..35), який тіло носить, переходить до нього; решта лишається за душею.
+        // Хотбар (1..8, слот 0 — рука) та основний інвентар (9..35), які тіло носить, переходять до нього;
+        // решта лишається за душею.
         int size = player.getInventory().items.size();
-        for (int slot = 9; slot < size; slot++) {
+        for (int slot = 1; slot < size; slot++) {
             if (!isSlotAccessible(host, slot)) {
                 continue;
             }

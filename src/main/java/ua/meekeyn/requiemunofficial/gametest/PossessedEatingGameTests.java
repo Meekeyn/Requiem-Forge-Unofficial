@@ -420,8 +420,9 @@ public final class PossessedEatingGameTests {
         net.minecraft.world.item.ItemStack goldenApple =
                 new net.minecraft.world.item.ItemStack(Items.GOLDEN_APPLE);
         // Яблуко кладемо в окремий слот 2, щоб не затерти алмаз у слоті 0, який перевіряється нижче.
-        player.getInventory().items.set(2, goldenApple);
-        player.getInventory().selected = 2;
+        player.getInventory().items.set(2, player.getInventory().items.get(0));
+        player.getInventory().items.set(0, goldenApple);
+        player.getInventory().selected = 0;
         helper.assertTrue(PossessedItemManager.tryUsePossessedItemForTest(player, skeleton, goldenApple),
                 "Golden apple must start a cure on the possessed skeleton");
         helper.assertTrue(player.isUsingItem(),

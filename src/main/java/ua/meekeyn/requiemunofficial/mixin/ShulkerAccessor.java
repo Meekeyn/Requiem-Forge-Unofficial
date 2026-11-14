@@ -6,6 +6,9 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(Shulker.class)
 public interface ShulkerAccessor {
+    @Invoker("getRawPeekAmount")
+    int requiemunofficial$getRawPeekAmount();
+
     @Invoker("setRawPeekAmount")
     void requiemunofficial$setRawPeekAmount(int amount);
 }

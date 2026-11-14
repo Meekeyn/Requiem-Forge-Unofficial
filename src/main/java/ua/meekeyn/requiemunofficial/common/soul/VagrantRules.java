@@ -40,16 +40,34 @@ public final class VagrantRules {
                 && SoulManager.getPossessedEntityId(player) == null;
     }
 
+    /** Безтілесна душа, що може проходити крізь стіни: як і обмежений вагрант, але також у креативі. */
+    public static boolean canPhase(Player player) {
+        return !player.isSpectator()
+                && SoulManager.getState(player) == SoulState.VAGRANT
+                && SoulManager.getPossessedEntityId(player) == null;
+    }
+
     public static boolean isRestrictedVagrantEntity(Entity entity) {
-        return entity instanceof Player player && isRestricted(player);
+        return entity instanceof Player player && canPhase(player);
+    }
+
+    /**
+     * beta.16 TargetPredicateMixin: бестілесна душа (вагрант) не ціль для звичайних мобів — і коли
+     * вселена в тіло (інакше, напр., фантоми б'ють гравця в тілі ендермена).
+     */
+    public static boolean isPossessingVagrantEntity(Entity entity) {
+        return entity instanceof Player player
+                && !player.isSpectator()
+                && SoulManager.getState(player) == SoulState.VAGRANT
+                && SoulManager.getPossessedEntityId(player) != null;
     }
 
     public static boolean shouldBeIgnoredByOrdinaryTargeting(Entity entity) {
-        return isRestrictedVagrantEntity(entity) || isEmptyPlayerShell(entity);
+        return isRestrictedVagrantEntity(entity) || isPossessingVagrantEntity(entity);
     }
 
     public static boolean shouldBeIgnoredByOrdinarySensors(Entity entity) {
-        return isRestrictedVagrantEntity(entity) || isEmptyPlayerShell(entity);
+        return isRestrictedVagrantEntity(entity) || isPossessingVagrantEntity(entity);
     }
 
     /** Покинуте тіло гравця (без душі всередині) — не ціль для звичайних мобів. */
@@ -92,7 +110,7 @@ public final class VagrantRules {
     }
 
     public static boolean shouldPhaseThroughBlocks(Player player) {
-        return isRestricted(player)
+        return canPhase(player)
                 && (isInsidePhaseableBlock(player)
                 || isDescendingIntoPhaseableBlock(player)
                 || player.horizontalCollision && isLookingIntoPhaseableBlock(player)
@@ -102,26 +120,26 @@ public final class VagrantRules {
     }
 
     public static boolean shouldSuppressBlockCollision(Player player) {
-        return isRestricted(player)
+        return canPhase(player)
                 && (isPhaseCharged(player)
                 || isLeafPhaseActive(player) && !isInsideNonLeafPhaseableBlock(player));
     }
 
     public static boolean shouldUsePhaseMovement(Player player) {
-        return isRestricted(player)
+        return canPhase(player)
                 && (isPhaseCharged(player)
                 || isLeafPhaseActive(player) && isInsideLeaves(player)
                 || isInsideNonLeafPhaseableBlock(player));
     }
 
     public static boolean shouldSuppressOnlyLeafCollision(Player player) {
-        return isRestricted(player)
+        return canPhase(player)
                 && !isPhaseCharged(player)
                 && isLeafPhaseActive(player);
     }
 
     public static boolean shouldSuppressCollisionWith(Player player, BlockState state) {
-        if (!isRestricted(player) || state.isAir()) {
+        if (!canPhase(player) || state.isAir()) {
             return false;
         }
         if (isPhaseCharged(player)) {
@@ -131,7 +149,7 @@ public final class VagrantRules {
     }
 
     public static boolean shouldChargePhaseEntry(Player player) {
-        return isRestricted(player)
+        return canPhase(player)
                 && !isInsidePhaseableBlock(player)
                 && (isTouchingSidePhaseableBlock(player)
                 || isLookingIntoPhaseableBlock(player));

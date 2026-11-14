@@ -83,7 +83,7 @@ public final class PlayerBodyMovement {
 
     public static Vec3 prepareTravel(Player player, Vec3 input) {
         LivingEntity host = host(player);
-        if (host == null) return input;
+        if (host == null || player.getAbilities().flying) return input;
         var profile = EntityMobilityManager.get(host);
         if (host.getType().is(ModTags.IMMOVABLE)) {
             player.setDeltaMovement(Vec3.ZERO);

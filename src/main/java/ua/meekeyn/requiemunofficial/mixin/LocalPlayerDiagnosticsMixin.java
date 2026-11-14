@@ -24,7 +24,7 @@ public abstract class LocalPlayerDiagnosticsMixin {
     @Inject(method = "moveTowardsClosestSpace", at = @At("HEAD"), cancellable = true)
     private void requiemunofficial$captureClosestSpaceStart(double x, double z, CallbackInfo ci) {
         LocalPlayer player = (LocalPlayer) (Object) this;
-        if (VagrantRules.isRestricted(player) && VagrantRules.isInsidePhaseableBlock(player)) {
+        if (VagrantRules.canPhase(player) && VagrantRules.isInsidePhaseableBlock(player)) {
             ci.cancel();
             return;
         }

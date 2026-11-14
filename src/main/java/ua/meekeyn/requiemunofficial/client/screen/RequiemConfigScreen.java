@@ -3,19 +3,50 @@ package ua.meekeyn.requiemunofficial.client.screen;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.GameRules;
 import net.minecraftforge.common.ForgeConfigSpec;
+import ua.meekeyn.requiemunofficial.common.config.RequiemClientConfig;
 import ua.meekeyn.requiemunofficial.common.config.RequiemConfig;
+import ua.meekeyn.requiemunofficial.common.init.ModGameRules;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 public class RequiemConfigScreen extends Screen {
     private static final int ROW_HEIGHT = 32;
+    private static final int HEADER_HEIGHT = 20;
     private static final int BUTTON_HEIGHT = 28;
     private static final int SIDE_BUTTON_WIDTH = 28;
 
+    private record RuleRow(String labelKey, String id, String[] options, Function<GameRules, String> reader) {
+    }
+
+    private static final String[] BOOLEAN_OPTIONS = {"false", "true"};
+    private static final List<RuleRow> RULE_ROWS = List.of(
+            new RuleRow("screen.requiemunofficial.config.rule_show_possessor_name_tag", "requiem:showPossessorNameTag",
+                    BOOLEAN_OPTIONS, rules -> rules.getRule(ModGameRules.SHOW_POSSESSOR_NAME_TAG).serialize()),
+            new RuleRow("screen.requiemunofficial.config.rule_disable_cure", "requiem:disableCure",
+                    BOOLEAN_OPTIONS, rules -> rules.getRule(ModGameRules.DISABLE_CURE).serialize()),
+            new RuleRow("screen.requiemunofficial.config.rule_drop_vessel", "requiem:dropVesselOnDisconnect",
+                    BOOLEAN_OPTIONS, rules -> rules.getRule(ModGameRules.DROP_VESSEL_ON_DISCONNECT).serialize()),
+            new RuleRow("screen.requiemunofficial.config.rule_starting_remnant", "requiem:startingRemnantType",
+                    new String[]{"CHOOSE", "FORCE_REMNANT", "FORCE_VANILLA"},
+                    rules -> rules.getRule(ModGameRules.STARTING_REMNANT_TYPE).serialize()),
+            new RuleRow("screen.requiemunofficial.config.rule_keep_inventory", "requiem:possessionKeepInventory",
+                    new String[]{"NEVER", "LIVING", "ALWAYS"},
+                    rules -> rules.getRule(ModGameRules.POSSESSION_KEEP_INVENTORY).serialize()),
+            new RuleRow("screen.requiemunofficial.config.rule_detection", "requiem:possessionDetection",
+                    new String[]{"DISABLED", "NORMAL", "HARD"},
+                    rules -> rules.getRule(ModGameRules.POSSESSION_DETECTION).serialize()));
+
+    private final Map<String, String> sentRuleValues = new HashMap<>();
     private final Screen parent;
     private int scroll;
     private int contentHeight;
@@ -34,6 +65,26 @@ public class RequiemConfigScreen extends Screen {
         this.listTop = 36;
         this.listBottom = this.height - 62;
         int y = listTop - scroll;
+
+        // Налаштування звичайного Requiem — вгорі; нижче лише те, що додав порт.
+        addSectionHeader(left, rowWidth, y, "screen.requiemunofficial.config.section_requiem");
+        y += HEADER_HEIGHT;
+        addToggleRow(left, rowWidth, y, "screen.requiemunofficial.config.fancy_demon_render",
+                RequiemClientConfig.FANCY_DEMON_RENDER, RequiemClientConfig.SPEC);
+        y += ROW_HEIGHT;
+
+        // Ігрові правила оригінального Requiem (/gamerule requiem:*) — діють на світ, тому лише там, де їх можна змінити.
+        if (canEditGameRules()) {
+            addSectionHeader(left, rowWidth, y, "screen.requiemunofficial.config.section_world_rules");
+            y += HEADER_HEIGHT;
+            for (RuleRow rule : RULE_ROWS) {
+                addRuleRow(left, rowWidth, y, rule);
+                y += ROW_HEIGHT;
+            }
+        }
+
+        addSectionHeader(left, rowWidth, y, "screen.requiemunofficial.config.section_port");
+        y += HEADER_HEIGHT;
 
         addNumericRow(left, rowWidth, y, "screen.requiemunofficial.config.soul_capture_chance",
                 () -> Math.round(RequiemConfig.SOUL_CAPTURE_CHANCE.get() * 100.0D) + "%",
@@ -79,8 +130,8 @@ public class RequiemConfigScreen extends Screen {
                 RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT);
         y += ROW_HEIGHT;
 
-        addToggleRow(left, rowWidth, y, "screen.requiemunofficial.config.own_body_exit",
-                RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION);
+        addToggleRow(left, rowWidth, y, "screen.requiemunofficial.config.obelisk_soul_blocks",
+                RequiemConfig.OBELISK_REQUIRE_SOUL_BLOCKS);
         y += ROW_HEIGHT;
 
         this.contentHeight = y + scroll - listTop;
@@ -93,6 +144,58 @@ public class RequiemConfigScreen extends Screen {
                 Component.translatable("gui.done"),
                 button -> onClose()
         ).bounds(this.width / 2 - 100, this.height - 32, 200, 20).build());
+    }
+
+    private boolean canEditGameRules() {
+        if (this.minecraft == null || this.minecraft.player == null) {
+            return false;
+        }
+        return this.minecraft.getSingleplayerServer() != null || this.minecraft.player.hasPermissions(2);
+    }
+
+    /** Поточне значення правила: у одиночній грі читаємо з сервера, на чужому сервері — лише те, що змінили тут. */
+    private String ruleValue(RuleRow rule) {
+        String sent = sentRuleValues.get(rule.id());
+        if (sent != null) {
+            return sent;
+        }
+        MinecraftServer server = this.minecraft.getSingleplayerServer();
+        return server != null ? rule.reader().apply(server.getGameRules()) : "?";
+    }
+
+    private void applyRule(RuleRow rule, String value) {
+        String command = "gamerule " + rule.id() + " " + value;
+        MinecraftServer server = this.minecraft.getSingleplayerServer();
+        if (server != null) {
+            server.execute(() -> server.getCommands()
+                    .performPrefixedCommand(server.createCommandSourceStack(), command));
+        } else if (this.minecraft.player != null) {
+            this.minecraft.player.connection.sendCommand(command);
+        }
+        sentRuleValues.put(rule.id(), value);
+    }
+
+    private void addRuleRow(int left, int rowWidth, int y, RuleRow rule) {
+        String current = ruleValue(rule);
+        Component shown = rule.options().length == 2 && rule.options()[0].equals("false")
+                ? Component.translatable(current.equals("true") ? "options.on" : "options.off")
+                : Component.literal(current);
+        WrappedButton button = new WrappedButton(left, y, rowWidth, BUTTON_HEIGHT,
+                Component.translatable(rule.labelKey(), shown), pressed -> {
+            int index = 0;
+            for (int i = 0; i < rule.options().length; i++) {
+                if (rule.options()[i].equalsIgnoreCase(current)) {
+                    index = i + 1;
+                    break;
+                }
+            }
+            applyRule(rule, rule.options()[index % rule.options().length]);
+            rebuildWidgets();
+        });
+        boolean visible = isRowVisible(y);
+        button.visible = visible;
+        button.active = visible;
+        addRenderableWidget(button);
     }
 
     private boolean isRowVisible(int y) {
@@ -123,14 +226,27 @@ public class RequiemConfigScreen extends Screen {
         }
     }
 
+    private void addSectionHeader(int left, int rowWidth, int y, String labelKey) {
+        if (!isRowVisible(y)) {
+            return;
+        }
+        addRenderableWidget(new StringWidget(left, y, rowWidth, HEADER_HEIGHT - 4,
+                Component.translatable(labelKey).withStyle(net.minecraft.ChatFormatting.YELLOW), this.font));
+    }
+
     private void addToggleRow(int left, int rowWidth, int y, String labelKey, ForgeConfigSpec.BooleanValue value) {
+        addToggleRow(left, rowWidth, y, labelKey, value, RequiemConfig.SPEC);
+    }
+
+    private void addToggleRow(int left, int rowWidth, int y, String labelKey, ForgeConfigSpec.BooleanValue value,
+                              ForgeConfigSpec spec) {
         boolean visible = isRowVisible(y);
         WrappedButton toggle = new WrappedButton(left, y, rowWidth, BUTTON_HEIGHT,
                 Component.translatable(labelKey,
                         Component.translatable(value.get() ? "options.on" : "options.off")),
                 button -> {
                     value.set(!value.get());
-                    RequiemConfig.SPEC.save();
+                    spec.save();
                     rebuildWidgets();
                 });
         toggle.visible = visible;

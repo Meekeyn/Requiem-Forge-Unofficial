@@ -36,6 +36,10 @@ public class PlayerShellEntity extends PathfinderMob {
             SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.STRING);
     private static final EntityDataAccessor<String> PROFILE_TEXTURES =
             SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.STRING);
+    // Маска шарів скіна власника (PlayerModelPart): вимкнені в меню шари не малюються на оболонці.
+    private static final EntityDataAccessor<Byte> SKIN_PARTS =
+            SynchedEntityData.defineId(PlayerShellEntity.class, EntityDataSerializers.BYTE);
+    private static final String SKIN_PARTS_TAG = "SkinParts";
     private static final String PROFILE_TEXTURES_PROPERTY = "textures";
     private static final String POSSESSED_DATA = "RequiemPossessed";
     private static final String BODY_INVENTORY = "RequiemBodyInventory";
@@ -140,6 +144,14 @@ public class PlayerShellEntity extends PathfinderMob {
         this.entityData.set(PROFILE_NAME, profile.getName() == null ? "" : profile.getName());
         String textures = getTexturesProperty(profile);
         this.entityData.set(PROFILE_TEXTURES, textures == null ? "" : textures);
+        int skinParts = 0;
+        for (net.minecraft.world.entity.player.PlayerModelPart part
+                : net.minecraft.world.entity.player.PlayerModelPart.values()) {
+            if (player.isModelPartShown(part)) {
+                skinParts |= part.getMask();
+            }
+        }
+        this.entityData.set(SKIN_PARTS, (byte) skinParts);
         // Оболонка без AI ніколи не рухається, тож BodyRotationControl не повертає тіло: задаємо поворот явно.
         float yaw = player.getYRot();
         setYRot(yaw);
@@ -240,6 +252,12 @@ public class PlayerShellEntity extends PathfinderMob {
         this.entityData.define(OWNER_ID, Optional.empty());
         this.entityData.define(PROFILE_NAME, "");
         this.entityData.define(PROFILE_TEXTURES, "");
+        this.entityData.define(SKIN_PARTS, (byte) 0x7F);
+    }
+
+    /** Маска шарів скіна власника (біти {@link net.minecraft.world.entity.player.PlayerModelPart#getMask()}). */
+    public int getSkinPartsMask() {
+        return this.entityData.get(SKIN_PARTS) & 0x7F;
     }
 
     @Override
@@ -302,6 +320,7 @@ public class PlayerShellEntity extends PathfinderMob {
         tag.put(BODY_INVENTORY, bodyInventory.copy());
         tag.putBoolean(BODY_INVENTORY_CAPTURED, bodyInventoryCaptured);
         tag.putInt(BODY_SELECTED_SLOT, bodySelectedSlot);
+        tag.putByte(SKIN_PARTS_TAG, this.entityData.get(SKIN_PARTS));
     }
 
     @Override
@@ -318,6 +337,7 @@ public class PlayerShellEntity extends PathfinderMob {
                 ? tag.getBoolean(BODY_INVENTORY_CAPTURED)
                 : !bodyInventory.isEmpty();
         bodySelectedSlot = tag.getInt(BODY_SELECTED_SLOT);
+        this.entityData.set(SKIN_PARTS, tag.contains(SKIN_PARTS_TAG) ? tag.getByte(SKIN_PARTS_TAG) : (byte) 0x7F);
     }
 
     private void restoreBodyEffects(ServerPlayer player) {

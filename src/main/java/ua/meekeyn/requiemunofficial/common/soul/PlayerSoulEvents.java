@@ -143,6 +143,15 @@ public final class PlayerSoulEvents {
         }
     }
 
+    /** A client started tracking a player: tell it whether that player is in soul form. */
+    @SubscribeEvent
+    public static void onStartTracking(PlayerEvent.StartTracking event) {
+        if (event.getEntity() instanceof net.minecraft.server.level.ServerPlayer viewer
+                && event.getTarget() instanceof Player target) {
+            ModNetwork.sendSoulVisibility(viewer, target);
+        }
+    }
+
     @SubscribeEvent
     public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
         SoulManager.sync(event.getEntity());

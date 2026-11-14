@@ -96,14 +96,14 @@ public abstract class PlayerMixin {
     @Inject(method = "getFlyingSpeed", at = @At("RETURN"), cancellable = true)
     private void requiemunofficial$vagrantSprintFlightSpeed(CallbackInfoReturnable<Float> cir) {
         Player player = (Player) (Object) this;
-        if (!player.isInWater() && !player.isInLava()
+        if (!player.isInWater() && !player.isInLava() && !player.getAbilities().flying
                 && ua.meekeyn.requiemunofficial.common.possession.PlayerBodyMovement.usesGroundMoveControl(
                         PossessionManager.getBeta16PlayerBodyHost(player))) {
             // Ground Mob uses 0.02 air acceleration even when its sprint attribute is active.
             cir.setReturnValue(0.02F);
             return;
         }
-        if (VagrantRules.isRestricted(player)
+        if (VagrantRules.canPhase(player)
                 && player.getAbilities().flying
                 && player.isSprinting()
                 && !VagrantRules.shouldSuppressBlockCollision(player)) {

@@ -47,6 +47,14 @@ public abstract class GameRendererMixin {
         ClientPossessionFx.renderShaderEffects(partialTick);
     }
 
+    /** Ванільний F4 перемикає пост-ефект; зір тіла (шейдер) від F4 не залежить, як і в оригінальному Requiem. */
+    @Inject(method = "togglePostEffect", at = @At("HEAD"), cancellable = true)
+    private void requiemunofficial$keepVisionOnF4(CallbackInfo ci) {
+        if (ua.meekeyn.requiemunofficial.client.ClientPossessionVision.isShaderEnforced()) {
+            ci.cancel();
+        }
+    }
+
     @ModifyArg(
             method = "pick",
             at = @At(

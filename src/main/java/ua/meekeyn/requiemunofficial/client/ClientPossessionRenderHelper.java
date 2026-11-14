@@ -57,6 +57,22 @@ public final class ClientPossessionRenderHelper {
                 && SoulManager.getPossessedEntityId(player) != null;
     }
 
+    /**
+     * Remote player whose soul is out of their own body (server-synced via
+     * {@code SoulVisibilityPacket}). Must be invisible to this client: model,
+     * armor, held items, cape/elytra layers, name tag and shadow.
+     */
+    public static boolean shouldHideRemoteSoulPlayer(AbstractClientPlayer player) {
+        return player != null
+                && player != Minecraft.getInstance().player
+                && ClientSoulVisibility.isHidden(player);
+    }
+
+    /** Local possessing soul (existing behaviour) or any remote player in soul form. */
+    public static boolean shouldHideSoulPlayer(AbstractClientPlayer player) {
+        return shouldHideLocalSoulPlayer(player) || shouldHideRemoteSoulPlayer(player);
+    }
+
     public static boolean isFreeLocalSoulPlayer(AbstractClientPlayer player) {
         return player == Minecraft.getInstance().player
                 && SoulManager.getState(player) == SoulState.VAGRANT

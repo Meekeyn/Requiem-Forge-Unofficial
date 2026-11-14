@@ -11,6 +11,7 @@
     "BlazeAccessor",
     "EntityAccessor",
     "CatLikeEntityMixin",
+    "EnderManMixin",
     "EntityMixin",
     "EntityAccessor",
     "EatBlockGoalMixin",

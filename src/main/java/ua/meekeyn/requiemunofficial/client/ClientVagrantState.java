@@ -94,7 +94,7 @@ public final class ClientVagrantState {
             minecraft.setCameraEntity(player);
         }
 
-        if (VagrantRules.isRestricted(player)) {
+        if (VagrantRules.canPhase(player)) {
             if (!player.getUUID().equals(appliedPlayerId)) {
                 appliedPlayerId = player.getUUID();
                 originalNoPhysics = player.noPhysics;
@@ -144,7 +144,7 @@ public final class ClientVagrantState {
     }
 
     private static void primeVagrantPhasePhysics(Minecraft minecraft, LocalPlayer player) {
-        if (!VagrantRules.isRestricted(player)) {
+        if (!VagrantRules.canPhase(player)) {
             phaseChargeTicks = 0;
             leafPhaseChargeTicks = 0;
             leafPhaseGraceTicks = 0;

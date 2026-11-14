@@ -132,8 +132,8 @@ public final class VagrantEvents {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onLivingChangeTarget(LivingChangeTargetEvent event) {
         LivingEntity target = event.getNewTarget();
-        if ((target instanceof ServerPlayer player && VagrantRules.isRestricted(player))
-                || VagrantRules.isEmptyPlayerShell(target)) {
+        if ((target instanceof ServerPlayer player && VagrantRules.canPhase(player))
+                || VagrantRules.isPossessingVagrantEntity(target)) {
             event.setCanceled(true);
             event.setNewTarget(null);
             if (event.getEntity() instanceof Mob mob) {
@@ -170,7 +170,7 @@ public final class VagrantEvents {
     }
 
     public static boolean suppressFallForVagrant(ServerPlayer player) {
-        if (!VagrantRules.isRestricted(player)) {
+        if (!VagrantRules.canPhase(player)) {
             return false;
         }
         player.fallDistance = 0.0F;
@@ -178,7 +178,7 @@ public final class VagrantEvents {
     }
 
     public static boolean shouldSuppressDamageForVagrant(ServerPlayer player) {
-        return VagrantRules.isRestricted(player);
+        return VagrantRules.canPhase(player);
     }
 
     public static void setVagrantInput(ServerPlayer player, boolean jumping, boolean shifting, boolean phaseAttempt) {
@@ -189,11 +189,11 @@ public final class VagrantEvents {
 
     private static void updateVagrantState(ServerPlayer player) {
         if (player.isSpectator()) {
-            clearStoredVagrantState(player);
+            // Стан душі зберігається: після спектатора вагрант лишається вагрантом з тими ж оригіналами.
             return;
         }
 
-        if (VagrantRules.isRestricted(player)) {
+        if (VagrantRules.canPhase(player)) {
             boolean alreadyGranted = player.getPersistentData().getBoolean(FLIGHT_GRANTED);
             if (!alreadyGranted) {
                 player.getPersistentData().putBoolean(ORIGINAL_MAYFLY, player.getAbilities().mayfly);
@@ -285,7 +285,7 @@ public final class VagrantEvents {
     }
 
     private static void primeVagrantPhasePhysics(ServerPlayer player) {
-        if (!VagrantRules.isRestricted(player)) {
+        if (!VagrantRules.canPhase(player)) {
             return;
         }
         updatePhaseCharge(player);

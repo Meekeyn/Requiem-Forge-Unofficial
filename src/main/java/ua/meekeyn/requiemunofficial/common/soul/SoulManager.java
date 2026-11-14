@@ -83,6 +83,17 @@ public final class SoulManager {
         }
     }
 
+    /**
+     * Soul form = the player's soul is outside their own body: VAGRANT (free soul or
+     * possessing a mob) or a legacy REMNANT that still carries a possessed entity id.
+     * A REMNANT in their own body and MORTAL players are physical and stay visible.
+     */
+    public static boolean isSoulForm(Player player) {
+        SoulState state = getState(player);
+        return state == SoulState.VAGRANT
+                || state == SoulState.REMNANT && getPossessedEntityId(player) != null;
+    }
+
     public static UUID getPossessedEntityId(Player player) {
         return player.getCapability(ModCapabilities.PLAYER_SOUL)
                 .resolve()

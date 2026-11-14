@@ -5,6 +5,8 @@ import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -60,5 +62,22 @@ public final class SoulHarvestEvents {
         int healthUnits = Math.max(1, (int) Math.ceil(entity.getMaxHealth() / 20.0F));
         int minimum = soulKind == SoulKind.AGGREGATE ? 4 : 1;
         return Math.min(SoulVesselItem.CAPACITY, Math.max(minimum, healthUnits));
+    }
+
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
+    public static void onVesselInteractEntity(PlayerInteractEvent.EntityInteract event) {
+        Player player = event.getEntity();
+        if (VagrantRules.isRestricted(player) || !(event.getTarget() instanceof LivingEntity target)) {
+            return;
+        }
+        ItemStack stack = event.getItemStack();
+        if (!stack.is(ModItems.EMPTY_SOUL_VESSEL.get()) && !stack.is(ModItems.CREATIVE_SOUL_VESSEL.get())) {
+            return;
+        }
+        var result = SoulVesselItem.captureBeforeTargetInteraction(stack, player, target, event.getHand());
+        if (result != net.minecraft.world.InteractionResult.PASS) {
+            event.setCanceled(true);
+            event.setCancellationResult(result);
+        }
     }
 }

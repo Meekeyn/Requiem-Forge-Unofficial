@@ -31,21 +31,9 @@ public final class ClientPossessionInput {
     private static int attackRepeatCooldown;
     private static int currentCameraHostId = -1;
     private static boolean emergencyShiftPressed;
-    private static boolean reqExitPending; // ТИМЧАСОВО [REQ-EXIT]
 
     private ClientPossessionInput() {
     }
-
-    // ТИМЧАСОВО [REQ-EXIT]: фіксуємо сире натискання V, до будь-яких ранніх виходів обробника тіку.
-    @SubscribeEvent // ТИМЧАСОВО [REQ-EXIT]
-    public static void reqExitOnKey(InputEvent.Key event) { // ТИМЧАСОВО [REQ-EXIT]
-        if (event.getAction() != org.lwjgl.glfw.GLFW.GLFW_PRESS || !ModKeyMappings.UNCONDITIONAL_EXIT.matches(event.getKey(), event.getScanCode())) return; // ТИМЧАСОВО [REQ-EXIT]
-        Minecraft mc = Minecraft.getInstance(); // ТИМЧАСОВО [REQ-EXIT]
-        StringBuilder conflicts = new StringBuilder(); // ТИМЧАСОВО [REQ-EXIT]
-        for (net.minecraft.client.KeyMapping km : mc.options.keyMappings) { if (km != ModKeyMappings.UNCONDITIONAL_EXIT && km.same(ModKeyMappings.UNCONDITIONAL_EXIT)) conflicts.append(km.getName()).append(' '); } // ТИМЧАСОВО [REQ-EXIT]
-        RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V pressed key={} conflicts=[{}] player={} screen={} camera={} clientPossessedId={}", ModKeyMappings.UNCONDITIONAL_EXIT.getKey().getName(), conflicts.toString().trim(), mc.player != null, mc.screen == null ? "none" : mc.screen.getClass().getSimpleName(), mc.getCameraEntity() == null ? "null" : mc.getCameraEntity().getClass().getSimpleName() + "#" + mc.getCameraEntity().getId(), mc.player == null ? "n/a" : SoulManager.getPossessedEntityId(mc.player)); // ТИМЧАСОВО [REQ-EXIT]
-        reqExitPending = true; // ТИМЧАСОВО [REQ-EXIT]
-    } // ТИМЧАСОВО [REQ-EXIT]
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
@@ -59,11 +47,9 @@ public final class ClientPossessionInput {
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
             emergencyShiftPressed = false;
-            reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
             return;
         }
         if (minecraft.screen != null) {
-            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, screen open: {}", minecraft.screen.getClass().getSimpleName()); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             emergencyShiftPressed = false;
@@ -79,7 +65,6 @@ public final class ClientPossessionInput {
             return;
         }
         if (minecraft.player.isSpectator()) {
-            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, player is spectator"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
@@ -87,25 +72,15 @@ public final class ClientPossessionInput {
             return;
         }
 
-        while (ModKeyMappings.DISSOCIATION.consumeClick()) {
-            RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: ',' consumed, sending RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
-            ModNetwork.CHANNEL.sendToServer(
-                    new PossessionActionPacket(PossessionActionPacket.Action.RELEASE)
-            );
-        }
-
         boolean controllingHost = minecraft.getCameraEntity() != minecraft.player
                 || SoulManager.getPossessedEntityId(minecraft.player) != null;
         if (!controllingHost) {
             // V поза тілом-носієм: сервер вирішує (конфіг + стан remnant), чи вийти з власного тіла.
             while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
-                reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
-                RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed outside host, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
                 ModNetwork.CHANNEL.sendToServer(
                         new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
                 );
             }
-            if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: chain stopped, controllingHost=false (camera==player, clientPossessedId=null)"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
             jumpCooldown = 0;
             attackRepeatCooldown = 0;
             currentCameraHostId = -1;
@@ -115,13 +90,10 @@ public final class ClientPossessionInput {
 
         // Port-only безумовний вихід. Сервер вирішує, чи він дозволений конфігом.
         while (ModKeyMappings.UNCONDITIONAL_EXIT.consumeClick()) {
-            RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V consumed, sending UNCONDITIONAL_RELEASE"); // ТИМЧАСОВО [REQ-EXIT]
-            reqExitPending = false; // ТИМЧАСОВО [REQ-EXIT]
             ModNetwork.CHANNEL.sendToServer(
                     new PossessionActionPacket(PossessionActionPacket.Action.UNCONDITIONAL_RELEASE)
             );
         }
-        if (reqExitPending) { RequiemUnofficial.LOGGER.info("[REQ-EXIT] client: V pressed but consumeClick() returned nothing (click taken by another mapping?)"); reqExitPending = false; } // ТИМЧАСОВО [REQ-EXIT]
 
         LivingEntity beta16Host = PossessionManager.getBeta16PlayerBodyHost(minecraft.player);
         if (beta16Host != null) {
@@ -387,7 +359,9 @@ public final class ClientPossessionInput {
                 || !isControllingPossessedHost(minecraft)) {
             return;
         }
-        if (PossessionManager.isUsingBeta16PlayerBody(minecraft.player)) {
+        // У beta16-режимі тіло — сам гравець: атака/копання лишаються ванільними, але ПКМ-здібність
+        // (телепорт ендермена тощо) мусить дійти до сервера так само, як у класичному режимі.
+        if (PossessionManager.isUsingBeta16PlayerBody(minecraft.player) && !event.isUseItem()) {
             return;
         }
         // Обхід для посадки - лише на ПКМ; ЛКМ по транспорту лишається звичайною атакою носія.

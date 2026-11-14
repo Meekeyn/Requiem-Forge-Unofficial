@@ -81,7 +81,9 @@ public class RemnantVesselItem extends Item {
         LivingEntity host = possessedId == null ? null : PossessionManager.findPossessedHost(player, possessedId);
 
         if (host != null) {
-            if (!PossessedItemManager.hasPendingBodyCure(player, host)) {
+            // Порт: людиноподібні тіла (зомбі, скелети, жителі, пиглини) вилучаються сосудом без золотого яблука.
+            if (!PossessedItemManager.hasPendingBodyCure(player, host)
+                    && !host.getType().is(ua.meekeyn.requiemunofficial.common.util.ModTags.SKELETONIZABLE)) {
                 return InteractionResultHolder.success(stack);
             }
             PossessionManager.restorePlayerBodyFromHost(player, host);

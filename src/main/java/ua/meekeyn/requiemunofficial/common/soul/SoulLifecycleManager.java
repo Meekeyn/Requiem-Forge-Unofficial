@@ -120,6 +120,7 @@ public final class SoulLifecycleManager {
         if (player.getVehicle() != null) {
             shell.startRiding(player.getVehicle(), true);
         }
+        PossessionManager.assistFall(shell);
         SoulManager.setPlayerShell(player, shell.getUUID());
         return shell;
     }

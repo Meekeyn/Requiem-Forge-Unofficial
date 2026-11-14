@@ -513,11 +513,11 @@ public class MorticianEntity extends WanderingTrader {
                     new ItemStack(ModItems.EMPTY_SOUL_VESSEL.get()),
                     new ItemStack(Items.NETHERITE_INGOT),
                     new ItemStack(ModItems.SEALED_REMNANT_VESSEL.get()),
-                    VagrantRules.isRestricted(player) ? 0 : 1,
+                    VagrantRules.canPhase(player) ? 0 : 1,
                     1,
                     0.05F
             );
-        } else if (VagrantRules.isRestricted(player)) {
+        } else if (VagrantRules.canPhase(player)) {
             first = new MerchantOffer(
                     first.getBaseCostA(),
                     first.getCostB(),

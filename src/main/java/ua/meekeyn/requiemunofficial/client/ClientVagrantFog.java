@@ -22,7 +22,7 @@ public final class ClientVagrantFog {
     public static void onRenderFog(ViewportEvent.RenderFog event) {
         LocalPlayer player = Minecraft.getInstance().player;
         if (player == null
-                || !VagrantRules.isRestricted(player)
+                || !VagrantRules.canPhase(player)
                 || !VagrantRules.isInsideNonLeafPhaseableBlock(player)) {
             return;
         }
@@ -35,7 +35,7 @@ public final class ClientVagrantFog {
     @SubscribeEvent
     public static void onComputeFogColor(ViewportEvent.ComputeFogColor event) {
         LocalPlayer player = Minecraft.getInstance().player;
-        if (player == null || !VagrantRules.isRestricted(player)) {
+        if (player == null || !VagrantRules.canPhase(player)) {
             return;
         }
 

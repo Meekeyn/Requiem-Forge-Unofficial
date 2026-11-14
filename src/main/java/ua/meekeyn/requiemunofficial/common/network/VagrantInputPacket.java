@@ -24,7 +24,7 @@ public record VagrantInputPacket(boolean jumping, boolean shifting, boolean phas
         NetworkEvent.Context context = contextSupplier.get();
         context.enqueueWork(() -> {
             ServerPlayer player = context.getSender();
-            if (player != null && VagrantRules.isRestricted(player)) {
+            if (player != null && VagrantRules.canPhase(player)) {
                 VagrantEvents.setVagrantInput(player, packet.jumping, packet.shifting, packet.phaseAttempt);
             }
         });

@@ -16,6 +16,7 @@ import net.minecraft.client.renderer.entity.LivingEntityRenderer;
 import net.minecraft.client.renderer.entity.layers.HumanoidArmorLayer;
 import net.minecraft.client.renderer.entity.layers.ItemInHandLayer;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.player.PlayerModelPart;
 import ua.meekeyn.requiemunofficial.common.entity.PlayerShellEntity;
 
 import java.util.HashMap;
@@ -48,6 +49,13 @@ public class PlayerShellRenderer extends LivingEntityRenderer<PlayerShellEntity,
     public void render(PlayerShellEntity entity, float entityYaw, float partialTick, PoseStack poseStack,
                        MultiBufferSource buffer, int packedLight) {
         this.model = resolveSkin(entity).slim() ? slimModel : wideModel;
+        int parts = entity.getSkinPartsMask();
+        this.model.hat.visible = (parts & PlayerModelPart.HAT.getMask()) != 0;
+        this.model.jacket.visible = (parts & PlayerModelPart.JACKET.getMask()) != 0;
+        this.model.leftPants.visible = (parts & PlayerModelPart.LEFT_PANTS_LEG.getMask()) != 0;
+        this.model.rightPants.visible = (parts & PlayerModelPart.RIGHT_PANTS_LEG.getMask()) != 0;
+        this.model.leftSleeve.visible = (parts & PlayerModelPart.LEFT_SLEEVE.getMask()) != 0;
+        this.model.rightSleeve.visible = (parts & PlayerModelPart.RIGHT_SLEEVE.getMask()) != 0;
         super.render(entity, entityYaw, partialTick, poseStack, buffer, packedLight);
     }
 

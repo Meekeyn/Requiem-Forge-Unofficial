@@ -114,7 +114,7 @@ public final class HudOverlay {
 
         if (!Boolean.getBoolean("requiemunofficial.debugHud")) {
             LivingEntity possessedHost = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
-            if (possessedHost != null && !minecraft.player.isCreative()) {
+            if (possessedHost != null && !minecraft.player.isCreative() && !minecraft.player.isSpectator()) {
                 renderBodyHealth(event, minecraft, displayedBodyHealthEntity(possessedHost));
             }
             return;
@@ -167,14 +167,14 @@ public final class HudOverlay {
         );
 
         LivingEntity possessedHost = ClientPossessionRenderHelper.getPossessedHost(minecraft.player);
-        if (possessedHost != null && !minecraft.player.isCreative()) {
+        if (possessedHost != null && !minecraft.player.isCreative() && !minecraft.player.isSpectator()) {
             renderBodyHealth(event, minecraft, displayedBodyHealthEntity(possessedHost));
         }
     }
 
     private static void renderVagrantBlockOcclusion(Minecraft minecraft, GuiGraphics guiGraphics) {
         if (minecraft.level == null
-                || !VagrantRules.isRestricted(minecraft.player)
+                || !VagrantRules.canPhase(minecraft.player)
                 || !isVagrantEyeInsideSolidBlock(minecraft)) {
             return;
         }
@@ -320,6 +320,6 @@ public final class HudOverlay {
     }
 
     private static boolean isPossessing(Minecraft minecraft) {
-        return SoulManager.getPossessedEntityId(minecraft.player) != null;
+        return SoulManager.getPossessedEntityId(minecraft.player) != null && !minecraft.player.isSpectator();
     }
 }

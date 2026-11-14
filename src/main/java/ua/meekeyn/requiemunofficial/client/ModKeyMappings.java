@@ -15,20 +15,11 @@ public final class ModKeyMappings {
      */
     public static final String CATEGORY = "key.categories.requiemunofficial";
 
-    // Оригінальна beta.16 клавіша дисоціації: кома (","), власна категорія мода.
-    public static final KeyMapping DISSOCIATION = new KeyMapping(
-            "key.requiemunofficial.dissociation",
-            InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_COMMA,
-            CATEGORY
-    );
-
-    // Port-only клавіша безумовного виходу з тіла. Працює лише коли серверний конфіг
-    // allowUnconditionalPossessionExit увімкнено; не поєднана з жодною здібністю.
+    // Безумовний вихід із тіла (завжди увімкнений, M). Замінює beta.16-клавішу дисоціації (',').
     public static final KeyMapping UNCONDITIONAL_EXIT = new KeyMapping(
             "key.requiemunofficial.unconditional_exit",
             InputConstants.Type.KEYSYM,
-            GLFW.GLFW_KEY_V,
+            GLFW.GLFW_KEY_M,
             CATEGORY
     );
 
@@ -45,7 +36,6 @@ public final class ModKeyMappings {
     }
 
     public static void register(RegisterKeyMappingsEvent event) {
-        event.register(DISSOCIATION);
         event.register(UNCONDITIONAL_EXIT);
         event.register(ABILITY);
     }

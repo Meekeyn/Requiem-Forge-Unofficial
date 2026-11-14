@@ -5,12 +5,14 @@ import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.PacketDistributor;
 import net.minecraftforge.network.simple.SimpleChannel;
 import ua.meekeyn.requiemunofficial.RequiemUnofficial;
+import net.minecraft.world.entity.player.Player;
 import ua.meekeyn.requiemunofficial.common.soul.ModCapabilities;
+import ua.meekeyn.requiemunofficial.common.soul.SoulManager;
 import ua.meekeyn.requiemunofficial.common.util.ModIds;
 
 public final class ModNetwork {
 
-    private static final String PROTOCOL_VERSION = "17";
+    private static final String PROTOCOL_VERSION = "18";
 
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ModIds.id("main"),
@@ -121,6 +123,14 @@ public final class ModNetwork {
                 RemnantVesselFxPacket::decode,
                 RemnantVesselFxPacket::handle
         );
+        CHANNEL.registerMessage(
+                nextId(),
+                SoulVisibilityPacket.class,
+                SoulVisibilityPacket::encode,
+                SoulVisibilityPacket::decode,
+                SoulVisibilityPacket::handle,
+                java.util.Optional.of(net.minecraftforge.network.NetworkDirection.PLAY_TO_CLIENT)
+        );
     }
 
     public static int nextId() {
@@ -128,6 +138,7 @@ public final class ModNetwork {
     }
 
     public static void sendSoulData(ServerPlayer player) {
+        broadcastSoulVisibility(player);
         if (!isConnected(player)) {
             return;
         }
@@ -145,6 +156,22 @@ public final class ModNetwork {
                         )
                 )
         );
+    }
+
+    /**
+     * Tells every client tracking {@code player} whether that player is in soul form,
+     * so remote clients can hide the model, held items and layers.
+     */
+    public static void broadcastSoulVisibility(ServerPlayer player) {
+        CHANNEL.send(
+                PacketDistributor.TRACKING_ENTITY.with(() -> player),
+                new SoulVisibilityPacket(player.getId(), SoulManager.isSoulForm(player))
+        );
+    }
+
+    /** Sends the soul visibility of {@code target} to a single {@code viewer}. */
+    public static void sendSoulVisibility(ServerPlayer viewer, Player target) {
+        sendToPlayer(viewer, new SoulVisibilityPacket(target.getId(), SoulManager.isSoulForm(target)));
     }
 
     public static void sendToPlayer(ServerPlayer player, Object packet) {

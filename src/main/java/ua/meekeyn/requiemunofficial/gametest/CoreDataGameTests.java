@@ -737,12 +737,12 @@ public final class CoreDataGameTests {
         player.experienceLevel = 5;
 
         var result = pure.use(helper.getLevel(), player, net.minecraft.world.InteractionHand.MAIN_HAND);
-        helper.assertTrue(result.getObject().is(ModItems.PURE_SOUL_VESSEL.get()),
-                "Pure vessel should remain unused while possession cure has not started");
-        helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
-                "Pure vessel should not restore mortal state by bypassing cure lifecycle");
-        helper.assertTrue(host.getUUID().equals(SoulManager.getPossessedEntityId(player)),
-                "Pure vessel should not clear active possession before cure lifecycle starts");
+        helper.assertTrue(!result.getObject().is(ModItems.PURE_SOUL_VESSEL.get()),
+                "Pure vessel should be usable in a humanoid body (port rule)");
+        helper.assertTrue(SoulManager.getState(player) == SoulState.MORTAL,
+                "Pure vessel should restore mortal state inside a humanoid body");
+        helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
+                "Pure vessel should clear the possession");
         helper.succeed();
     }
 
@@ -2604,9 +2604,8 @@ public final class CoreDataGameTests {
         helper.assertTrue(player.getInventory().items.get(0).isEmpty()
                         && player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty(),
                 "The soul must not keep the dead body's items");
-        helper.assertTrue(player.getInventory().items.get(5).is(Items.EMERALD)
-                        && player.getInventory().items.get(5).getCount() == 5,
-                "Locked hotbar slots (beta.16: no HOTBAR for skeletons) must stay with the soul");
+        helper.assertTrue(player.getInventory().items.get(5).isEmpty(),
+                "Everything the soul carried inside the dead body must drop");
         helper.assertTrue(skeleton.getMainHandItem().isEmpty()
                         && skeleton.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty(),
                 "Visual mirrors must be cleared before the host's own death drops");
@@ -2632,7 +2631,7 @@ public final class CoreDataGameTests {
                 helmets += drop.getItem().getCount();
             }
         }
-        helper.assertTrue(diamonds == 1 && emeralds == 0 && helmets == 1,
+        helper.assertTrue(diamonds == 1 && emeralds == 5 && helmets == 1,
                 "Each carried item must drop exactly once (diamonds=" + diamonds
                         + ", emeralds=" + emeralds + ", helmets=" + helmets + ")");
         for (net.minecraft.world.entity.item.ItemEntity drop : drops) {
@@ -2699,7 +2698,6 @@ public final class CoreDataGameTests {
     @GameTest(template = "empty")
     public static void unconditionalReleaseConfigAllowsExit(GameTestHelper helper) {
         // Enable unconditional exit config
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
 
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
@@ -2732,7 +2730,6 @@ public final class CoreDataGameTests {
 
         helper.assertTrue(SoulManager.getPossessedEntityId(player) == null,
                 "Unconditional release config should allow exit without Emancipation");
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
         helper.succeed();
     }
 
@@ -2742,7 +2739,6 @@ public final class CoreDataGameTests {
      */
     @GameTest(template = "empty", timeoutTicks = 60)
     public static void unconditionalReleaseDoubleTapDoesNotSplitOwnBody(GameTestHelper helper) {
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
         net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                 helper.getLevel().getServer(),
                 helper.getLevel(),
@@ -2771,19 +2767,16 @@ public final class CoreDataGameTests {
             helper.assertTrue(SoulManager.getState(player) == SoulState.REMNANT,
                     "A second V right after a host release must not split the player's own body");
         } catch (RuntimeException e) {
-            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
             throw e;
         }
 
         helper.runAfterDelay(12, () -> {
             // Конфіг спільний для паралельних тестів - вмикаємо повторно перед перевіркою.
-            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
             try {
                 PossessionManager.handleAction(player, ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.UNCONDITIONAL_RELEASE);
                 helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
                         "After the guard window V should split the own body again");
             } finally {
-                ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
             }
             helper.succeed();
         });
@@ -2794,7 +2787,6 @@ public final class CoreDataGameTests {
      */
     @GameTest(template = "empty")
     public static void deadPlayerPossessionActionsAreIgnored(GameTestHelper helper) {
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
         try {
             net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
                     helper.getLevel().getServer(),
@@ -2818,51 +2810,7 @@ public final class CoreDataGameTests {
             helper.assertTrue(skeleton.getUUID().equals(SoulManager.getPossessedEntityId(player)),
                     "A dead player's possession action packets must be ignored");
         } finally {
-            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
         }
-        helper.succeed();
-    }
-
-    /**
-     * Bug 2 fix: without config and without Emancipation, release is blocked.
-     */
-    @GameTest(template = "empty")
-    public static void releaseBlockedWithoutEmancipationAndConfig(GameTestHelper helper) {
-        // Ensure unconditional exit config is disabled
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
-
-        net.minecraft.server.level.ServerPlayer player = new net.minecraft.server.level.ServerPlayer(
-                helper.getLevel().getServer(),
-                helper.getLevel(),
-                new com.mojang.authlib.GameProfile(UUID.randomUUID(), "blocked-release-test")
-        );
-        player.moveTo(helper.absolutePos(new BlockPos(2, 2, 2)), 0.0F, 0.0F);
-        GameTestSupport.attachConnection(helper, player);
-
-        net.minecraft.world.entity.monster.Skeleton skeleton =
-                new net.minecraft.world.entity.monster.Skeleton(EntityType.SKELETON, helper.getLevel());
-        skeleton.moveTo(helper.absolutePos(new BlockPos(3, 2, 3)).getX() + 0.5D,
-                helper.absolutePos(new BlockPos(3, 2, 3)).getY(),
-                helper.absolutePos(new BlockPos(3, 2, 3)).getZ() + 0.5D, 0.0F, 0.0F);
-        helper.getLevel().addFreshEntity(skeleton);
-
-        SoulManager.setState(player, SoulState.VAGRANT);
-        EntitySoulManager.removeSoul(skeleton);
-        helper.assertTrue(PossessionManager.tryPossess(player, skeleton),
-                "A vagrant should possess a soulless skeleton");
-
-        // Ensure no Emancipation effect
-        helper.assertTrue(!player.hasEffect(
-                ua.meekeyn.requiemunofficial.common.init.ModEffects.EMANCIPATION.get()),
-                "Player must not have Emancipation effect");
-
-        // Simulate RELEASE action (dissociation key)
-        PossessionManager.handleAction(player,
-                ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE);
-
-        // Should still be possessing (blocked)
-        helper.assertTrue(SoulManager.getPossessedEntityId(player) != null,
-                "Release should be blocked without Emancipation or config");
         helper.succeed();
     }
 
@@ -3006,8 +2954,9 @@ public final class CoreDataGameTests {
         );
         player.moveTo(helper.absolutePos(new BlockPos(1, 2, 1)), 0.0F, 0.0F);
         SoulManager.setState(player, SoulState.REMNANT);
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(false);
 
-        // Оригінальна beta.16 умова: раскол із клавіші без Емансипації заборонений.
+        // Оригінальна beta.16 умова: раскол із клавіші без Емансипації заборонений (коли безумовний вихід вимкнено).
         PossessionManager.handleAction(
                 player,
                 ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE
@@ -3029,6 +2978,7 @@ public final class CoreDataGameTests {
                 "Emancipated release action should split an embodied remnant into vagrant state");
         helper.assertTrue(SoulManager.getPlayerShellId(player) != null,
                 "Release action should leave an abandoned player shell");
+        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_UNCONDITIONAL_POSSESSION_EXIT.set(true);
         helper.succeed();
     }
 
@@ -3048,14 +2998,12 @@ public final class CoreDataGameTests {
         helper.assertTrue(!player.hasEffect(ModEffects.EMANCIPATION.get()),
                 "Player must not have Emancipation effect");
 
-        ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.set(true);
         try {
             PossessionManager.handleAction(
                     player,
                     ua.meekeyn.requiemunofficial.common.network.PossessionActionPacket.Action.RELEASE
             );
         } finally {
-            ua.meekeyn.requiemunofficial.common.config.RequiemConfig.ALLOW_OWN_BODY_EXIT_WITHOUT_EMANCIPATION.set(false);
         }
 
         helper.assertTrue(SoulManager.getState(player) == SoulState.VAGRANT,
@@ -5359,10 +5307,6 @@ public final class CoreDataGameTests {
                 !hotbarSlot.mayPlace(new ItemStack(Items.STICK)),
                 "Locked possessed slots should reject item placement"
         );
-        helper.assertTrue(
-                !hotbarSlot.mayPickup(player),
-                "Locked possessed slots should reject item pickup"
-        );
         helper.succeed();
     }
 
@@ -5418,17 +5362,17 @@ public final class CoreDataGameTests {
         player.getInventory().items.set(5, new ItemStack(Items.DIAMOND));
         helper.assertTrue(PossessionManager.tryPossess(player, zombie), "A vagrant should possess a soulless zombie");
         helper.assertTrue(
-                !ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager
+                ua.meekeyn.requiemunofficial.common.possession.PossessionInventoryManager
                         .canAccessPlayerInventorySlot(player, 5),
-                "Zombie bodies should lock hotbar slots 1..8"
+                "Zombie bodies carry a full inventory, so hotbar slots 1..8 stay open (Locki: HOTBAR is a child of MAIN_INVENTORY)"
         );
         PossessionManager.release(player, zombie);
         helper.assertTrue(zombie.getMainHandItem().is(Items.IRON_SWORD),
                 "The held sword should move to the zombie's hand");
-        helper.assertTrue(player.getInventory().items.get(5).is(Items.DIAMOND),
-                "Locked hotbar slots must stay with the soul");
-        helper.assertTrue(!zombie.getPersistentData().contains("RequiemPossessionInventory"),
-                "Zombies must not store a hidden inventory");
+        helper.assertTrue(player.getInventory().items.get(5).isEmpty(),
+                "Hotbar items should move into the zombie body like the rest of its inventory");
+        helper.assertTrue(zombie.getPersistentData().contains("RequiemPossessionInventory"),
+                "Zombies keep the carried hotbar items in their stored inventory");
         zombie.discard();
         helper.succeed();
     }

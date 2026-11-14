@@ -146,11 +146,11 @@ public abstract class EntityMixin {
         if (PossessionManager.isPossessing(player)) {
             return true;
         }
-        return event == GameEvent.STEP && VagrantRules.isRestricted(player);
+        return event == GameEvent.STEP && VagrantRules.canPhase(player);
     }
 
     private static boolean requiemunofficial$isRestrictedVagrant(Entity entity) {
-        return entity instanceof Player player && VagrantRules.isRestricted(player);
+        return entity instanceof Player player && VagrantRules.canPhase(player);
     }
 
 }

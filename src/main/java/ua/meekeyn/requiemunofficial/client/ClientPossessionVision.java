@@ -57,6 +57,11 @@ public final class ClientPossessionVision {
     private ClientPossessionVision() {
     }
 
+    /** Чи діє зараз шейдер зору тіла (F4 ванілі не повинен його вимикати — в оригіналі такого перемикача немає). */
+    public static boolean isShaderEnforced() {
+        return desiredShader != null;
+    }
+
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
         if (event.phase != TickEvent.Phase.END) {
